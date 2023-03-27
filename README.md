@@ -23,3 +23,5 @@ Or add to an existing Miro Board:
 existing_board_id = "" # grab this from the end of the board's url on miro.com
 graph.generate_miro_board(board_id=existing_board_id)
 ````
+
+__Important Note:__ The `dependency_chart` layout algorithm has not been adequately tested for dependency charts that have more than one exit node, and such schemas may yield unexpected results. Multiple entry nodes (nodes with 0 dependencies) are supported.
