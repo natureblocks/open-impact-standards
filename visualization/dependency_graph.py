@@ -177,7 +177,10 @@ node_colors = {
     "Carbon Auditor": "#fffcc7",
 }
 gate_colors = {
-    "AND": "#da5050",
-    "OR": "#4498f5",
+    "AND": "#E88E8E",
+    "OR": "#50da8b",
     "XOR": "#50da8b",
+    "NAND": "#FFBA91",
+    "NOR": "#E8A5D8",
+    "XNOR": "#E8A5D8"
 }
