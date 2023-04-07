@@ -8,20 +8,20 @@
         { "name": "Government Representatives" },
         { "name": "Carbon Auditor" }
     ],
-    "activeNodes": [0],
+    "active_nodes": [0],
 
-    "dependencySets": [
+    "dependency_sets": [
         {
             "alias": "Land owner or Tenant#0000",
-            "gateType": "OR",
+            "gate_type": "OR",
             "dependencies": [
                 {
-                    "nodeId": 13,
+                    "node_id": 13,
                     "property": "completed",
                     "equals": true
                 },
                 {
-                    "nodeId": 14,
+                    "node_id": 14,
                     "property": "completed",
                     "equals": true
                 }
@@ -29,15 +29,15 @@
         },
         {
             "alias": "Borehole and Scheme#0000",
-            "gateType": "OR",
+            "gate_type": "OR",
             "dependencies": [
                 {
-                    "nodeId": 34,
+                    "node_id": 34,
                     "property": "completed",
                     "equals": true
                 },
                 {
-                    "nodeId": 35,
+                    "node_id": 35,
                     "property": "completed",
                     "equals": true
                 }
@@ -45,15 +45,15 @@
         },
         {
             "alias": "Plant Area or BMP#0000",
-            "gateType": "OR",
+            "gate_type": "OR",
             "dependencies": [
                 {
-                    "nodeId": 26,
+                    "node_id": 26,
                     "property": "completed",
                     "equals": true
                 },
                 {
-                    "nodeId": 27,
+                    "node_id": 27,
                     "property": "completed",
                     "equals": true
                 }
@@ -63,858 +63,908 @@
 
     "nodes": {
         "0": {
+            "id": "0",
             "description": "Gathered list of possible eligible farmers",
-            "nodeType": "action",
-            "appliesTo": "Project Developer",
+            "node_type": "ACTION",
+            "applies_to": "Project Developer",
             "references": [
                 "https://airtable.com/appt2BchP4GWQwc7X/tbl08AX8QdRWbJFVC/viwXZLLmqNIVBUhz4?blocks=bip0NKHe8SNPBIe6o"
             ],
-            "dependenciesMet": true,
+            "dependencies_met": true,
             "completed": false
         },
         "1": {
+            "id": "1",
             "description": "Develop list of preliminary questions",
-            "nodeType": "action",
-            "appliesTo": "Project Developer",
-            "dependencySet": {
+            "node_type": "ACTION",
+            "applies_to": "Project Developer",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 0,
+                        "node_id": 0,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "2": {
+            "id": "2",
             "description": "Farm size?",
-            "nodeType": "question",
-            "appliesTo": "Land Representative",
-            "dependencySet": {
+            "node_type": "QUESTION",
+            "applies_to": "Land Representative",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 1,
+                        "node_id": 1,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "3": {
+            "id": "3",
             "description": "% HA plantations",
-            "nodeType": "question",
-            "appliesTo": "Land Representative",
-            "dependencySet": {
+            "node_type": "QUESTION",
+            "applies_to": "Land Representative",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 1,
+                        "node_id": 1,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "4": {
+            "id": "4",
             "description": "% HA Dryland",
-            "nodeType": "question",
-            "appliesTo": "Land Representative",
-            "dependencySet": {
+            "node_type": "QUESTION",
+            "applies_to": "Land Representative",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 1,
+                        "node_id": 1,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "5": {
+            "id": "5",
             "description": "% HA Field",
-            "nodeType": "question",
-            "appliesTo": "Land Representative",
-            "dependencySet": {
+            "node_type": "QUESTION",
+            "applies_to": "Land Representative",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 1,
+                        "node_id": 1,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "6": {
+            "id": "6",
             "description": "Farm location?",
-            "nodeType": "question",
-            "appliesTo": "Land Representative",
-            "dependencySet": {
+            "node_type": "QUESTION",
+            "applies_to": "Land Representative",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 1,
+                        "node_id": 1,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "7": {
+            "id": "7",
             "description": "Set up survey",
-            "nodeType": "action",
-            "appliesTo": "Project Developer",
-            "dependencySet": {
+            "node_type": "ACTION",
+            "applies_to": "Project Developer",
+            "dependency_set": {
                 "alias": "Preliminary Questions Answered#0000",
-                "gateType": "AND",
+                "gate_type": "AND",
                 "dependencies": [
                     {
-                        "nodeId": 2,
+                        "node_id": 2,
                         "property": "answer",
-                        "greaterThan": 1000
+                        "greater_than": 1000
                     },
                     {
-                        "nodeId": 3,
+                        "node_id": 3,
                         "property": "completed",
                         "equals": true
                     },
                     {
-                        "nodeId": 4,
+                        "node_id": 4,
                         "property": "completed",
                         "equals": true
                     },
                     {
-                        "nodeId": 5,
+                        "node_id": 5,
                         "property": "completed",
                         "equals": true
                     },
                     {
-                        "nodeId": 6,
+                        "node_id": 6,
                         "property": "answer",
                         "equals": "South Africa"
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "8": {
+            "id": "8",
             "description": "Make contact with them with preliminary set of questions",
-            "nodeType": "action",
-            "appliesTo": "Project Developer",
-            "dependencySet": {
+            "node_type": "ACTION",
+            "applies_to": "Project Developer",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 7,
+                        "node_id": 7,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "9": {
+            "id": "9",
             "description": "Agreement decided between tenant and owner.",
-            "nodeType": "action",
-            "appliesTo": "Land Representative",
-            "dependenciesMet": true,
+            "node_type": "ACTION",
+            "applies_to": "Land Representative",
+            "dependencies_met": true,
             "completed": false
         },
         "10": {
+            "id": "10",
             "description": "Guidance on what should be on the contract from Natureblocks",
-            "nodeType": "action",
-            "appliesTo": "Project Developer",
-            "dependenciesMet": true,
+            "node_type": "ACTION",
+            "applies_to": "Project Developer",
+            "dependencies_met": true,
             "completed": false
         },
         "11": {
+            "id": "11",
             "description": "Written agreement to generate Carbon offsets",
-            "nodeType": "action",
-            "appliesTo": "Land Representative",
-            "dependencySet": {
+            "node_type": "ACTION",
+            "applies_to": "Land Representative",
+            "dependency_set": {
                 "alias": "Agreement and Guidance#0000",
-                "gateType": "AND",
+                "gate_type": "AND",
                 "dependencies": [
                     {
-                        "nodeId": 9,
+                        "node_id": 9,
                         "property": "completed",
                         "equals": true
                     },
                     {
-                        "nodeId": 10,
+                        "node_id": 10,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "12": {
+            "id": "12",
             "description": "Laws and contracts adhered to by both parties",
-            "nodeType": "state",
-            "appliesTo": "Land Representative",
-            "dependencySet": {
+            "node_type": "STATE",
+            "applies_to": "Land Representative",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 8,
+                        "node_id": 8,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "13": {
+            "id": "13",
             "description": "Tenant of land",
-            "nodeType": "state",
-            "appliesTo": "Land Representative",
-            "dependencySet": {
+            "node_type": "STATE",
+            "applies_to": "Land Representative",
+            "dependency_set": {
                 "alias": "Written Agreement, Laws and Contracts#0000",
-                "gateType": "AND",
+                "gate_type": "AND",
                 "dependencies": [
                     {
-                        "nodeId": 11,
+                        "node_id": 11,
                         "property": "completed",
                         "equals": true
                     },
                     {
-                        "nodeId": 12,
+                        "node_id": 12,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "14": {
+            "id": "14",
             "description": "Is the owner of land",
-            "nodeType": "state",
-            "appliesTo": "Land Representative",
-            "dependencySet": {
+            "node_type": "STATE",
+            "applies_to": "Land Representative",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 8,
+                        "node_id": 8,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "15": {
+            "id": "15",
             "description": "Land user has the rights to generate carbon offsets",
-            "nodeType": "state",
-            "appliesTo": "Project",
-            "dependencySet": {
+            "node_type": "STATE",
+            "applies_to": "Project",
+            "dependency_set": {
                 "dependencies": [
                     { "alias": "Land owner or Tenant#0000" }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "16": {
+            "id": "16",
             "description": "No local laws would be broken by planting crops / trees / etc",
-            "nodeType": "state",
-            "appliesTo": "Project",
-            "dependencySet": {
+            "node_type": "STATE",
+            "applies_to": "Project",
+            "dependency_set": {
                 "dependencies": [
                     { "alias": "Land owner or Tenant#0000" }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "17": {
+            "id": "17",
             "description": "Usable land available",
-            "nodeType": "state",
-            "appliesTo": "Project",
-            "dependencySet": {
+            "node_type": "STATE",
+            "applies_to": "Project",
+            "dependency_set": {
                 "alias": "Land Rights and Local Laws#0000",
-                "gateType": "AND",
+                "gate_type": "AND",
                 "dependencies": [
                     {
-                        "nodeId": 15,
+                        "node_id": 15,
                         "property": "completed",
                         "equals": true
                     },
                     {
-                        "nodeId": 16,
+                        "node_id": 16,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "18": {
+            "id": "18",
             "description": "History (5y)",
-            "nodeType": "action",
-            "appliesTo": "Project Developer",
-            "dependencySet": {
+            "node_type": "ACTION",
+            "applies_to": "Project Developer",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 17,
+                        "node_id": 17,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "19": {
+            "id": "19",
             "description": "Benefits information reviewed",
-            "nodeType": "action",
-            "appliesTo": "Project Developer",
-            "dependencySet": {
+            "node_type": "ACTION",
+            "applies_to": "Project Developer",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 17,
+                        "node_id": 17,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "20": {
+            "id": "20",
             "description": "Agroforestry",
-            "nodeType": "action",
-            "appliesTo": "Land Representative",
-            "dependencySet": {
+            "node_type": "ACTION",
+            "applies_to": "Land Representative",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 17,
+                        "node_id": 17,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "21": {
+            "id": "21",
             "description": "Farm big enough",
-            "nodeType": "action",
-            "appliesTo": "Land Representative",
-            "dependencySet": {
+            "node_type": "ACTION",
+            "applies_to": "Land Representative",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 17,
+                        "node_id": 17,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "22": {
+            "id": "22",
             "description": "Capacity",
-            "nodeType": "action",
-            "appliesTo": "Land Representative",
-            "dependencySet": {
+            "node_type": "ACTION",
+            "applies_to": "Land Representative",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 17,
+                        "node_id": 17,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "23": {
+            "id": "23",
             "description": "Unused lands",
-            "nodeType": "action",
-            "appliesTo": "Land Representative",
-            "dependencySet": {
+            "node_type": "ACTION",
+            "applies_to": "Land Representative",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 18,
+                        "node_id": 18,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "24": {
+            "id": "24",
             "description": "No local laws would be broken by planting crops / trees / etc",
-            "nodeType": "action",
-            "appliesTo": "Land Representative",
-            "dependenciesMet": true,
+            "node_type": "ACTION",
+            "applies_to": "Land Representative",
+            "dependencies_met": true,
             "completed": false
         },
         "25": {
+            "id": "25",
             "description": "Farmer willing to make at least one or more changes",
-            "nodeType": "state",
-            "appliesTo": "Land Representative",
-            "dependencySet": {
+            "node_type": "STATE",
+            "applies_to": "Land Representative",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 19,
+                        "node_id": 19,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "26": {
+            "id": "26",
             "description": "Better management Practices",
-            "nodeType": "action",
-            "appliesTo": "Land Representative",
-            "dependencySet": {
+            "node_type": "ACTION",
+            "applies_to": "Land Representative",
+            "dependency_set": {
                 "alias": "BMC#0000",
-                "gateType": "AND",
+                "gate_type": "AND",
                 "dependencies": [
                     {
-                        "nodeId": 18,
+                        "node_id": 18,
                         "property": "completed",
                         "equals": true
                     },
                     {
-                        "nodeId": 20,
+                        "node_id": 20,
                         "property": "completed",
                         "equals": true
                     },
                     {
-                        "nodeId": 25,
+                        "node_id": 25,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "27": {
+            "id": "27",
             "description": "Additional plant area",
-            "nodeType": "state",
-            "appliesTo": "Project Developer",
-            "dependencySet": {
+            "node_type": "STATE",
+            "applies_to": "Project Developer",
+            "dependency_set": {
                 "alias": "PA#0000",
-                "gateType": "AND",
+                "gate_type": "AND",
                 "dependencies": [
                     {
-                        "nodeId": 20,
+                        "node_id": 20,
                         "property": "completed",
                         "equals": true
                     },
                     {
-                        "nodeId": 21,
+                        "node_id": 21,
                         "property": "completed",
                         "equals": true
                     },
                     {
-                        "nodeId": 22,
+                        "node_id": 22,
                         "property": "completed",
                         "equals": true
                     },
                     {
-                        "nodeId": 23,
+                        "node_id": 23,
                         "property": "completed",
                         "equals": true
                     },
                     {
-                        "nodeId": 24,
+                        "node_id": 24,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "28": {
+            "id": "28",
             "description": "Cubic/ l water price x amount used",
-            "nodeType": "action",
-            "appliesTo": "Project Developer",
-            "dependencySet": {
+            "node_type": "ACTION",
+            "applies_to": "Project Developer",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 8,
+                        "node_id": 8,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "29": {
+            "id": "29",
             "description": "All water information/ price and amount available",
-            "nodeType": "action",
-            "appliesTo": "Carbon Auditor",
-            "dependencySet": {
+            "node_type": "ACTION",
+            "applies_to": "Carbon Auditor",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 28,
+                        "node_id": 28,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "30": {
+            "id": "30",
             "description": "Water rights",
-            "nodeType": "action",
-            "appliesTo": "Government Representatives",
-            "dependencySet": {
+            "node_type": "ACTION",
+            "applies_to": "Government Representatives",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 29,
+                        "node_id": 29,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "31": {
+            "id": "31",
             "description": "Water table sufficient - Tested",
-            "nodeType": "action",
-            "appliesTo": "Government Representatives",
-            "dependencySet": {
+            "node_type": "ACTION",
+            "applies_to": "Government Representatives",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 29,
+                        "node_id": 29,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "32": {
+            "id": "32",
             "description": "Water usage within local laws - Documentation",
-            "nodeType": "action",
-            "appliesTo": "Government Representatives",
-            "dependencySet": {
+            "node_type": "ACTION",
+            "applies_to": "Government Representatives",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 29,
+                        "node_id": 29,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "33": {
+            "id": "33",
             "description": "Natural rivers",
-            "nodeType": "state",
-            "appliesTo": "Project",
-            "dependencySet": {
+            "node_type": "STATE",
+            "applies_to": "Project",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 30,
+                        "node_id": 30,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "34": {
+            "id": "34",
             "description": "Borehole",
-            "nodeType": "state",
-            "appliesTo": "Project",
-            "dependencySet": {
+            "node_type": "STATE",
+            "applies_to": "Project",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 31,
+                        "node_id": 31,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "35": {
+            "id": "35",
             "description": "Scheme",
-            "nodeType": "state",
-            "appliesTo": "Project",
-            "dependencySet": {
+            "node_type": "STATE",
+            "applies_to": "Project",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 32,
+                        "node_id": 32,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "36": {
+            "id": "36",
             "description": "Pivots",
-            "nodeType": "state",
-            "appliesTo": "Land Representative",
-            "dependencySet": {
+            "node_type": "STATE",
+            "applies_to": "Land Representative",
+            "dependency_set": {
                 "dependencies": [
                     { "alias": "Borehole and Scheme#0000" }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "37": {
+            "id": "37",
             "description": "Drippers",
-            "nodeType": "state",
-            "appliesTo": "Land Representative",
-            "dependencySet": {
+            "node_type": "STATE",
+            "applies_to": "Land Representative",
+            "dependency_set": {
                 "dependencies": [
                     { "alias": "Borehole and Scheme#0000" }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "38": {
+            "id": "38",
             "description": "Sprinklers",
-            "nodeType": "state",
-            "appliesTo": "Land Representative",
-            "dependencySet": {
+            "node_type": "STATE",
+            "applies_to": "Land Representative",
+            "dependency_set": {
                 "dependencies": [
                     { "alias": "Borehole and Scheme#0000" }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "39": {
+            "id": "39",
             "description": "Other",
-            "nodeType": "state",
-            "appliesTo": "Land Representative",
-            "dependencySet": {
+            "node_type": "STATE",
+            "applies_to": "Land Representative",
+            "dependency_set": {
                 "dependencies": [
                     { "alias": "Borehole and Scheme#0000" }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "40": {
+            "id": "40",
             "description": "Has water rights (for irrigation)",
-            "nodeType": "state",
-            "appliesTo": "Project",
-            "dependencySet": {
+            "node_type": "STATE",
+            "applies_to": "Project",
+            "dependency_set": {
                 "alias": "Pivots, Drippers, Sprinklers, Other#0000",
-                "gateType": "OR",
+                "gate_type": "OR",
                 "dependencies": [
                     {
-                        "nodeId": 36,
+                        "node_id": 36,
                         "property": "completed",
                         "equals": true
                     },
                     {
-                        "nodeId": 37,
+                        "node_id": 37,
                         "property": "completed",
                         "equals": true
                     },
                     {
-                        "nodeId": 38,
+                        "node_id": 38,
                         "property": "completed",
                         "equals": true
                     },
                     {
-                        "nodeId": 39,
+                        "node_id": 39,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "41": {
+            "id": "41",
             "description": "Dependent on rain",
-            "nodeType": "state",
-            "appliesTo": "Project",
-            "dependenciesMet": true,
+            "node_type": "STATE",
+            "applies_to": "Project",
+            "dependencies_met": true,
             "completed": false
         },
         "42": {
+            "id": "42",
             "description": "Water access",
-            "nodeType": "state",
-            "appliesTo": "Project",
-            "dependencySet": {
+            "node_type": "STATE",
+            "applies_to": "Project",
+            "dependency_set": {
                 "alias": "Rain, Rivers, and Water Rights#0000",
-                "gateType": "OR",
+                "gate_type": "OR",
                 "dependencies": [
                     {
-                        "nodeId": 33,
+                        "node_id": 33,
                         "property": "completed",
                         "equals": true
                     },
                     {
-                        "nodeId": 40,
+                        "node_id": 40,
                         "property": "completed",
                         "equals": true
                     },
                     {
-                        "nodeId": 41,
+                        "node_id": 41,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "43": {
+            "id": "43",
             "description": "Meets preliminary criteria",
-            "nodeType": "state",
-            "appliesTo": "Land Representative",
-            "dependencySet": {
+            "node_type": "STATE",
+            "applies_to": "Land Representative",
+            "dependency_set": {
                 "alias": "Preliminary Criteria#0000",
-                "gateType": "AND",
+                "gate_type": "AND",
                 "dependencies": [
                     {
-                        "nodeId": 42,
+                        "node_id": 42,
                         "property": "completed",
                         "equals": true
                     },
                     { "alias": "Plant Area or BMP#0000" }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "44": {
+            "id": "44",
             "description": "Expansion",
-            "nodeType": "action",
-            "appliesTo": "Land Representative",
-            "dependencySet": {
+            "node_type": "ACTION",
+            "applies_to": "Land Representative",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 43,
+                        "node_id": 43,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "45": {
+            "id": "45",
             "description": "Risk analysis for more plantations",
-            "nodeType": "action",
-            "appliesTo": "Project Developer",
-            "dependencySet": {
+            "node_type": "ACTION",
+            "applies_to": "Project Developer",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 44,
+                        "node_id": 44,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "46": {
+            "id": "46",
             "description": "Native biomes",
-            "nodeType": "state",
-            "appliesTo": "Project Developer",
-            "dependencySet": {
+            "node_type": "STATE",
+            "applies_to": "Project Developer",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 45,
+                        "node_id": 45,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "47": {
+            "id": "47",
             "description": "Unique location",
-            "nodeType": "state",
-            "appliesTo": "Project Developer",
-            "dependencySet": {
+            "node_type": "STATE",
+            "applies_to": "Project Developer",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 45,
+                        "node_id": 45,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "48": {
+            "id": "48",
             "description": "Space dedicated for project",
-            "nodeType": "state",
-            "appliesTo": "Project Developer",
-            "dependencySet": {
+            "node_type": "STATE",
+            "applies_to": "Project Developer",
+            "dependency_set": {
                 "dependencies": [
                     {
-                        "nodeId": 45,
+                        "node_id": 45,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         },
         "49": {
+            "id": "49",
             "description": "Project information sufficient to do Feasibility study",
-            "nodeType": "state",
-            "appliesTo": "Project",
-            "dependencySet": {
+            "node_type": "STATE",
+            "applies_to": "Project",
+            "dependency_set": {
                 "alias": "Project Info for Feasibility Study#0000",
-                "gateType": "AND",
+                "gate_type": "AND",
                 "dependencies": [
                     {
-                        "nodeId": 46,
+                        "node_id": 46,
                         "property": "completed",
                         "equals": true
                     },
                     {
-                        "nodeId": 47,
+                        "node_id": 47,
                         "property": "completed",
                         "equals": true
                     },
                     {
-                        "nodeId": 48,
+                        "node_id": 48,
                         "property": "completed",
                         "equals": true
                     }
                 ]
             },
-            "dependenciesMet": false,
+            "dependencies_met": false,
             "completed": false
         }
     }

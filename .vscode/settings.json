@@ -1,0 +1,11 @@
+{
+    "python.testing.pytestArgs": [
+        "."
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "python.analysis.extraPaths": [
+        "./validation"
+    ],
+    "python.formatting.provider": "black"
+}

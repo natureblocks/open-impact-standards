@@ -8,7 +8,7 @@ class DependencyGraph:
         self.schema = json.load(open(json_schema_file_path))
         
         self.nodes = {}
-        self.dependencySets = []
+        self.dependency_sets = []
         self.gates = {}
         self.edge_tuples = []
         self.edge_dict = {}
@@ -29,23 +29,23 @@ class DependencyGraph:
         self.graph = nx.DiGraph()
 
         self.nodes = self.schema['nodes']
-        self.dependencySets = self.schema["dependencySets"]
+        self.dependency_sets = self.schema["dependency_sets"]
 
         self.edge_tuples = []
         self.gates = {}
         for node_id, node in self.nodes.items():
-            if "dependencySet" not in node:
+            if "dependency_set" not in node:
                 continue
 
             self.edge_dict[node_id] = []
-            nodeDS = node["dependencySet"]
+            nodeDS = node["dependency_set"]
             numDependencies = len(nodeDS["dependencies"])
             if numDependencies > 1:
                 # represent the gate as a node
                 gate = nodeDS["alias"]
                 self.graph.add_node(gate)
                 self._add_edge(node_id, gate)
-                self.gates[gate] = nodeDS["gateType"]
+                self.gates[gate] = nodeDS["gate_type"]
                 
                 if gate not in self.edge_dict:
                     self.edge_dict[gate] = []
@@ -53,8 +53,8 @@ class DependencyGraph:
                 # connect the gate to the nodes it depends on
                 for dep in nodeDS["dependencies"]:
                     # dependency sets can contain standalone dependencies and alias references
-                    if "nodeId" in dep:
-                        to_node_id = str(dep["nodeId"])
+                    if "node_id" in dep:
+                        to_node_id = str(dep["node_id"])
                         self._add_edge(gate, to_node_id)
                     elif "alias" in dep:
                         subGate = dep["alias"]
@@ -70,19 +70,19 @@ class DependencyGraph:
                         self.edge_dict[gate] = []
             
                 else: # standalone dependency
-                    to_node_id = str(nodeDS["dependencies"][0]["nodeId"])
+                    to_node_id = str(nodeDS["dependencies"][0]["node_id"])
                     self._add_edge(node_id, to_node_id)
 
-        for ds in self.dependencySets:
+        for ds in self.dependency_sets:
             gate = ds["alias"]
             
-            self.gates[gate] = ds["gateType"]
+            self.gates[gate] = ds["gate_type"]
             if gate not in self.edge_dict:
                 self.edge_dict[gate] = []
 
             for dep in ds["dependencies"]:
-                if "nodeId" in dep:
-                    to_node_id = str(dep["nodeId"])
+                if "node_id" in dep:
+                    to_node_id = str(dep["node_id"])
                     self._add_edge(gate, to_node_id)
                 elif "alias" in dep:
                     subGate = dep["alias"]
@@ -109,18 +109,18 @@ class DependencyGraph:
 
         for node_id, node in self.nodes.items():
             shape_dict[node_id] = mb.create_shape(
-                shape_type=shape_types[node["nodeType"]],
+                shape_type=shape_types[node["node_type"]],
                 content=node["description"],
-                fill_color=node_colors[node["appliesTo"]],
+                fill_color=node_colors[node["applies_to"]],
                 x=self.node_coordinates[node_id][0]*self.x_coord_factor,
                 y=self.node_coordinates[node_id][1]*self.y_coord_factor
             )
         
-        for alias, gateType in self.gates.items():
+        for alias, gate_type in self.gates.items():
             shape_dict[alias] = mb.create_shape(
-                shape_type=shape_types["gate"],
-                content=gateType,
-                fill_color=gate_colors[gateType],
+                shape_type=shape_types["GATE"],
+                content=gate_type,
+                fill_color=gate_colors[gate_type],
                 x=self.node_coordinates[alias][0]*self.x_coord_factor,
                 y=self.node_coordinates[alias][1]*self.y_coord_factor
             )
@@ -163,10 +163,10 @@ class DependencyGraph:
     
 
 shape_types = {
-    "state": "rectangle",
-    "action": "round_rectangle",
-    "question": "triangle",
-    "gate": "circle",
+    "STATE": "rectangle",
+    "ACTION": "round_rectangle",
+    "QUESTION": "triangle",
+    "GATE": "circle",
 }
 node_colors = {
     "Land Representative": "#fdeeb7",
