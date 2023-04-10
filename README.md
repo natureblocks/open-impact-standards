@@ -14,7 +14,7 @@ __Notes for psuedocode interpretation:__
 __Top-level json object:__
 - `standard` is the name of the open standard.
 - `parties` is the list of parties relevant to the open standard.
-- `nodes` is a dictionary containing the `Node` objects that comprise the standard's dependency chart.
+- `nodes` is a list containing the `Node` objects that comprise the standard's dependency chart.
 - `active_nodes` is a list of ids referencing `Node` objects whose dependencies have been met, but whose conditions for completion have not been satisfied.
 - If two or more `Node` objects specify an identical `DependencySet` object, the `DependencySet` is added to the `dependency_sets` array and referenced by those nodes. `DependencySet` objects can be referenced in `Node.dependency_sets` using a `DependencySetReference` object.
 ````
@@ -22,7 +22,7 @@ __Top-level json object:__
     standard: string,
     parties: [Party],
 
-    nodes: {Node.id: Node},
+    nodes: [Node],
     active_nodes: [Node.id],
 
     dependency_sets: [DependencySet]

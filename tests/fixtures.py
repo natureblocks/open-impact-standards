@@ -3,7 +3,7 @@ def basic_schema_with_nodes(num_nodes):
     schema["parties"].append({"name": "Project"})
 
     for i in range(num_nodes):
-        schema["nodes"][str(i)] = node(i)
+        schema["nodes"].append(node(i))
 
     return schema
 
@@ -13,14 +13,14 @@ def basic_schema():
         "standard": "basic_test_schema",
         "parties": [],
         "active_nodes": [],
-        "nodes": {},
+        "nodes": [],
         "dependency_sets": [],
     }
 
 
 def node(node_id=None):
     return {
-        "id": str(node_id) if node_id is not None else "0",
+        "id": node_id if node_id is not None else 0,
         "description": "test node",
         "node_type": "STATE",
         "applies_to": "Project",
@@ -32,8 +32,6 @@ def node(node_id=None):
 def dependency_set(alias, gate_type="AND", num_dependencies=2):
     dependencies = []
     for i in range(num_dependencies):
-        dependencies.append(
-            {"node_id": str(i), "property": "completed", "equals": True}
-        )
+        dependencies.append({"node_id": i, "property": "completed", "equals": True})
 
     return {"alias": alias, "gate_type": gate_type, "dependencies": dependencies}

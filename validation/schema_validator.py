@@ -73,7 +73,7 @@ class SchemaValidator:
                     )
                 elif key in templates.RESERVED_KEYWORDS:
                     errors += [
-                        f"{path}: cannot use reserved keyword as property name: '{key}'"
+                        f"{path}: cannot use reserved keyword as property name: {json.dumps(key)}"
                     ]
 
         # For certain objects, the keys are not known ahead of time:
@@ -250,7 +250,7 @@ class SchemaValidator:
             for value, is_unique in unique[field_name].items():
                 if not is_unique:
                     errors += [
-                        f"{path}: duplicate value provided for unique field '{field_name}': {json.dumps(value)}"
+                        f"{path}: duplicate value provided for unique field {json.dumps(field_name)}: {json.dumps(value)}"
                     ]
 
         return errors
@@ -287,7 +287,15 @@ class SchemaValidator:
                         return []
 
                 return [
-                    f"{path}: referenced object key of {referenced_path} does not exist: {json.dumps(referenced_value)}"
+                    f"{path}: expected any key from {referenced_path}, got {json.dumps(referenced_value)}"
+                ]
+            elif referenced_prop == "values":
+                for value in objectOrArray.values():
+                    if value == referenced_value:
+                        return []
+
+                return [
+                    f"{path}: expected any value from {referenced_path}, got {json.dumps(referenced_value)}"
                 ]
             else:
                 for value in objectOrArray.values():
@@ -298,7 +306,7 @@ class SchemaValidator:
                         return []
 
                 return [
-                    f"{path}: referenced object property '{referenced_prop}' of item in {referenced_path} does not exist: {json.dumps(referenced_value)}"
+                    f'{path}: expected any "{referenced_prop}" field from {referenced_path}, got {json.dumps(referenced_value)}'
                 ]
 
         elif isinstance(objectOrArray, list):
@@ -313,7 +321,7 @@ class SchemaValidator:
                     return []
 
             return [
-                f"{path}: invalid value: expected any '{referenced_prop}' field from {referenced_path}, got {json.dumps(referenced_value)}"
+                f'{path}: expected any "{referenced_prop}" field from {referenced_path}, got {json.dumps(referenced_value)}'
             ]
 
         else:

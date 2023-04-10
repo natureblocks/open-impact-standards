@@ -1,6 +1,6 @@
 from enums import gate_types, node_types
 
-RESERVED_KEYWORDS = ["root", "keys"]
+RESERVED_KEYWORDS = ["root", "keys", "values"]
 
 root_object = {
     "type": "object",
@@ -8,11 +8,7 @@ root_object = {
         "standard": {"type": "string"},
         "parties": {"type": "array", "values": {"type": "object", "template": "party"}},
         "nodes": {
-            "type": "object",
-            "keys": {
-                "type": "reference",
-                "referenced_value": "{corresponding_value}.id",
-            },
+            "type": "array",
             "values": {"type": "object", "template": "node"},
         },
         "dependency_sets": {
@@ -30,7 +26,7 @@ root_object = {
             "type": "array",
             "values": {
                 "type": "reference",
-                "references_any": {"from": "root.nodes", "property": "keys"},
+                "references_any": {"from": "root.nodes", "property": "id"},
             },
             "distinct": True,
         },
@@ -51,8 +47,8 @@ dependency = {
     "type": "object",
     "properties": {
         "node_id": {
-            "type": "integer_string",
-            "references_any": {"from": "root.nodes", "property": "keys"},
+            "type": "integer",
+            "references_any": {"from": "root.nodes", "property": "id"},
         },
         "property": {"type": "string"},
         "equals": {"types": ["string", "decimal", "boolean"]},
@@ -127,7 +123,7 @@ dependency_set = {
 node = {
     "type": "object",
     "properties": {
-        "id": {"type": "integer_string"},
+        "id": {"type": "integer"},
         "description": {"type": "string"},
         "node_type": {"type": "enum", "values": node_types},
         "applies_to": {

@@ -61,9 +61,9 @@
         }
     ],
 
-    "nodes": {
-        "0": {
-            "id": "0",
+    "nodes": [
+        {
+            "id": 0,
             "description": "Gathered list of possible eligible farmers",
             "node_type": "ACTION",
             "applies_to": "Project Developer",
@@ -73,8 +73,8 @@
             "dependencies_met": true,
             "completed": false
         },
-        "1": {
-            "id": "1",
+        {
+            "id": 1,
             "description": "Develop list of preliminary questions",
             "node_type": "ACTION",
             "applies_to": "Project Developer",
@@ -90,8 +90,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "2": {
-            "id": "2",
+        {
+            "id": 2,
             "description": "Farm size?",
             "node_type": "QUESTION",
             "applies_to": "Land Representative",
@@ -107,8 +107,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "3": {
-            "id": "3",
+        {
+            "id": 3,
             "description": "% HA plantations",
             "node_type": "QUESTION",
             "applies_to": "Land Representative",
@@ -124,8 +124,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "4": {
-            "id": "4",
+        {
+            "id": 4,
             "description": "% HA Dryland",
             "node_type": "QUESTION",
             "applies_to": "Land Representative",
@@ -141,8 +141,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "5": {
-            "id": "5",
+        {
+            "id": 5,
             "description": "% HA Field",
             "node_type": "QUESTION",
             "applies_to": "Land Representative",
@@ -158,8 +158,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "6": {
-            "id": "6",
+        {
+            "id": 6,
             "description": "Farm location?",
             "node_type": "QUESTION",
             "applies_to": "Land Representative",
@@ -175,8 +175,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "7": {
-            "id": "7",
+        {
+            "id": 7,
             "description": "Set up survey",
             "node_type": "ACTION",
             "applies_to": "Project Developer",
@@ -214,8 +214,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "8": {
-            "id": "8",
+        {
+            "id": 8,
             "description": "Make contact with them with preliminary set of questions",
             "node_type": "ACTION",
             "applies_to": "Project Developer",
@@ -231,24 +231,24 @@
             "dependencies_met": false,
             "completed": false
         },
-        "9": {
-            "id": "9",
+        {
+            "id": 9,
             "description": "Agreement decided between tenant and owner.",
             "node_type": "ACTION",
             "applies_to": "Land Representative",
             "dependencies_met": true,
             "completed": false
         },
-        "10": {
-            "id": "10",
+        {
+            "id": 10,
             "description": "Guidance on what should be on the contract from Natureblocks",
             "node_type": "ACTION",
             "applies_to": "Project Developer",
             "dependencies_met": true,
             "completed": false
         },
-        "11": {
-            "id": "11",
+        {
+            "id": 11,
             "description": "Written agreement to generate Carbon offsets",
             "node_type": "ACTION",
             "applies_to": "Land Representative",
@@ -271,8 +271,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "12": {
-            "id": "12",
+        {
+            "id": 12,
             "description": "Laws and contracts adhered to by both parties",
             "node_type": "STATE",
             "applies_to": "Land Representative",
@@ -288,8 +288,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "13": {
-            "id": "13",
+        {
+            "id": 13,
             "description": "Tenant of land",
             "node_type": "STATE",
             "applies_to": "Land Representative",
@@ -312,8 +312,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "14": {
-            "id": "14",
+        {
+            "id": 14,
             "description": "Is the owner of land",
             "node_type": "STATE",
             "applies_to": "Land Representative",
@@ -329,8 +329,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "15": {
-            "id": "15",
+        {
+            "id": 15,
             "description": "Land user has the rights to generate carbon offsets",
             "node_type": "STATE",
             "applies_to": "Project",
@@ -342,8 +342,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "16": {
-            "id": "16",
+        {
+            "id": 16,
             "description": "No local laws would be broken by planting crops / trees / etc",
             "node_type": "STATE",
             "applies_to": "Project",
@@ -355,8 +355,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "17": {
-            "id": "17",
+        {
+            "id": 17,
             "description": "Usable land available",
             "node_type": "STATE",
             "applies_to": "Project",
@@ -379,8 +379,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "18": {
-            "id": "18",
+        {
+            "id": 18,
             "description": "History (5y)",
             "node_type": "ACTION",
             "applies_to": "Project Developer",
@@ -396,8 +396,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "19": {
-            "id": "19",
+        {
+            "id": 19,
             "description": "Benefits information reviewed",
             "node_type": "ACTION",
             "applies_to": "Project Developer",
@@ -413,8 +413,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "20": {
-            "id": "20",
+        {
+            "id": 20,
             "description": "Agroforestry",
             "node_type": "ACTION",
             "applies_to": "Land Representative",
@@ -430,8 +430,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "21": {
-            "id": "21",
+        {
+            "id": 21,
             "description": "Farm big enough",
             "node_type": "ACTION",
             "applies_to": "Land Representative",
@@ -447,8 +447,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "22": {
-            "id": "22",
+        {
+            "id": 22,
             "description": "Capacity",
             "node_type": "ACTION",
             "applies_to": "Land Representative",
@@ -464,8 +464,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "23": {
-            "id": "23",
+        {
+            "id": 23,
             "description": "Unused lands",
             "node_type": "ACTION",
             "applies_to": "Land Representative",
@@ -481,16 +481,16 @@
             "dependencies_met": false,
             "completed": false
         },
-        "24": {
-            "id": "24",
+        {
+            "id": 24,
             "description": "No local laws would be broken by planting crops / trees / etc",
             "node_type": "ACTION",
             "applies_to": "Land Representative",
             "dependencies_met": true,
             "completed": false
         },
-        "25": {
-            "id": "25",
+        {
+            "id": 25,
             "description": "Farmer willing to make at least one or more changes",
             "node_type": "STATE",
             "applies_to": "Land Representative",
@@ -506,8 +506,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "26": {
-            "id": "26",
+        {
+            "id": 26,
             "description": "Better management Practices",
             "node_type": "ACTION",
             "applies_to": "Land Representative",
@@ -535,8 +535,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "27": {
-            "id": "27",
+        {
+            "id": 27,
             "description": "Additional plant area",
             "node_type": "STATE",
             "applies_to": "Project Developer",
@@ -574,8 +574,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "28": {
-            "id": "28",
+        {
+            "id": 28,
             "description": "Cubic/ l water price x amount used",
             "node_type": "ACTION",
             "applies_to": "Project Developer",
@@ -591,8 +591,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "29": {
-            "id": "29",
+        {
+            "id": 29,
             "description": "All water information/ price and amount available",
             "node_type": "ACTION",
             "applies_to": "Carbon Auditor",
@@ -608,8 +608,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "30": {
-            "id": "30",
+        {
+            "id": 30,
             "description": "Water rights",
             "node_type": "ACTION",
             "applies_to": "Government Representatives",
@@ -625,8 +625,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "31": {
-            "id": "31",
+        {
+            "id": 31,
             "description": "Water table sufficient - Tested",
             "node_type": "ACTION",
             "applies_to": "Government Representatives",
@@ -642,8 +642,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "32": {
-            "id": "32",
+        {
+            "id": 32,
             "description": "Water usage within local laws - Documentation",
             "node_type": "ACTION",
             "applies_to": "Government Representatives",
@@ -659,8 +659,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "33": {
-            "id": "33",
+        {
+            "id": 33,
             "description": "Natural rivers",
             "node_type": "STATE",
             "applies_to": "Project",
@@ -676,8 +676,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "34": {
-            "id": "34",
+        {
+            "id": 34,
             "description": "Borehole",
             "node_type": "STATE",
             "applies_to": "Project",
@@ -693,8 +693,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "35": {
-            "id": "35",
+        {
+            "id": 35,
             "description": "Scheme",
             "node_type": "STATE",
             "applies_to": "Project",
@@ -710,8 +710,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "36": {
-            "id": "36",
+        {
+            "id": 36,
             "description": "Pivots",
             "node_type": "STATE",
             "applies_to": "Land Representative",
@@ -723,8 +723,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "37": {
-            "id": "37",
+        {
+            "id": 37,
             "description": "Drippers",
             "node_type": "STATE",
             "applies_to": "Land Representative",
@@ -736,8 +736,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "38": {
-            "id": "38",
+        {
+            "id": 38,
             "description": "Sprinklers",
             "node_type": "STATE",
             "applies_to": "Land Representative",
@@ -749,8 +749,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "39": {
-            "id": "39",
+        {
+            "id": 39,
             "description": "Other",
             "node_type": "STATE",
             "applies_to": "Land Representative",
@@ -762,8 +762,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "40": {
-            "id": "40",
+        {
+            "id": 40,
             "description": "Has water rights (for irrigation)",
             "node_type": "STATE",
             "applies_to": "Project",
@@ -796,16 +796,16 @@
             "dependencies_met": false,
             "completed": false
         },
-        "41": {
-            "id": "41",
+        {
+            "id": 41,
             "description": "Dependent on rain",
             "node_type": "STATE",
             "applies_to": "Project",
             "dependencies_met": true,
             "completed": false
         },
-        "42": {
-            "id": "42",
+        {
+            "id": 42,
             "description": "Water access",
             "node_type": "STATE",
             "applies_to": "Project",
@@ -833,8 +833,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "43": {
-            "id": "43",
+        {
+            "id": 43,
             "description": "Meets preliminary criteria",
             "node_type": "STATE",
             "applies_to": "Land Representative",
@@ -853,8 +853,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "44": {
-            "id": "44",
+        {
+            "id": 44,
             "description": "Expansion",
             "node_type": "ACTION",
             "applies_to": "Land Representative",
@@ -870,8 +870,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "45": {
-            "id": "45",
+        {
+            "id": 45,
             "description": "Risk analysis for more plantations",
             "node_type": "ACTION",
             "applies_to": "Project Developer",
@@ -887,8 +887,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "46": {
-            "id": "46",
+        {
+            "id": 46,
             "description": "Native biomes",
             "node_type": "STATE",
             "applies_to": "Project Developer",
@@ -904,8 +904,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "47": {
-            "id": "47",
+        {
+            "id": 47,
             "description": "Unique location",
             "node_type": "STATE",
             "applies_to": "Project Developer",
@@ -921,8 +921,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "48": {
-            "id": "48",
+        {
+            "id": 48,
             "description": "Space dedicated for project",
             "node_type": "STATE",
             "applies_to": "Project Developer",
@@ -938,8 +938,8 @@
             "dependencies_met": false,
             "completed": false
         },
-        "49": {
-            "id": "49",
+        {
+            "id": 49,
             "description": "Project information sufficient to do Feasibility study",
             "node_type": "STATE",
             "applies_to": "Project",
@@ -967,5 +967,5 @@
             "dependencies_met": false,
             "completed": false
         }
-    }
+    ]
 }
