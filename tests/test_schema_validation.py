@@ -11,6 +11,70 @@ class TestSchemaValidation:
         errors = validator.validate(json_file="schemas/demo_schema.json")
         assert not errors
 
+    def test_duplicate_node_dependency_sets(self):
+        validator = SchemaValidator()
+
+        schema = fixtures.basic_schema_with_nodes(4)
+
+        dependency_set = fixtures.dependency_set("common_ds", "AND", 2)
+        schema["nodes"][2]["dependency_set"] = dependency_set
+        schema["nodes"][3]["dependency_set"] = dependency_set
+
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert len(errors) == 2
+        assert (
+            errors[0]
+            == "Any recurring DependencySet objects should be added to root.dependency_sets, and nodes should specify a DependencySetReference with the alias of the global DependencySet object."
+        )
+        assert (
+            errors[1]
+            == "The following node ids specify the same dependency set: [2, 3]"
+        )
+
+        schema["dependency_sets"].append(dependency_set)
+        ds_reference = {"alias": "common_ds"}
+        schema["nodes"][2]["dependency_set"] = {"dependencies": [ds_reference]}
+        schema["nodes"][3]["dependency_set"] = {"dependencies": [ds_reference]}
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        schema["nodes"].append(fixtures.node(4))
+        schema["nodes"].append(fixtures.node(5))
+
+        # Same dependency set, but the properties are ordered differently
+        schema["nodes"][4]["dependency_set"] = {
+            "alias": "common_ds#2",
+            "gate_type": "OR",
+            "dependencies": [
+                ds_reference,
+                {"node_id": 2, "property": "completed", "equals": True},
+            ],
+        }
+        schema["nodes"][5]["dependency_set"] = {
+            "dependencies": [
+                {"property": "completed", "node_id": 2, "equals": True},
+                ds_reference,
+            ],
+            "gate_type": "OR",
+            "alias": "common_ds#2",
+        }
+
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert len(errors) == 2
+        assert (
+            errors[0]
+            == "Any recurring DependencySet objects should be added to root.dependency_sets, and nodes should specify a DependencySetReference with the alias of the global DependencySet object."
+        )
+        assert (
+            errors[1]
+            == "The following node ids specify the same dependency set: [4, 5]"
+        )
+
+        schema["dependency_sets"].append(schema["nodes"][4]["dependency_set"])
+        ds_reference = {"alias": "common_ds#2"}
+        schema["nodes"][4]["dependency_set"] = {"dependencies": [ds_reference]}
+        schema["nodes"][5]["dependency_set"] = {"dependencies": [ds_reference]}
+
     def test_root_object(self):
         validator = SchemaValidator()
 

@@ -1,10 +1,15 @@
 import copy
+import hashlib
 import json
 
-from validation import templates
+from validation import templates, utils
 
 
 class SchemaValidator:
+    def __init__(self):
+        self.schema = None
+        self._node_depencency_sets = {}  # to be collected during validation
+
     def validate(self, json_file=None, json_string=None):
         if json_file is not None:
             self.schema = json.load(open(json_file))
@@ -13,7 +18,8 @@ class SchemaValidator:
         else:
             raise TypeError("must provide either json_file or json_string")
 
-        return self._validate_object("root", self.schema, templates.root_object)
+        errors = self._validate_object("root", self.schema, templates.root_object)
+        return errors + self._validate_node_depencency_sets()
 
     def _validate_field(self, path, field, template):
         if "types" in template:
@@ -51,7 +57,7 @@ class SchemaValidator:
         if "templates" in template:
             return self._validate_multi_template_object(path, field, template)
 
-        template = self._resolve_template(field, template)
+        template = self._resolve_template(path, field, template)
 
         errors = []
         if "properties" in template:
@@ -367,10 +373,13 @@ class SchemaValidator:
 
         return ([], template)
 
-    def _resolve_template(self, field, template):
+    def _resolve_template(self, path, field, template):
         if "template" in template:
             template_name = template["template"]
             referenced_template = getattr(templates, template_name)
+
+            if template_name == "node":
+                self._collect_node_depencency_set(path, field)
 
             if (
                 "template_modifiers" in template
@@ -439,6 +448,53 @@ class SchemaValidator:
         if "does_not_contain" in condition:
             return condition["does_not_contain"] not in prop
 
+        if "one_of" in condition:
+            return prop in condition["one_of"]
+
         raise NotImplementedError(
             "template condition not yet supported: " + str(condition)
         )
+
+    def _collect_node_depencency_set(self, path, field):
+        if "dependency_set" not in field or "id" not in field:
+            return
+
+        dependency_set_is_invalid = len(
+            self._validate_object(
+                path, field["dependency_set"], templates.dependency_set
+            )
+        )
+        if dependency_set_is_invalid:
+            return
+
+        self._node_depencency_sets[field["id"]] = field["dependency_set"]
+
+    def _validate_node_depencency_sets(self):
+        ds_hashes = {}
+        for node_id, dependency_set in self._node_depencency_sets.items():
+            if len(dependency_set["dependencies"]) == 1:
+                continue
+
+            dsh = hashlib.sha1(
+                json.dumps(utils.recursive_sort(dependency_set)).encode()
+            ).digest()
+
+            if dsh in ds_hashes:
+                ds_hashes[dsh].append(node_id)
+            else:
+                ds_hashes[dsh] = [node_id]
+
+        errors = []
+        for node_ids in ds_hashes.values():
+            if len(node_ids) > 1:
+                errors += [
+                    f"The following node ids specify the same dependency set: {json.dumps(node_ids)}"
+                ]
+
+        if len(errors):
+            error_explanation = [
+                "Any recurring DependencySet objects should be added to root.dependency_sets, and nodes should specify a DependencySetReference with the alias of the global DependencySet object."
+            ]
+            return error_explanation + errors
+
+        return []
