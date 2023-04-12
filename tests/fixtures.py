@@ -14,18 +14,18 @@ def basic_schema():
         "parties": [],
         "active_nodes": [],
         "nodes": [],
-        "dependency_sets": [],
+        "recurring_dependencies": [],
     }
 
 
 def node(node_id=None):
     return {
-        "id": node_id if node_id is not None else 0,
-        "description": "test node",
-        "node_type": "STATE",
-        "applies_to": "Project",
-        "dependencies_met": False,
-        "completed": False,
+        "meta": {
+            "id": node_id if node_id is not None else 0,
+            "description": "test node",
+            "node_type": "STATE",
+            "applies_to": "Project",
+        }
     }
 
 

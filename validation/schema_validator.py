@@ -248,6 +248,9 @@ class SchemaValidator:
                     unique_values[item[field_name]] = (
                         item[field_name] not in unique_values
                     )
+                elif "." in field_name:
+                    val = self._get_field(field_name, obj=item)
+                    unique_values[val] = val not in unique_values
 
             unique[field_name] = unique_values
 
@@ -455,21 +458,29 @@ class SchemaValidator:
             "template condition not yet supported: " + str(condition)
         )
 
-    def _collect_node_depencency_set(self, path, field):
-        if "dependency_set" not in field or "id" not in field:
+    def _collect_node_depencency_set(self, path, node):
+        if (
+            "depends_on" not in node
+            or "meta" not in node
+            or "id" not in node["meta"]
+        ):
             return
 
         dependency_set_is_invalid = len(
-            self._validate_object(
-                path, field["dependency_set"], templates.dependency_set
-            )
+            self._validate_object(path, node["depends_on"], templates.dependency_set)
         )
         if dependency_set_is_invalid:
             return
 
-        self._node_depencency_sets[field["id"]] = field["dependency_set"]
+        self._node_depencency_sets[node["meta"]["id"]] = node["depends_on"]
 
     def _validate_node_depencency_sets(self):
+        return (
+            self._detect_duplicate_dependency_sets()
+            + self._detect_circular_dependencies()
+        )
+
+    def _detect_duplicate_dependency_sets(self):
         ds_hashes = {}
         for node_id, dependency_set in self._node_depencency_sets.items():
             if len(dependency_set["dependencies"]) == 1:
@@ -488,13 +499,16 @@ class SchemaValidator:
         for node_ids in ds_hashes.values():
             if len(node_ids) > 1:
                 errors += [
-                    f"The following node ids specify the same dependency set: {json.dumps(node_ids)}"
+                    f"The following node ids specify identical dependency sets: {json.dumps(node_ids)}"
                 ]
 
         if len(errors):
             error_explanation = [
-                "Any recurring DependencySet objects should be added to root.dependency_sets, and nodes should specify a DependencySetReference with the alias of the global DependencySet object."
+                "Any recurring DependencySet objects (Node.depends_on) should be added to root.recurring_dependencies, and nodes should specify a DependencySetReference with the alias of the DependencySet object."
             ]
             return error_explanation + errors
 
+        return []
+
+    def _detect_circular_dependencies(self):
         return []

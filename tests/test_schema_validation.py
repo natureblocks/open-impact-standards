@@ -17,24 +17,24 @@ class TestSchemaValidation:
         schema = fixtures.basic_schema_with_nodes(4)
 
         dependency_set = fixtures.dependency_set("common_ds", "AND", 2)
-        schema["nodes"][2]["dependency_set"] = dependency_set
-        schema["nodes"][3]["dependency_set"] = dependency_set
+        schema["nodes"][2]["depends_on"] = dependency_set
+        schema["nodes"][3]["depends_on"] = dependency_set
 
         errors = validator.validate(json_string=json.dumps(schema))
         assert len(errors) == 2
         assert (
             errors[0]
-            == "Any recurring DependencySet objects should be added to root.dependency_sets, and nodes should specify a DependencySetReference with the alias of the global DependencySet object."
+            == "Any recurring DependencySet objects (Node.depends_on) should be added to root.recurring_dependencies, and nodes should specify a DependencySetReference with the alias of the DependencySet object."
         )
         assert (
             errors[1]
-            == "The following node ids specify the same dependency set: [2, 3]"
+            == "The following node ids specify identical dependency sets: [2, 3]"
         )
 
-        schema["dependency_sets"].append(dependency_set)
+        schema["recurring_dependencies"].append(dependency_set)
         ds_reference = {"alias": "common_ds"}
-        schema["nodes"][2]["dependency_set"] = {"dependencies": [ds_reference]}
-        schema["nodes"][3]["dependency_set"] = {"dependencies": [ds_reference]}
+        schema["nodes"][2]["depends_on"] = {"dependencies": [ds_reference]}
+        schema["nodes"][3]["depends_on"] = {"dependencies": [ds_reference]}
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
@@ -42,7 +42,7 @@ class TestSchemaValidation:
         schema["nodes"].append(fixtures.node(5))
 
         # Same dependency set, but the properties are ordered differently
-        schema["nodes"][4]["dependency_set"] = {
+        schema["nodes"][4]["depends_on"] = {
             "alias": "common_ds#2",
             "gate_type": "OR",
             "dependencies": [
@@ -50,7 +50,7 @@ class TestSchemaValidation:
                 {"node_id": 2, "property": "completed", "equals": True},
             ],
         }
-        schema["nodes"][5]["dependency_set"] = {
+        schema["nodes"][5]["depends_on"] = {
             "dependencies": [
                 {"property": "completed", "node_id": 2, "equals": True},
                 ds_reference,
@@ -63,15 +63,18 @@ class TestSchemaValidation:
         assert len(errors) == 2
         assert (
             errors[0]
-            == "Any recurring DependencySet objects should be added to root.dependency_sets, and nodes should specify a DependencySetReference with the alias of the global DependencySet object."
+            == "Any recurring DependencySet objects (Node.depends_on) should be added to root.recurring_dependencies, and nodes should specify a DependencySetReference with the alias of the DependencySet object."
         )
         assert (
             errors[1]
-            == "The following node ids specify the same dependency set: [4, 5]"
+            == "The following node ids specify identical dependency sets: [4, 5]"
         )
 
-        schema["dependency_sets"].append(schema["nodes"][4]["dependency_set"])
+        schema["recurring_dependencies"].append(schema["nodes"][4]["depends_on"])
         ds_reference = {"alias": "common_ds#2"}
+        schema["nodes"][4]["depends_on"] = {"dependencies": [ds_reference]}
+        schema["nodes"][5]["depends_on"] = {"dependencies": [ds_reference]}
+
         schema["nodes"][4]["dependency_set"] = {"dependencies": [ds_reference]}
         schema["nodes"][5]["dependency_set"] = {"dependencies": [ds_reference]}
 
@@ -132,11 +135,13 @@ class TestSchemaValidation:
         schema["parties"].append({"name": "Project"})
         schema["nodes"].append(
             {
-                "id": 0,
-                "description": "test node",
-                "node_type": "STATE",
-                "applies_to": "Project",
-                "dependency_set": {
+                "meta": {
+                    "id": 0,
+                    "description": "test node",
+                    "node_type": "STATE",
+                    "applies_to": "Project",
+                },
+                "depends_on": {
                     "dependencies": [
                         {
                             "node_id": 0,
@@ -148,12 +153,10 @@ class TestSchemaValidation:
                         }
                     ]
                 },
-                "dependencies_met": False,
-                "completed": False,
             }
         )
 
-        path = "root.nodes[0].dependency_set.dependencies[0]"
+        path = "root.nodes[0].depends_on.dependencies[0]"
         conformance_error = f"{path}: object does not conform to any of the allowed template specifications: ['dependency', 'dependency_set_reference']"
         mutually_exclusive = ["equals", "greater_than", "one_of"]
 
@@ -166,7 +169,7 @@ class TestSchemaValidation:
                 in errors
             )
 
-            del schema["nodes"][0]["dependency_set"]["dependencies"][0][
+            del schema["nodes"][0]["depends_on"]["dependencies"][0][
                 mutually_exclusive.pop()
             ]
 
@@ -179,9 +182,9 @@ class TestSchemaValidation:
 
         # Modifier:
         # "dependencies" property of dependency_set objects
-        # in root.dependency_sets must contain at least two items
+        # in root.recurring_dependencies must contain at least two items
         schema = fixtures.basic_schema_with_nodes(2)
-        schema["dependency_sets"] = [
+        schema["recurring_dependencies"] = [
             {
                 "alias": "test",
                 "gate_type": "AND",
@@ -194,10 +197,10 @@ class TestSchemaValidation:
         assert len(errors) == 1
         assert (
             errors[0]
-            == "root.dependency_sets[0].dependencies: must contain at least 2 item(s), got 1"
+            == "root.recurring_dependencies[0].dependencies: must contain at least 2 item(s), got 1"
         )
 
-        schema["dependency_sets"][0]["dependencies"].append(
+        schema["recurring_dependencies"][0]["dependencies"].append(
             {"node_id": 1, "property": "completed", "equals": True}
         )
         errors = validator.validate(json_string=json.dumps(schema))
@@ -209,7 +212,7 @@ class TestSchemaValidation:
         # If a dependency_set has more than one dependency,
         # "alias" and "gate_type" are required
         schema = fixtures.basic_schema_with_nodes(3)
-        schema["nodes"][2]["dependency_set"] = {
+        schema["nodes"][2]["depends_on"] = {
             "dependencies": [
                 {"node_id": 0, "property": "completed", "equals": True},
                 {"node_id": 1, "property": "completed", "equals": True},
@@ -217,14 +220,12 @@ class TestSchemaValidation:
         }
         errors = validator.validate(json_string=json.dumps(schema))
         assert len(errors) == 2
-        assert "root.nodes[2].dependency_set: missing required field: alias" in errors
-        assert (
-            "root.nodes[2].dependency_set: missing required field: gate_type" in errors
-        )
+        assert "root.nodes[2].depends_on: missing required field: alias" in errors
+        assert "root.nodes[2].depends_on: missing required field: gate_type" in errors
 
         # If a dependency_set has one or fewer dependencies,
         # "alias" and "gate_type" are optional
-        schema["nodes"][2]["dependency_set"]["dependencies"].pop()
+        schema["nodes"][2]["depends_on"]["dependencies"].pop()
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
@@ -375,15 +376,15 @@ class TestSchemaValidation:
         assert len(schema["nodes"]) == 1
 
         schema["parties"] = [{"name": "Project"}]
-        schema["nodes"][0]["applies_to"] = "something else"
+        schema["nodes"][0]["meta"]["applies_to"] = "something else"
         errors = validator.validate(json_string=json.dumps(schema))
         assert len(errors) == 1
         assert (
             errors[0]
-            == 'root.nodes[0].applies_to: expected any "name" field from root.parties, got "something else"'
+            == 'root.nodes[0].meta.applies_to: expected any "name" field from root.parties, got "something else"'
         )
 
-        schema["nodes"][0]["applies_to"] = "Project"
+        schema["nodes"][0]["meta"]["applies_to"] = "Project"
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
@@ -428,7 +429,7 @@ class TestSchemaValidation:
 
         schema = fixtures.basic_schema()
 
-        schema["dependency_sets"] = [
+        schema["recurring_dependencies"] = [
             fixtures.dependency_set("some_alias"),
             fixtures.dependency_set("some_alias"),
         ]
@@ -437,10 +438,28 @@ class TestSchemaValidation:
         assert len(errors) == 1
         assert (
             errors[0]
-            == 'root.dependency_sets: duplicate value provided for unique field "alias": "some_alias"'
+            == 'root.recurring_dependencies: duplicate value provided for unique field "alias": "some_alias"'
         )
 
-        schema["dependency_sets"].pop()
+        schema["recurring_dependencies"].pop()
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+    def test_unique_node_ids(self):
+        validator = SchemaValidator()
+
+        schema = fixtures.basic_schema_with_nodes(2)
+        schema["nodes"][0]["meta"]["id"] = 1
+        assert schema["nodes"][0]["meta"]["id"] == schema["nodes"][1]["meta"]["id"]
+
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert len(errors) == 1
+        assert (
+            errors[0]
+            == 'root.nodes: duplicate value provided for unique field "meta.id": 1'
+        )
+
+        schema["nodes"][0]["meta"]["id"] = 0
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
@@ -546,7 +565,7 @@ class TestSchemaValidation:
         validator = SchemaValidator()
 
         schema = fixtures.basic_schema_with_nodes(2)
-        schema["nodes"][1]["dependency_set"] = {
+        schema["nodes"][1]["depends_on"] = {
             "dependencies": []  # empty array, where min_length is 1
         }
 
@@ -554,10 +573,10 @@ class TestSchemaValidation:
         assert len(errors) == 1
         assert (
             errors[0]
-            == "root.nodes[1].dependency_set.dependencies: must contain at least 1 item(s), got 0"
+            == "root.nodes[1].depends_on.dependencies: must contain at least 1 item(s), got 0"
         )
 
-        schema["nodes"][1]["dependency_set"]["dependencies"].append(
+        schema["nodes"][1]["depends_on"]["dependencies"].append(
             {"node_id": 0, "property": "completed", "equals": True}
         )
         errors = validator.validate(json_string=json.dumps(schema))
@@ -653,20 +672,18 @@ class TestSchemaValidation:
 
     def test_boolean(self):
         validator = SchemaValidator()
-        schema = fixtures.basic_schema_with_nodes(1)
+
+        template = {"type": "boolean"}
 
         invalid_booleans = [1, 1.0, "True", None, [], {}]
         for invalid_boolean in invalid_booleans:
-            schema["nodes"][0]["completed"] = invalid_boolean
-            errors = validator.validate(json_string=json.dumps(schema))
+            errors = validator._validate_boolean("none", invalid_boolean, template)
             assert len(errors) == 1
             assert (
-                errors[0]
-                == f"root.nodes[0].completed: expected boolean, got {str(type(invalid_boolean))}"
+                errors[0] == f"none: expected boolean, got {str(type(invalid_boolean))}"
             )
 
         valid_booleans = [True, False]
         for valid_boolean in valid_booleans:
-            schema["nodes"][0]["completed"] = valid_boolean
-            errors = validator.validate(json_string=json.dumps(schema))
+            errors = validator._validate_boolean("none", valid_boolean, template)
             assert not errors

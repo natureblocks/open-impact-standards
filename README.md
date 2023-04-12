@@ -6,7 +6,7 @@ The below psuedocode blocks describe the structure of valid json objects within 
 
 __Notes for psuedocode interpretation:__
 - Capitalized value types indicate object types or enumeration types that are defined by this specification (e.g. `parties: [Party]` indicates that the `parties` array can only contain objects of type `Party`).
-- Some field types indicate a specific field from another object that must exist within the schema (e.g. `node_id: Node.id` indicates that the `node_id` field must reference the `id` field of an existing `Node` object).
+- Some field types indicate a specific field from another object that must exist within the schema (e.g. `node_id: Node.meta.id` indicates that the `node_id` field must reference the `id` field of an existing `Node` object).
 - `?` indicates an optional field.
 - `|` can be read as "or", and is used to indicate that a field, array, or json object can contain a more than one type of object.
 - `//` indicates an inline code comment.
@@ -15,29 +15,25 @@ __Top-level json object:__
 - `standard` is the name of the open standard.
 - `parties` is the list of parties relevant to the open standard.
 - `nodes` is a list containing the `Node` objects that comprise the standard's dependency chart.
-- `active_nodes` is a list of ids referencing `Node` objects whose dependencies have been met, but whose conditions for completion have not been satisfied.
-- If two or more `Node` objects specify an identical `DependencySet` object, the `DependencySet` is added to the `dependency_sets` array and referenced by those nodes. `DependencySet` objects can be referenced in `Node.dependency_sets` using a `DependencySetReference` object.
+- If two or more `Node` objects specify an identical `DependencySet` object (`Node.depends_on`), the `DependencySet` is added to the `recurring_dependencies` array and referenced by those nodes. `DependencySet` objects can be referenced in `Node.depends_on` using a `DependencySetReference` object.
 ````
 {
     standard: string,
     parties: [Party],
-
     nodes: [Node],
-    active_nodes: [Node.id],
-
-    dependency_sets: [DependencySet]
+    recurring_dependencies: [DependencySet]
 }
 ````
 __Node object type:__
 ````
 type Node {
-    description: string,
-    node_type: NodeType,
-    applies_to: Party.name,
-    references: [string]?,
-    dependency_set: DependencySet?,
-    dependencies_met: boolean,
-    completed: boolean
+    meta: {
+        id: integer
+        description: string,
+        node_type: NodeType,
+        applies_to: Party.name
+    },
+    depends_on: DependencySet?
 }
 ````
 __NodeType enumeration:__
@@ -73,7 +69,7 @@ enum GateType {
 }
 ````
 __DependencySetReference object type:__
-- The `alias` field references the alias (unique identifier) of a recurring `DependencySet` object that has been added to the top-level object's `dependency_sets` array.
+- The `alias` field references the alias (unique identifier) of a recurring `DependencySet` object that has been added to the top-level object's `recurring_dependencies` array.
 ````
 type DependencySetReference {
     alias: DependencySet.alias
@@ -87,7 +83,7 @@ __Dependency object type:__
 - A dependency is satisfied when applying the comparison field to the specified property on the referenced `Node` evaluates to `true`.
 ````
 type Dependency {
-    node_id: Node.id,
+    node_id: Node.meta.id,
     property: string,
 
     // Comparison fields:

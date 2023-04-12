@@ -9,9 +9,13 @@ root_object = {
         "parties": {"type": "array", "values": {"type": "object", "template": "party"}},
         "nodes": {
             "type": "array",
-            "values": {"type": "object", "template": "node"},
+            "values": {
+                "type": "object",
+                "template": "node",
+            },
+            "unique": ["meta.id"],
         },
-        "dependency_sets": {
+        "recurring_dependencies": {
             "type": "array",
             "values": {
                 "type": "object",
@@ -22,14 +26,6 @@ root_object = {
             },
             "unique": ["alias"],
         },
-        "active_nodes": {
-            "type": "array",
-            "values": {
-                "type": "reference",
-                "references_any": {"from": "root.nodes", "property": "id"},
-            },
-            "distinct": True,
-        },
     },
 }
 
@@ -38,7 +34,10 @@ dependency_set_reference = {
     "properties": {
         "alias": {
             "type": "reference",
-            "references_any": {"from": "root.dependency_sets", "property": "alias"},
+            "references_any": {
+                "from": "root.recurring_dependencies",
+                "property": "alias",
+            },
         }
     },
 }
@@ -123,22 +122,24 @@ dependency_set = {
 node = {
     "type": "object",
     "properties": {
-        "id": {"type": "integer"},
-        "description": {"type": "string"},
-        "node_type": {"type": "enum", "values": node_types},
-        "applies_to": {
-            "type": "reference",
-            "references_any": {
-                "from": "root.parties",
-                "property": "name",
+        "meta": {
+            "type": "object",
+            "properties": {
+                "id": {"type": "integer"},
+                "description": {"type": "string"},
+                "node_type": {"type": "enum", "values": node_types},
+                "applies_to": {
+                    "type": "reference",
+                    "references_any": {
+                        "from": "root.parties",
+                        "property": "name",
+                    },
+                },
             },
         },
-        "references": {"type": "array", "values": {"type": "string"}},
-        "dependency_set": {"type": "object", "template": "dependency_set"},
-        "dependencies_met": {"type": "boolean"},
-        "completed": {"type": "boolean"},
+        "depends_on": {"type": "object", "template": "dependency_set"},
     },
-    "optional": ["references", "dependency_set"],
+    "optional": ["depends_on"],
 }
 
 party = {"type": "object", "properties": {"name": {"type": "string"}}}
