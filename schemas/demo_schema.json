@@ -74,7 +74,7 @@
                 "node_type": "ACTION",
                 "applies_to": "Project Developer"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 0,
@@ -91,7 +91,7 @@
                 "node_type": "QUESTION",
                 "applies_to": "Land Representative"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 1,
@@ -108,7 +108,7 @@
                 "node_type": "QUESTION",
                 "applies_to": "Land Representative"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 1,
@@ -125,7 +125,7 @@
                 "node_type": "QUESTION",
                 "applies_to": "Land Representative"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 1,
@@ -142,7 +142,7 @@
                 "node_type": "QUESTION",
                 "applies_to": "Land Representative"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 1,
@@ -159,7 +159,7 @@
                 "node_type": "QUESTION",
                 "applies_to": "Land Representative"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 1,
@@ -176,7 +176,7 @@
                 "node_type": "ACTION",
                 "applies_to": "Project Developer"
             },
-            "dependency_set": {
+            "depends_on": {
                 "alias": "Preliminary Questions Answered#0000",
                 "gate_type": "AND",
                 "dependencies": [
@@ -220,7 +220,7 @@
                 "node_type": "ACTION",
                 "applies_to": "Project Developer"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 7,
@@ -253,7 +253,7 @@
                 "node_type": "ACTION",
                 "applies_to": "Land Representative"
             },
-            "dependency_set": {
+            "depends_on": {
                 "alias": "Agreement and Guidance#0000",
                 "gate_type": "AND",
                 "dependencies": [
@@ -277,7 +277,7 @@
                 "node_type": "STATE",
                 "applies_to": "Land Representative"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 8,
@@ -294,7 +294,7 @@
                 "node_type": "STATE",
                 "applies_to": "Land Representative"
             },
-            "dependency_set": {
+            "depends_on": {
                 "alias": "Written Agreement, Laws and Contracts#0000",
                 "gate_type": "AND",
                 "dependencies": [
@@ -318,7 +318,7 @@
                 "node_type": "STATE",
                 "applies_to": "Land Representative"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 8,
@@ -335,7 +335,7 @@
                 "node_type": "STATE",
                 "applies_to": "Project"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "alias": "Land owner or Tenant#0000"
@@ -350,7 +350,7 @@
                 "node_type": "STATE",
                 "applies_to": "Project"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "alias": "Land owner or Tenant#0000"
@@ -365,7 +365,7 @@
                 "node_type": "STATE",
                 "applies_to": "Project"
             },
-            "dependency_set": {
+            "depends_on": {
                 "alias": "Land Rights and Local Laws#0000",
                 "gate_type": "AND",
                 "dependencies": [
@@ -389,7 +389,7 @@
                 "node_type": "ACTION",
                 "applies_to": "Project Developer"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 17,
@@ -406,7 +406,7 @@
                 "node_type": "ACTION",
                 "applies_to": "Project Developer"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 17,
@@ -423,7 +423,7 @@
                 "node_type": "ACTION",
                 "applies_to": "Land Representative"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 17,
@@ -440,7 +440,7 @@
                 "node_type": "ACTION",
                 "applies_to": "Land Representative"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 17,
@@ -457,7 +457,7 @@
                 "node_type": "ACTION",
                 "applies_to": "Land Representative"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 17,
@@ -474,7 +474,7 @@
                 "node_type": "ACTION",
                 "applies_to": "Land Representative"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 18,
@@ -499,7 +499,7 @@
                 "node_type": "STATE",
                 "applies_to": "Land Representative"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 19,
@@ -516,7 +516,7 @@
                 "node_type": "ACTION",
                 "applies_to": "Land Representative"
             },
-            "dependency_set": {
+            "depends_on": {
                 "alias": "BMC#0000",
                 "gate_type": "AND",
                 "dependencies": [
@@ -545,7 +545,7 @@
                 "node_type": "STATE",
                 "applies_to": "Project Developer"
             },
-            "dependency_set": {
+            "depends_on": {
                 "alias": "PA#0000",
                 "gate_type": "AND",
                 "dependencies": [
@@ -584,7 +584,7 @@
                 "node_type": "ACTION",
                 "applies_to": "Project Developer"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 8,
@@ -601,7 +601,7 @@
                 "node_type": "ACTION",
                 "applies_to": "Carbon Auditor"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 28,
@@ -618,7 +618,7 @@
                 "node_type": "ACTION",
                 "applies_to": "Government Representatives"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 29,
@@ -635,7 +635,7 @@
                 "node_type": "ACTION",
                 "applies_to": "Government Representatives"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 29,
@@ -652,7 +652,7 @@
                 "node_type": "ACTION",
                 "applies_to": "Government Representatives"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 29,
@@ -669,7 +669,7 @@
                 "node_type": "STATE",
                 "applies_to": "Project"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 30,
@@ -686,7 +686,7 @@
                 "node_type": "STATE",
                 "applies_to": "Project"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 31,
@@ -703,7 +703,7 @@
                 "node_type": "STATE",
                 "applies_to": "Project"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 32,
@@ -720,7 +720,7 @@
                 "node_type": "STATE",
                 "applies_to": "Land Representative"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "alias": "Borehole and Scheme#0000"
@@ -735,7 +735,7 @@
                 "node_type": "STATE",
                 "applies_to": "Land Representative"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "alias": "Borehole and Scheme#0000"
@@ -750,7 +750,7 @@
                 "node_type": "STATE",
                 "applies_to": "Land Representative"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "alias": "Borehole and Scheme#0000"
@@ -765,7 +765,7 @@
                 "node_type": "STATE",
                 "applies_to": "Land Representative"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "alias": "Borehole and Scheme#0000"
@@ -780,7 +780,7 @@
                 "node_type": "STATE",
                 "applies_to": "Project"
             },
-            "dependency_set": {
+            "depends_on": {
                 "alias": "Pivots, Drippers, Sprinklers, Other#0000",
                 "gate_type": "OR",
                 "dependencies": [
@@ -822,7 +822,7 @@
                 "node_type": "STATE",
                 "applies_to": "Project"
             },
-            "dependency_set": {
+            "depends_on": {
                 "alias": "Rain, Rivers, and Water Rights#0000",
                 "gate_type": "OR",
                 "dependencies": [
@@ -851,7 +851,7 @@
                 "node_type": "STATE",
                 "applies_to": "Land Representative"
             },
-            "dependency_set": {
+            "depends_on": {
                 "alias": "Preliminary Criteria#0000",
                 "gate_type": "AND",
                 "dependencies": [
@@ -873,7 +873,7 @@
                 "node_type": "ACTION",
                 "applies_to": "Land Representative"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 43,
@@ -890,7 +890,7 @@
                 "node_type": "ACTION",
                 "applies_to": "Project Developer"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 44,
@@ -907,7 +907,7 @@
                 "node_type": "STATE",
                 "applies_to": "Project Developer"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 45,
@@ -924,7 +924,7 @@
                 "node_type": "STATE",
                 "applies_to": "Project Developer"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 45,
@@ -941,7 +941,7 @@
                 "node_type": "STATE",
                 "applies_to": "Project Developer"
             },
-            "dependency_set": {
+            "depends_on": {
                 "dependencies": [
                     {
                         "node_id": 45,
@@ -958,7 +958,7 @@
                 "node_type": "STATE",
                 "applies_to": "Project"
             },
-            "dependency_set": {
+            "depends_on": {
                 "alias": "Project Info for Feasibility Study#0000",
                 "gate_type": "AND",
                 "dependencies": [

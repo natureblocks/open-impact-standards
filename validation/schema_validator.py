@@ -10,8 +10,10 @@ class SchemaValidator:
         self.schema = None
         self._node_depencency_sets = {}  # to be collected during validation
 
-    def validate(self, json_file=None, json_string=None):
-        if json_file is not None:
+    def validate(self, schema=None, json_file=None, json_string=None):
+        if schema is not None:
+            self.schema = schema
+        elif json_file is not None:
             self.schema = json.load(open(json_file))
         elif json_string is not None:
             self.schema = json.loads(json_string)
