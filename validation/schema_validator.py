@@ -18,7 +18,7 @@ class SchemaValidator:
         elif json_string is not None:
             self.schema = json.loads(json_string)
         else:
-            raise TypeError("must provide either json_file or json_string")
+            raise TypeError("must provide an argument for schema, json_file, or json_string")
 
         errors = self._validate_object("root", self.schema, templates.root_object)
         return errors + self._validate_node_depencency_sets()
@@ -70,7 +70,7 @@ class SchemaValidator:
 
             for key in template["properties"]:
                 if key not in field and self._field_is_required(key, template):
-                    errors += [f"{path}: missing required field: {key}"]
+                    errors += [f"{path}: missing required property: {key}"]
 
             for key in field:
                 if key in template["properties"]:
@@ -323,6 +323,9 @@ class SchemaValidator:
         elif isinstance(objectOrArray, list):
             for item in objectOrArray:
                 if isinstance(item, dict):
+                    if "." in referenced_prop and self._get_field(referenced_prop, obj=item) == referenced_value:
+                        return []
+
                     if (
                         referenced_prop in item
                         and item[referenced_prop] == referenced_value
@@ -381,6 +384,10 @@ class SchemaValidator:
     def _resolve_template(self, path, field, template):
         if "template" in template:
             template_name = template["template"]
+            
+            if template_name == "dependency_set":
+                print("found it!")
+
             referenced_template = getattr(templates, template_name)
 
             if template_name == "node":

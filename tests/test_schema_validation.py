@@ -6,9 +6,13 @@ from validation.schema_validator import SchemaValidator
 
 
 class TestSchemaValidation:
-    def test_validate_demo_schema(self):
+    def test_validate_schema(self):
         validator = SchemaValidator()
         errors = validator.validate(json_file="schemas/demo_schema.json")
+        
+        if errors:
+            print("\n".join(errors))
+
         assert not errors
 
     def test_duplicate_node_dependency_sets(self):
@@ -107,7 +111,7 @@ class TestSchemaValidation:
 
         errors = validator.validate(json_string=json.dumps(schema))
         assert len(errors) == 1
-        assert errors[0] == "root: missing required field: standard"
+        assert errors[0] == "root: missing required property: standard"
 
         schema["standard"] = "test"
         errors = validator.validate(json_string=json.dumps(schema))
@@ -220,8 +224,8 @@ class TestSchemaValidation:
         }
         errors = validator.validate(json_string=json.dumps(schema))
         assert len(errors) == 2
-        assert "root.nodes[2].depends_on: missing required field: alias" in errors
-        assert "root.nodes[2].depends_on: missing required field: gate_type" in errors
+        assert "root.nodes[2].depends_on: missing required property: alias" in errors
+        assert "root.nodes[2].depends_on: missing required property: gate_type" in errors
 
         # If a dependency_set has one or fewer dependencies,
         # "alias" and "gate_type" are optional
@@ -427,7 +431,7 @@ class TestSchemaValidation:
     def test_unique_fields(self):
         validator = SchemaValidator()
 
-        schema = fixtures.basic_schema()
+        schema = fixtures.basic_schema_with_nodes(2)
 
         schema["recurring_dependencies"] = [
             fixtures.dependency_set("some_alias"),
@@ -542,7 +546,7 @@ class TestSchemaValidation:
             errors = validator.validate(json_string=json.dumps(schema))
             assert len(errors) == 1
             if "name" not in invalid_array[0]:
-                assert errors[0] == "root.parties[0]: missing required field: name"
+                assert errors[0] == "root.parties[0]: missing required property: name"
             else:
                 assert (
                     errors[0]

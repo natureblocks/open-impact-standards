@@ -3,7 +3,7 @@ from visualization.dependency_graph import DependencyGraph
 
 class TestDependencyGraph:
     def test_generate_miro_board(self):
-        graph = DependencyGraph(json_schema_file_path="schemas/demo_schema.json")
+        graph = DependencyGraph(json_schema_file_path="schemas/test/small_example_schema.json")
         graph.json_schema_to_graph()
 
         graph.generate_miro_board(board_name="Test Result (test_generate_miro_board)")

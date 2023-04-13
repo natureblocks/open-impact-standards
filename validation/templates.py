@@ -46,8 +46,8 @@ dependency = {
     "type": "object",
     "properties": {
         "node_id": {
-            "type": "integer",
-            "references_any": {"from": "root.nodes", "property": "id"},
+            "type": "reference",
+            "references_any": {"from": "root.nodes", "property": "meta.id"},
         },
         "property": {"type": "string"},
         "equals": {"types": ["string", "decimal", "boolean"]},
