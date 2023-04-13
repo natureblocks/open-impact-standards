@@ -22,11 +22,12 @@ class TestSchemaValidation:
         # Specify which JSON file to validate.
         json_file_path = "schemas/test/small_example_schema.json"
 
-        errors = SchemaValidator().validate(json_file_path=json_file_path)
+        validator = SchemaValidator()
+        errors = validator.validate(json_file_path=json_file_path)
 
         if errors:
             print(f"Invalid schema ({json_file_path}):")
-            print("\n".join(errors))
+            validator.print_errors()
 
         assert not errors
 
@@ -94,8 +95,61 @@ class TestSchemaValidation:
         schema["nodes"][4]["depends_on"] = {"dependencies": [ds_reference]}
         schema["nodes"][5]["depends_on"] = {"dependencies": [ds_reference]}
 
-        schema["nodes"][4]["dependency_set"] = {"dependencies": [ds_reference]}
-        schema["nodes"][5]["dependency_set"] = {"dependencies": [ds_reference]}
+    def test_broken_dependency(self):
+        validator = SchemaValidator()
+
+        schema = fixtures.basic_schema_with_nodes(2)
+        schema["nodes"][1]["depends_on"] = {
+            "dependencies": [
+                {
+                    "node_id": 2,
+                    "property": "completed",
+                    "equals": True,
+                }
+            ]
+        }
+
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert errors
+        assert (
+            'root.nodes[1].depends_on.dependencies[0].node_id (node id: 1): expected any "meta.id" field from root.nodes, got 2'
+            in errors
+        )
+
+    def test_unordered_node_ids(self):
+        validator = SchemaValidator()
+
+        schema = fixtures.basic_schema_with_nodes(5)
+
+        def set_node_id(idx, node_id):
+            schema["nodes"][idx]["meta"]["id"] = node_id
+
+        node_ids = {
+            0: 5,
+            1: 1,
+            2: 4,
+            3: 2,
+            4: 3,
+        }
+
+        for idx, node_id in node_ids.items():
+            set_node_id(idx, node_id)
+
+        # introduce an error to check if the correct node id is displayed in the context
+        node_idx = 0
+        schema["nodes"][node_idx]["meta"]["applies_to"] = "Vandelay Industries"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert len(errors) == 1
+        assert (
+            f'root.nodes[0].meta.applies_to (node id: {node_ids[node_idx]}): expected any "name" field from root.parties, got "Vandelay Industries"'
+            in errors
+        )
+
+        # fix the error
+        schema["nodes"][node_idx]["meta"]["applies_to"] = "Project"
+
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
 
     def test_root_object(self):
         validator = SchemaValidator()
@@ -175,8 +229,8 @@ class TestSchemaValidation:
             }
         )
 
-        path = "root.nodes[0].depends_on.dependencies[0]"
-        conformance_error = f"{path}: object does not conform to any of the allowed template specifications: ['dependency', 'dependency_set_reference']"
+        context = "root.nodes[0].depends_on.dependencies[0] (node id: 0)"
+        conformance_error = f"{context}: object does not conform to any of the allowed template specifications: ['dependency', 'dependency_set_reference']"
         mutually_exclusive = ["equals", "greater_than", "one_of"]
 
         # Remove one mutually exclusive property at a time until there is only one left
@@ -184,7 +238,7 @@ class TestSchemaValidation:
             errors = validator.validate(json_string=json.dumps(schema))
             assert conformance_error in errors
             assert (
-                f"{path}: more than one mutually exclusive property specified: {mutually_exclusive}"
+                f"{context}: more than one mutually exclusive property specified: {mutually_exclusive}"
                 in errors
             )
 
@@ -239,8 +293,9 @@ class TestSchemaValidation:
         }
         errors = validator.validate(json_string=json.dumps(schema))
         assert len(errors) == 2
-        assert "root.nodes[2].depends_on: missing required property: alias" in errors
-        assert "root.nodes[2].depends_on: missing required property: gate_type" in errors
+        expected_context = "root.nodes[2].depends_on (node id: 2)"
+        assert f"{expected_context}: missing required property: alias" in errors
+        assert f"{expected_context}: missing required property: gate_type" in errors
 
         # If a dependency_set has one or fewer dependencies,
         # "alias" and "gate_type" are optional
@@ -400,7 +455,7 @@ class TestSchemaValidation:
         assert len(errors) == 1
         assert (
             errors[0]
-            == 'root.nodes[0].meta.applies_to: expected any "name" field from root.parties, got "something else"'
+            == 'root.nodes[0].meta.applies_to (node id: 0): expected any "name" field from root.parties, got "something else"'
         )
 
         schema["nodes"][0]["meta"]["applies_to"] = "Project"
@@ -475,7 +530,7 @@ class TestSchemaValidation:
         assert len(errors) == 1
         assert (
             errors[0]
-            == 'root.nodes: duplicate value provided for unique field "meta.id": 1'
+            == 'root.nodes (node id: 1): duplicate value provided for unique field "meta.id": 1'
         )
 
         schema["nodes"][0]["meta"]["id"] = 0
@@ -592,7 +647,7 @@ class TestSchemaValidation:
         assert len(errors) == 1
         assert (
             errors[0]
-            == "root.nodes[1].depends_on.dependencies: must contain at least 1 item(s), got 0"
+            == "root.nodes[1].depends_on.dependencies (node id: 1): must contain at least 1 item(s), got 0"
         )
 
         schema["nodes"][1]["depends_on"]["dependencies"].append(

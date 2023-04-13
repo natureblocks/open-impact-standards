@@ -1,6 +1,7 @@
 import copy
 import hashlib
 import json
+import re
 
 from validation import templates, utils
 
@@ -9,6 +10,9 @@ class SchemaValidator:
     def __init__(self):
         self.schema = None
         self._node_depencency_sets = {}  # to be collected during validation
+
+        # for including helpful context information in error messages
+        self._path_context = ""
 
     def validate(self, schema=None, json_file_path=None, json_string=None):
         if schema is not None:
@@ -22,8 +26,16 @@ class SchemaValidator:
                 "must provide an argument for schema, json_file_path, or json_string"
             )
 
-        errors = self._validate_object("root", self.schema, templates.root_object)
-        return errors + self._validate_node_depencency_sets()
+        self.errors = (
+            self._validate_object("root", self.schema, templates.root_object)
+            + self._validate_node_depencency_sets()
+        )
+
+        return self.errors
+
+    def print_errors(self):
+        for error in self.errors:
+            print(error)
 
     def _validate_field(self, path, field, template):
         if "types" in template:
@@ -37,6 +49,7 @@ class SchemaValidator:
                 "no validation method exists for type: " + expected_type
             )
 
+        self._set_path_context(path)
         return type_validator(path, field, template)
 
     def _validate_multi_type_field(self, path, field, allowed_types):
@@ -52,11 +65,13 @@ class SchemaValidator:
             if len(errors) == 0:
                 return []
 
-        return [f"{path}: expected one of {allowed_types}, got {str(type(field))}"]
+        return [
+            f"{self._context(path)}: expected one of {allowed_types}, got {str(type(field))}"
+        ]
 
     def _validate_object(self, path, field, template):
         if not isinstance(field, dict):
-            return [f"{path}: expected object, got {str(type(field))}"]
+            return [f"{self._context(path)}: expected object, got {str(type(field))}"]
 
         if "templates" in template:
             return self._validate_multi_template_object(path, field, template)
@@ -72,7 +87,9 @@ class SchemaValidator:
 
             for key in template["properties"]:
                 if key not in field and self._field_is_required(key, template):
-                    errors += [f"{path}: missing required property: {key}"]
+                    errors += [
+                        f"{self._context(path)}: missing required property: {key}"
+                    ]
 
             for key in field:
                 if key in template["properties"]:
@@ -83,7 +100,7 @@ class SchemaValidator:
                     )
                 elif key in templates.RESERVED_KEYWORDS:
                     errors += [
-                        f"{path}: cannot use reserved keyword as property name: {json.dumps(key)}"
+                        f"{self._context(path)}: cannot use reserved keyword as property name: {json.dumps(key)}"
                     ]
 
         # For certain objects, the keys are not known ahead of time:
@@ -121,12 +138,12 @@ class SchemaValidator:
                 )
 
         return [
-            f"{path}: object does not conform to any of the allowed template specifications: {str(allowed_templates)}"
+            f"{self._context(path)}: object does not conform to any of the allowed template specifications: {str(allowed_templates)}"
         ] + template_errors
 
     def _validate_array(self, path, field, template):
         if not isinstance(field, list):
-            return [f"{path}: expected array, got {str(type(field))}"]
+            return [f"{self._context(path)}: expected array, got {str(type(field))}"]
 
         errors = self._validate_min_length(path, field, template)
 
@@ -140,7 +157,7 @@ class SchemaValidator:
         if "distinct" in template and template["distinct"]:
             if len(field) != len(set(field)):
                 errors += [
-                    f"{path}: contains duplicate item(s) (values must be distinct)"
+                    f"{self._context(path)}: contains duplicate item(s) (values must be distinct)"
                 ]
 
         if "unique" in template:
@@ -153,7 +170,7 @@ class SchemaValidator:
             return []
 
         return [
-            f"{path}: invalid enum value: expected one of {str(template['values'])}, got {field}"
+            f"{self._context(path)}: invalid enum value: expected one of {str(template['values'])}, got {field}"
         ]
 
     def _validate_reference(self, path, field, template):
@@ -168,7 +185,7 @@ class SchemaValidator:
                     return []
                 else:
                     return [
-                        f"{path}: invalid key: expected {expected_value} ({'.'.join(reference_path)}), got {field}"
+                        f"{self._context(path)}: invalid key: expected {expected_value} ({'.'.join(reference_path)}), got {field}"
                     ]
             else:
                 raise NotImplementedError(
@@ -190,19 +207,19 @@ class SchemaValidator:
         ):
             return []
 
-        return [f"{path}: expected decimal, got {str(type(field))}"]
+        return [f"{self._context(path)}: expected decimal, got {str(type(field))}"]
 
     def _validate_integer(self, path, field, template=None):
         if isinstance(field, int) and not isinstance(field, bool):
             return []
 
-        return [f"{path}: expected integer, got {str(type(field))}"]
+        return [f"{self._context(path)}: expected integer, got {str(type(field))}"]
 
     def _validate_string(self, path, field, template=None):
         if isinstance(field, str):
             return []
 
-        return [f"{path}: expected string, got {str(type(field))}"]
+        return [f"{self._context(path)}: expected string, got {str(type(field))}"]
 
     def _validate_integer_string(self, path, field, template=None):
         # Allow string representations of negative integers, e.g. "-1"
@@ -211,7 +228,7 @@ class SchemaValidator:
 
         if not str(field).isdigit():
             return [
-                f"{path}: expected a string representation of an integer, got {str(type(field))}"
+                f"{self._context(path)}: expected a string representation of an integer, got {str(type(field))}"
             ]
 
         return []
@@ -220,7 +237,7 @@ class SchemaValidator:
         if isinstance(field, bool):
             return []
 
-        return [f"{path}: expected boolean, got {str(type(field))}"]
+        return [f"{self._context(path)}: expected boolean, got {str(type(field))}"]
 
     def _field_is_required(self, key, template=None):
         if "optional" in template and key in template["optional"]:
@@ -231,7 +248,7 @@ class SchemaValidator:
     def _validate_min_length(self, path, field, template):
         if "min_length" in template and len(field) < template["min_length"]:
             return [
-                f"{path}: must contain at least {template['min_length']} item(s), got {len(field)}"
+                f"{self._context(path)}: must contain at least {template['min_length']} item(s), got {len(field)}"
             ]
 
         return []
@@ -263,7 +280,7 @@ class SchemaValidator:
             for value, is_unique in unique[field_name].items():
                 if not is_unique:
                     errors += [
-                        f"{path}: duplicate value provided for unique field {json.dumps(field_name)}: {json.dumps(value)}"
+                        f"{self._context(path)}: duplicate value provided for unique field {json.dumps(field_name)}: {json.dumps(value)}"
                     ]
 
         return errors
@@ -276,14 +293,22 @@ class SchemaValidator:
             if key == "root":
                 continue
 
-            if isinstance(obj, dict) and key in obj:
-                obj = obj[key]
-            elif isinstance(obj, list):
-                raise NotImplementedError(
-                    "failed to get field: lists not yet supported"
-                )
-            else:
-                raise Exception(f"invalid path: {path}")
+            if isinstance(obj, dict):
+                key_includes_array_index = re.match(r"^(\w*)\[(\d+)\]$", key)
+                if key_includes_array_index:
+                    key = key_includes_array_index.group(1)
+                    idx = int(key_includes_array_index.group(2))
+
+                    if key in obj and idx < len(obj[key]):
+                        obj = obj[key][idx]
+                        continue
+
+                elif key in obj:
+                    obj = obj[key]
+                    continue
+
+            # If a continue statement was not reached, the path is invalid
+            raise Exception(f"invalid path: {path}")
 
         return obj
 
@@ -300,7 +325,7 @@ class SchemaValidator:
                         return []
 
                 return [
-                    f"{path}: expected any key from {referenced_path}, got {json.dumps(referenced_value)}"
+                    f"{self._context(path)}: expected any key from {referenced_path}, got {json.dumps(referenced_value)}"
                 ]
             elif referenced_prop == "values":
                 for value in objectOrArray.values():
@@ -308,7 +333,7 @@ class SchemaValidator:
                         return []
 
                 return [
-                    f"{path}: expected any value from {referenced_path}, got {json.dumps(referenced_value)}"
+                    f"{self._context(path)}: expected any value from {referenced_path}, got {json.dumps(referenced_value)}"
                 ]
             else:
                 for value in objectOrArray.values():
@@ -319,7 +344,7 @@ class SchemaValidator:
                         return []
 
                 return [
-                    f'{path}: expected any "{referenced_prop}" field from {referenced_path}, got {json.dumps(referenced_value)}'
+                    f'{self._context(path)}: expected any "{referenced_prop}" field from {referenced_path}, got {json.dumps(referenced_value)}'
                 ]
 
         elif isinstance(objectOrArray, list):
@@ -341,12 +366,12 @@ class SchemaValidator:
                     return []
 
             return [
-                f'{path}: expected any "{referenced_prop}" field from {referenced_path}, got {json.dumps(referenced_value)}'
+                f'{self._context(path)}: expected any "{referenced_prop}" field from {referenced_path}, got {json.dumps(referenced_value)}'
             ]
 
         else:
             return [
-                f"{path}: reference path {referenced_path} contains invalid type: {str(type(objectOrArray))}"
+                f"{self._context(path)}: reference path {referenced_path} contains invalid type: {str(type(objectOrArray))}"
             ]
 
     def _evaluate_meta_properties(self, path, field, template):
@@ -380,7 +405,7 @@ class SchemaValidator:
         if len(included_props) > 1:
             return (
                 [
-                    f"{path}: more than one mutually exclusive property specified: {included_props}"
+                    f"{self._context(path)}: more than one mutually exclusive property specified: {included_props}"
                 ],
                 template,
             )
@@ -523,3 +548,41 @@ class SchemaValidator:
 
     def _detect_circular_dependencies(self):
         return []
+
+    def _set_path_context(self, path):
+        # For paths that should include some sort of context,
+        # add the path and context resolver here.
+        context_resolvers = {
+            "root.nodes": lambda path: "node id: " + str(self._resolve_node_id(path))
+            if path != "root.nodes"
+            else ""
+        }
+
+        self._path_context = []
+        for path_segment, context_resolver in context_resolvers.items():
+            if path_segment in path:
+                self._path_context.append(context_resolver(path))
+
+    def _context(self, path):
+        return path + (
+            f" ({','.join(self._path_context)})" if self._path_context else ""
+        )
+
+    def _resolve_node_id(self, path):
+        ex = Exception(
+            f"Cannot resolve node id: path does not lead to a node object ({path})"
+        )
+
+        if "root.nodes" not in path:
+            raise ex
+
+        idx = path.find("]")
+        if idx == -1:
+            raise ex
+
+        node = self._get_field(path[: idx + 1])
+
+        if "meta" not in node or "id" not in node["meta"]:
+            raise ex
+
+        return node["meta"]["id"]
