@@ -10,15 +10,17 @@ class SchemaValidator:
         self.schema = None
         self._node_depencency_sets = {}  # to be collected during validation
 
-    def validate(self, schema=None, json_file=None, json_string=None):
+    def validate(self, schema=None, json_file_path=None, json_string=None):
         if schema is not None:
             self.schema = schema
-        elif json_file is not None:
-            self.schema = json.load(open(json_file))
+        elif json_file_path is not None:
+            self.schema = json.load(open(json_file_path))
         elif json_string is not None:
             self.schema = json.loads(json_string)
         else:
-            raise TypeError("must provide an argument for schema, json_file, or json_string")
+            raise TypeError(
+                "must provide an argument for schema, json_file_path, or json_string"
+            )
 
         errors = self._validate_object("root", self.schema, templates.root_object)
         return errors + self._validate_node_depencency_sets()
@@ -323,7 +325,11 @@ class SchemaValidator:
         elif isinstance(objectOrArray, list):
             for item in objectOrArray:
                 if isinstance(item, dict):
-                    if "." in referenced_prop and self._get_field(referenced_prop, obj=item) == referenced_value:
+                    if (
+                        "." in referenced_prop
+                        and self._get_field(referenced_prop, obj=item)
+                        == referenced_value
+                    ):
                         return []
 
                     if (
@@ -384,10 +390,6 @@ class SchemaValidator:
     def _resolve_template(self, path, field, template):
         if "template" in template:
             template_name = template["template"]
-            
-            if template_name == "dependency_set":
-                print("found it!")
-
             referenced_template = getattr(templates, template_name)
 
             if template_name == "node":

@@ -7,10 +7,25 @@ from validation.schema_validator import SchemaValidator
 
 class TestSchemaValidation:
     def test_validate_schema(self):
-        validator = SchemaValidator()
-        errors = validator.validate(json_file="schemas/demo_schema.json")
-        
+        """This test performs validation on the JSON file at the specified json_file_path
+        against the schema specification.
+
+        A high-level description of the schema specification can be found in the README:
+            https://github.com/natureblocks/open-impact-standards#schema-specification
+
+        The schema specification is formally defined in validation/templates.py.
+
+        Any validation errors are printed.
+        The test passes if there are no validation errors.
+        """
+
+        # Specify which JSON file to validate.
+        json_file_path = "schemas/test/small_example_schema.json"
+
+        errors = SchemaValidator().validate(json_file_path=json_file_path)
+
         if errors:
+            print(f"Invalid schema ({json_file_path}):")
             print("\n".join(errors))
 
         assert not errors

@@ -32,7 +32,9 @@ class DependencyGraph:
         self.layout_iterations = 200
         self.layout_seed = 13434  # Seed random number generators for reproducibility
 
-    def json_schema_to_graph(self):
+        self._json_schema_to_graph()
+
+    def _json_schema_to_graph(self):
         self.graph = nx.DiGraph()
 
         self.nodes = {n["meta"]["id"]: n for n in self.schema["nodes"]}

@@ -113,8 +113,7 @@ Usage:
 from visualization.dependency_graph import DependencyGraph
 
 # Convert json schema to graph and calculate node coordinates
-graph = DependencyGraph("schemas/demo_schema.json")
-graph.json_schema_to_graph()
+graph = DependencyGraph(json_schema_file_path="schemas/demo_schema.json")
 ````
 Generate a new Miro Board:
 ````python
