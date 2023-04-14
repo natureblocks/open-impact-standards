@@ -9,14 +9,14 @@ from validation import templates, utils
 class SchemaValidator:
     def __init__(self):
         self.schema = None
-        self._node_depencency_sets = {}  # to be collected during validation
+        self._node_dependency_sets = {}  # to be collected during validation
 
         # for including helpful context information in error messages
         self._path_context = ""
 
-    def validate(self, schema=None, json_file_path=None, json_string=None):
-        if schema is not None:
-            self.schema = schema
+    def validate(self, schema_dict=None, json_file_path=None, json_string=None):
+        if schema_dict is not None:
+            self.schema = schema_dict
         elif json_file_path is not None:
             self.schema = json.load(open(json_file_path))
         elif json_string is not None:
@@ -28,7 +28,7 @@ class SchemaValidator:
 
         self.errors = (
             self._validate_object("root", self.schema, templates.root_object)
-            + self._validate_node_depencency_sets()
+            + self._validate_node_dependency_sets()
         )
 
         return self.errors
@@ -418,7 +418,7 @@ class SchemaValidator:
             referenced_template = getattr(templates, template_name)
 
             if template_name == "node":
-                self._collect_node_depencency_set(path, field)
+                self._collect_node_dependency_set(path, field)
 
             if (
                 "template_modifiers" in template
@@ -494,12 +494,8 @@ class SchemaValidator:
             "template condition not yet supported: " + str(condition)
         )
 
-    def _collect_node_depencency_set(self, path, node):
-        if (
-            "depends_on" not in node
-            or "meta" not in node
-            or "id" not in node["meta"]
-        ):
+    def _collect_node_dependency_set(self, path, node):
+        if "depends_on" not in node or "meta" not in node or "id" not in node["meta"]:
             return
 
         dependency_set_is_invalid = len(
@@ -508,9 +504,9 @@ class SchemaValidator:
         if dependency_set_is_invalid:
             return
 
-        self._node_depencency_sets[node["meta"]["id"]] = node["depends_on"]
+        self._node_dependency_sets[node["meta"]["id"]] = node["depends_on"]
 
-    def _validate_node_depencency_sets(self):
+    def _validate_node_dependency_sets(self):
         return (
             self._detect_duplicate_dependency_sets()
             + self._detect_circular_dependencies()
@@ -518,7 +514,7 @@ class SchemaValidator:
 
     def _detect_duplicate_dependency_sets(self):
         ds_hashes = {}
-        for node_id, dependency_set in self._node_depencency_sets.items():
+        for node_id, dependency_set in self._node_dependency_sets.items():
             if len(dependency_set["dependencies"]) == 1:
                 continue
 
@@ -547,6 +543,56 @@ class SchemaValidator:
         return []
 
     def _detect_circular_dependencies(self):
+        def _get_recurring_dependency_set(alias):
+            for ds in self.schema["recurring_dependencies"]:
+                if ds["alias"] == alias:
+                    return ds
+
+        def _explore_recursive(node_id, visited, dependency_path):
+            if node_id in dependency_path:
+                if len(dependency_path) > 1:
+                    return [
+                        f"Circular dependency detected (dependency path: {dependency_path})"
+                    ]
+                return [f"A node cannot have itself as a dependency (id: {node_id})"]
+
+            if node_id in visited:
+                return []
+
+            visited.add(node_id)
+
+            if node_id not in self._node_dependency_sets:
+                return []
+
+            dependency_path.append(node_id)
+
+            errors = []
+            for dependency in self._node_dependency_sets[node_id]["dependencies"]:
+                # Could be a Dependency object or a DependencySetReference
+                if "node_id" in dependency:
+                    # Dependency
+                    errors += _explore_recursive(
+                        dependency["node_id"],
+                        visited,
+                        dependency_path,
+                    )
+                elif "alias" in dependency:
+                    # DependencySetReference
+                    recurring_ds = _get_recurring_dependency_set(dependency["alias"])
+                    for dep in recurring_ds["dependencies"]:
+                        errors += _explore_recursive(
+                            dep["node_id"], visited, dependency_path
+                        )
+
+            return [errors[0]] if errors else []
+
+        visited = set()
+        for node_id in self._node_dependency_sets.keys():
+            errors = _explore_recursive(node_id, visited, dependency_path=[])
+            # It's simpler to return immediately when a circular dependency is found
+            if errors:
+                return errors
+
         return []
 
     def _set_path_context(self, path):

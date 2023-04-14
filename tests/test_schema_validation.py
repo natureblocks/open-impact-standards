@@ -67,12 +67,12 @@ class TestSchemaValidation:
             "gate_type": "OR",
             "dependencies": [
                 ds_reference,
-                {"node_id": 2, "property": "completed", "equals": True},
+                {"node_id": 3, "property": "completed", "equals": True},
             ],
         }
         schema["nodes"][5]["depends_on"] = {
             "dependencies": [
-                {"property": "completed", "node_id": 2, "equals": True},
+                {"property": "completed", "node_id": 3, "equals": True},
                 ds_reference,
             ],
             "gate_type": "OR",
@@ -94,6 +94,82 @@ class TestSchemaValidation:
         ds_reference = {"alias": "common_ds#2"}
         schema["nodes"][4]["depends_on"] = {"dependencies": [ds_reference]}
         schema["nodes"][5]["depends_on"] = {"dependencies": [ds_reference]}
+
+    def test_circular_dependencies(self):
+        def _set_dependency_node_id(schema, node_id, dependency_node_id):
+            if "depends_on" not in schema["nodes"][node_id]:
+                schema["nodes"][node_id]["depends_on"] = {
+                    "dependencies": [
+                        {
+                            "node_id": dependency_node_id,
+                            "property": "completed",
+                            "equals": True,
+                        }
+                    ]
+                }
+            else:
+                schema["nodes"][node_id]["depends_on"]["dependencies"][0][
+                    "node_id"
+                ] = dependency_node_id
+
+        validator = SchemaValidator()
+
+        # A node should not be able to depend on itself
+        schema = fixtures.basic_schema_with_nodes(1)
+        _set_dependency_node_id(schema, 0, 0)
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert len(errors) == 1
+        assert errors[0] == "A node cannot have itself as a dependency (id: 0)"
+
+        # Two nodes should not be able to depend on each other
+        schema["nodes"].append(fixtures.node(1))
+        _set_dependency_node_id(schema, 0, 1)
+        _set_dependency_node_id(schema, 1, 0)
+
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert len(errors) == 1
+        assert errors[0] == "Circular dependency detected (dependency path: [0, 1])"
+
+        # Three or more nodes should not be able to form a circular dependency
+        schema["nodes"].append(fixtures.node(2))
+        _set_dependency_node_id(schema, 1, 2)
+        _set_dependency_node_id(schema, 2, 0)
+
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert len(errors) == 1
+        assert errors[0] == "Circular dependency detected (dependency path: [0, 1, 2])"
+
+        # What if a recurring dependency set helps form a circular dependency?
+        schema["nodes"].append(fixtures.node(3))
+        schema["nodes"].append(fixtures.node(4))
+        _set_dependency_node_id(schema, 2, 3)
+        schema["recurring_dependencies"].append(
+            {
+                "alias": "common_ds",
+                "gate_type": "AND",
+                "dependencies": [
+                    {
+                        "node_id": 1,
+                        "property": "completed",
+                        "equals": True,
+                    },
+                    {
+                        "node_id": 1,
+                        "property": "jumped_through_hoops",
+                        "equals": True,
+                    },
+                ],
+            }
+        )
+        common_ds_reference = {"alias": "common_ds"}
+        schema["nodes"][3]["depends_on"] = {"dependencies": [common_ds_reference]}
+        schema["nodes"][4]["depends_on"] = {"dependencies": [common_ds_reference]}
+
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert len(errors) == 1
+        assert (
+            errors[0] == "Circular dependency detected (dependency path: [0, 1, 2, 3])"
+        )
 
     def test_broken_dependency(self):
         validator = SchemaValidator()
@@ -204,12 +280,12 @@ class TestSchemaValidation:
     def test_mutually_exclusive_properties(self):
         validator = SchemaValidator()
 
-        schema = fixtures.basic_schema()
+        schema = fixtures.basic_schema_with_nodes(1)
         schema["parties"].append({"name": "Project"})
         schema["nodes"].append(
             {
                 "meta": {
-                    "id": 0,
+                    "id": 1,
                     "description": "test node",
                     "node_type": "STATE",
                     "applies_to": "Project",
@@ -229,7 +305,7 @@ class TestSchemaValidation:
             }
         )
 
-        context = "root.nodes[0].depends_on.dependencies[0] (node id: 0)"
+        context = "root.nodes[1].depends_on.dependencies[0] (node id: 1)"
         conformance_error = f"{context}: object does not conform to any of the allowed template specifications: ['dependency', 'dependency_set_reference']"
         mutually_exclusive = ["equals", "greater_than", "one_of"]
 
@@ -242,7 +318,7 @@ class TestSchemaValidation:
                 in errors
             )
 
-            del schema["nodes"][0]["depends_on"]["dependencies"][0][
+            del schema["nodes"][1]["depends_on"]["dependencies"][0][
                 mutually_exclusive.pop()
             ]
 

@@ -6,13 +6,21 @@ from services.miro import MiroBoard
 
 
 class DependencyGraph:
-    def __init__(self, json_schema_file_path, validate_schema=True):
-        self.schema = json.load(open(json_schema_file_path))
+    def __init__(self, schema_dict=None, json_schema_file_path=None, validate_schema=True):
+        if schema_dict is not None:
+            self.schema = schema_dict
+        elif json_schema_file_path is not None:
+            self.schema = json.load(open(json_schema_file_path))
+        else:
+            raise Exception(
+                "must provide an argument for schema_dict or json_schema_file_path"
+            )
 
         if validate_schema:
-            errors = SchemaValidator().validate(self.schema)
+            validator = SchemaValidator()
+            errors = validator.validate(schema_dict=self.schema)
             if errors:
-                print("\n".join(errors))
+                validator.print_errors()
                 raise Exception("Schema validation failed. See output for details.")
 
         self.nodes = {}

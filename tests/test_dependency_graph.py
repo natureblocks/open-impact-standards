@@ -39,7 +39,8 @@ class TestDependencyGraph:
 
     def test_basic_dependency_chart_layout(self):
         graph = DependencyGraph(
-            "schemas/test/basic_dependency_chart.json", validate_schema=False
+            json_schema_file_path="schemas/test/basic_dependency_chart.json",
+            validate_schema=False,
         )
 
         expected_node_depths = {
