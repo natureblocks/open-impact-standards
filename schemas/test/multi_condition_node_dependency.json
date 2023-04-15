@@ -1,0 +1,46 @@
+{
+    "standard": "Project Development Test",
+    "parties": [
+        {"name": "Land Representative"},
+        {"name": "Project"},
+        {"name": "Project Developer"},
+        {"name": "Financiers / Bankers / Investors"},
+        {"name": "Government Representatives"},
+        {"name": "Carbon Auditor"}
+    ],
+    "recurring_dependencies": [],
+    "nodes": [
+        {
+            "meta": {
+                "id": 0,
+                "description": "Node 0",
+                "node_type": "ACTION",
+                "applies_to": "Project Developer"
+            }
+        },
+        {
+            "meta": {
+                "id": 1,
+                "description": "Node 1",
+                "node_type": "ACTION",
+                "applies_to": "Project Developer"
+            },
+            "depends_on": {
+                "alias": "a#0000",
+                "gate_type": "AND",
+                "dependencies": [
+                    {
+                        "node_id": 0,
+                        "property": "completed",
+                        "equals": true
+                    },
+                    {
+                        "node_id": 0,
+                        "property": "did_the_thing",
+                        "equals": true
+                    }
+                ]
+            }
+        }
+    ]
+}

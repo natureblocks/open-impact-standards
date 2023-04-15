@@ -53,3 +53,17 @@ class TestDependencyGraph:
         assert {
             node_id: coords[0] for node_id, coords in graph.node_coordinates.items()
         } == expected_node_depths
+
+    def test_multi_condition_node_dependency(self):
+        graph = DependencyGraph(
+            json_schema_file_path="schemas/test/multi_condition_node_dependency.json"
+        )
+        #graph.generate_miro_board(board_name="Test Result (multi_condition_node_dependency)")
+
+        # If a node lists more than one dependency for the same node id, a gate should be created
+        assert len(graph.gates) == 1
+        expected_edge_dict = {
+            1: ["a#0000"],
+            "a#0000": [0, 0],
+        }
+        assert graph.edge_dict == expected_edge_dict
