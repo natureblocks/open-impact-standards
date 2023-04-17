@@ -566,8 +566,7 @@ class TestSchemaValidation:
             errors[0]
             == f"root: invalid key: expected {actual_id} ("
             + "{corresponding_value}.id"
-            + "), got "
-            + wrong_id
+            + f"), got {json.dumps(wrong_id)}"
         )
 
         validator.schema = {actual_id: {"id": actual_id}}
@@ -745,7 +744,7 @@ class TestSchemaValidation:
                 errors[0]
                 == f"none: invalid enum value: expected one of "
                 + str(template["values"])
-                + f", got {str(invalid_value)}"
+                + f", got {json.dumps(invalid_value)}"
             )
 
         for valid_value in template["values"]:

@@ -170,7 +170,7 @@ class SchemaValidator:
             return []
 
         return [
-            f"{self._context(path)}: invalid enum value: expected one of {str(template['values'])}, got {field}"
+            f"{self._context(path)}: invalid enum value: expected one of {str(template['values'])}, got {json.dumps(field)}"
         ]
 
     def _validate_reference(self, path, field, template):
@@ -185,7 +185,7 @@ class SchemaValidator:
                     return []
                 else:
                     return [
-                        f"{self._context(path)}: invalid key: expected {expected_value} ({'.'.join(reference_path)}), got {field}"
+                        f"{self._context(path)}: invalid key: expected {expected_value} ({'.'.join(reference_path)}), got {json.dumps(field)}"
                     ]
             else:
                 raise NotImplementedError(
