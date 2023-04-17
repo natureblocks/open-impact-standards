@@ -1,8 +1,11 @@
 import json
+import logging
 
 from tests import fixtures
 from validation import templates
 from validation.schema_validator import SchemaValidator
+
+logger = logging.getLogger("schema_validation")
 
 
 class TestSchemaValidation:
@@ -30,6 +33,39 @@ class TestSchemaValidation:
             validator.print_errors()
 
         assert not errors
+
+    def test_get_next_node_id(self):
+        """Logs the next node id for the provided JSON schema file.
+
+        Note that skipped node ids will not be returned. For example, if the schema
+        contains the following node ids: [0, 1, 3], the next id is 4.
+
+        To run this test and see the output, run the following command in the terminal:
+        pytest -v tests/test_schema_validation.py::TestSchemaValidation::test_get_next_node_id --log-cli-level=DEBUG
+        """
+
+        # Specify the path to the JSON file.
+        json_file_path = "schemas/demo_schema.json"
+
+        next_available_node_id = SchemaValidator().get_next_node_id(json_file_path)
+        logger.debug("\nNext available node id: " + str(next_available_node_id))
+
+    def test_get_all_node_ids(self):
+        """Logs all node ids that are specified by provided JSON schema file.
+
+        To run this test and see the output, run the following command in the terminal:
+        pytest -v tests/test_schema_validation.py::TestSchemaValidation::test_get_all_node_ids --log-cli-level=DEBUG
+        """
+
+        # Specify the path to the JSON file.
+        json_file_path = "schemas/demo_schema.json"
+
+        node_ids = SchemaValidator().get_all_node_ids(json_file_path)
+
+        logger.setLevel(logging.DEBUG)
+        logger.debug(
+            "\nNode ids in schema:\n" + "\n".join([str(id) for id in node_ids])
+        )
 
     def test_duplicate_node_dependency_sets(self):
         validator = SchemaValidator()

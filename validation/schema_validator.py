@@ -34,8 +34,28 @@ class SchemaValidator:
         return self.errors
 
     def print_errors(self):
-        for error in self.errors:
-            print(error)
+        print("\n".join(self.errors))
+
+    def get_next_node_id(self, json_file_path):
+        if self.validate(json_file_path=json_file_path):
+            print(f"Invalid schema ({json_file_path}):\n")
+            self.print_errors()
+            raise Exception(f"Invalid schema")
+
+        next_id = 0
+        if "nodes" in self.schema:
+            node_ids = [node["meta"]["id"] for node in self.schema["nodes"]]
+            next_id = max(node_ids) + 1
+
+        return next_id
+
+    def get_all_node_ids(self, json_file_path):
+        if self.validate(json_file_path=json_file_path):
+            print(f"Invalid schema ({json_file_path}):\n")
+            self.print_errors()
+            raise Exception(f"Invalid schema")
+
+        return [node["meta"]["id"] for node in self.schema["nodes"]]
 
     def _validate_field(self, path, field, template):
         if "types" in template:
