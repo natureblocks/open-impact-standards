@@ -23,7 +23,7 @@ class TestSchemaValidation:
         """
 
         # Specify which JSON file to validate.
-        json_file_path = "schemas/test/small_example_schema.json"
+        json_file_path = "schemas/demo_schema.json"
 
         validator = SchemaValidator()
         errors = validator.validate(json_file_path=json_file_path)
@@ -66,6 +66,20 @@ class TestSchemaValidation:
         logger.debug(
             "\nNode ids in schema:\n" + "\n".join([str(id) for id in node_ids])
         )
+    
+    def test_node_data(self):
+        validator = SchemaValidator()
+
+        errors = validator.validate(json_file_path="schemas/test/node_data.json")
+        assert not errors
+
+        # Introduce an error
+        validator.schema["nodes"][1]["depends_on"]["dependencies"][0]["property"] = "not_a_property"
+        errors = validator.validate()
+        assert len(errors) > 0
+        assert "root.nodes[1].depends_on.dependencies[0].property (node id: 1): expected any \"data.keys\" field from root.nodes, got \"not_a_property\"" in errors
+
+        validator.schema["nodes"][1]["depends_on"]["dependencies"][0]["property"] = "is_forest"
 
     def test_duplicate_node_dependency_sets(self):
         validator = SchemaValidator()
@@ -179,6 +193,11 @@ class TestSchemaValidation:
         schema["nodes"].append(fixtures.node(3))
         schema["nodes"].append(fixtures.node(4))
         _set_dependency_node_id(schema, 2, 3)
+        schema["nodes"][1]["data"] = {
+            "jumped_through_hoops": {
+                "field_type": "BOOLEAN"
+            }
+        }
         schema["recurring_dependencies"].append(
             {
                 "alias": "common_ds",

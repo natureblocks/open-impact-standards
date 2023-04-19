@@ -25,6 +25,11 @@ def node(node_id=None):
             "description": "test node",
             "node_type": "STATE",
             "applies_to": "Project",
+        },
+        "data": {
+            "completed": {
+                "field_type": "BOOLEAN"
+            }
         }
     }
 

@@ -16,6 +16,14 @@
                 "description": "Node 0",
                 "node_type": "ACTION",
                 "applies_to": "Project Developer"
+            },
+            "data": {
+                "completed": {
+                    "field_type": "BOOLEAN"
+                },
+                "did_the_thing": {
+                    "field_type": "BOOLEAN"
+                }
             }
         },
         {

@@ -47,9 +47,18 @@ dependency = {
     "properties": {
         "node_id": {
             "type": "reference",
-            "references_any": {"from": "root.nodes", "property": "meta.id"},
+            "references_any": {
+                "from": "root.nodes",
+                "property": "meta.id",
+            },
         },
-        "property": {"type": "string"},
+        "property": {
+            "type": "reference",
+            "references_any": {
+                "from": "root.nodes",
+                "property": "data.keys",
+            },
+        },
         "equals": {"types": ["string", "decimal", "boolean"]},
         "does_not_equal": {"types": ["string", "decimal", "boolean"]},
         "greater_than": {"types": ["string", "decimal", "boolean"]},
@@ -119,6 +128,15 @@ dependency_set = {
     ],
 }
 
+field = {
+    "type": "object",
+    "properties": {
+        "field_type": {"type": "enum", "values": ["STRING", "NUMERIC", "BOOLEAN"]},
+        "description": {"type": "string"},
+    },
+    "optional": ["description"],
+}
+
 node = {
     "type": "object",
     "properties": {
@@ -134,12 +152,26 @@ node = {
                         "from": "root.parties",
                         "property": "name",
                     },
-                },
+                }
             },
         },
-        "depends_on": {"type": "object", "template": "dependency_set"},
+        "data": {
+            "type": "object",
+            "keys": {
+                "type": "string",
+            },
+            "values": {
+                "type": "object",
+                "template": "field",
+            },
+            "optional": ["string_fields", "numeric_fields", "boolean_fields"],
+        },
+        "depends_on": {
+            "type": "object",
+            "template": "dependency_set",
+        },
     },
-    "optional": ["depends_on"],
+    "optional": ["data", "depends_on"],
 }
 
 party = {"type": "object", "properties": {"name": {"type": "string"}}}

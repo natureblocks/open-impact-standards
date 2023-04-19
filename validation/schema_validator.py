@@ -21,7 +21,7 @@ class SchemaValidator:
             self.schema = json.load(open(json_file_path))
         elif json_string is not None:
             self.schema = json.loads(json_string)
-        else:
+        elif self.schema is None:
             raise TypeError(
                 "must provide an argument for schema, json_file_path, or json_string"
             )
@@ -327,8 +327,8 @@ class SchemaValidator:
                     obj = obj[key]
                     continue
 
-            # If a continue statement was not reached, the path is invalid
-            raise Exception(f"invalid path: {path}")
+            # If a continue statement was not reached, the path leads nowhere
+            return None
 
         return obj
 
@@ -368,22 +368,40 @@ class SchemaValidator:
                 ]
 
         elif isinstance(objectOrArray, list):
+            if "." in referenced_prop:
+                referenced_prop_path = referenced_prop.split(".")
+                referenced_prop_name = (
+                    referenced_prop_path.pop()
+                    if len(referenced_prop_path) > 0
+                    else referenced_prop
+                )
+            else:
+                referenced_prop_path = None
+
             for item in objectOrArray:
                 if isinstance(item, dict):
-                    if (
-                        "." in referenced_prop
-                        and self._get_field(referenced_prop, obj=item)
-                        == referenced_value
-                    ):
-                        return []
+                    if referenced_prop_path:
+                        if referenced_prop_name == "keys":
+                            # Looking for any matching key in a nested object
+                            referenced_obj = self._get_field(
+                                ".".join(referenced_prop_path), obj=item
+                            )
+                            if (
+                                isinstance(referenced_obj, dict)
+                                and referenced_value in referenced_obj.keys()
+                            ):
+                                return []
+                        elif (
+                            self._get_field(referenced_prop, obj=item)
+                            == referenced_value
+                        ):
+                            return []
 
                     if (
                         referenced_prop in item
                         and item[referenced_prop] == referenced_value
                     ):
                         return []
-                elif item == referenced_value:
-                    return []
 
             return [
                 f'{self._context(path)}: expected any "{referenced_prop}" field from {referenced_path}, got {json.dumps(referenced_value)}'

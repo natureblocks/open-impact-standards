@@ -1,0 +1,79 @@
+{
+    "standard": "Project Development Test",
+    "parties": [
+        {"name": "Land Representative"},
+        {"name": "Project"},
+        {"name": "Project Developer"},
+        {"name": "Financiers / Bankers / Investors"},
+        {"name": "Government Representatives"},
+        {"name": "Carbon Auditor"}
+    ],
+    "recurring_dependencies": [],
+    "nodes": [
+        {
+            "meta": {
+                "id": 0,
+                "description": "Node 0",
+                "node_type": "STATE",
+                "applies_to": "Project Developer"
+            },
+            "data": {
+                "area": {
+                    "field_type": "NUMERIC",
+                    "description": "Area of land in hectares"
+                },
+                "number_of_trees": {
+                    "field_type": "NUMERIC",
+                    "description": "Number of trees to be planted"
+                },
+                "type_of_forest": {
+                    "field_type": "STRING"
+                },
+                "is_forest": {
+                    "field_type": "BOOLEAN",
+                    "description": "Is the land a forest?"
+                }
+            }
+        },
+        {
+            "meta": {
+                "id": 1,
+                "description": "Node 1",
+                "node_type": "ACTION",
+                "applies_to": "Project Developer"
+            },
+            "data": {
+                "agreement_decided": {
+                    "field_type": "BOOLEAN",
+                    "description": "Has the agreement been decided?"
+                }
+            },
+            "depends_on": {
+                "dependencies": [
+                    {
+                        "node_id": 0,
+                        "property": "is_forest",
+                        "equals": true
+                    }
+                ]
+            }
+        },
+        {
+            "meta": {
+                "id": 2,
+                "description": "Node 3",
+                "node_type": "STATE",
+                "applies_to": "Land Representative"
+            },
+            "depends_on": {
+                "dependencies": [
+                    {
+                        "node_id": 1,
+                        "property": "agreement_decided",
+                        "equals": true
+                    }
+                ]
+            }
+        }
+    ]
+}
