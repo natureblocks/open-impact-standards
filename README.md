@@ -25,6 +25,7 @@ __Top-level json object:__
 }
 ````
 __Node object type:__
+- The keys of the `Node.data` object (denoted as `<field_name>` below) should be the names of any fields that instances of that node would have. There is no limit to the number of `<field_name>` keys that can be specified for a given node.
 ````
 type Node {
     meta: {
@@ -32,6 +33,12 @@ type Node {
         description: string,
         node_type: NodeType,
         applies_to: Party.name
+    },
+    data: {
+        <field_name>: {
+            field_type: FieldType,
+            description: string?
+        }
     },
     depends_on: DependencySet?
 }
@@ -42,6 +49,14 @@ enum NodeType {
     ACTION,
     STATE,
     QUESTION
+}
+````
+__FieldType enumeration:__
+````
+enum FieldType {
+    STRING,
+    NUMERIC,
+    BOOLEAN
 }
 ````
 __DependencySet object type:__
@@ -77,14 +92,14 @@ type DependencySetReference {
 ````
 __Dependency object type:__
 - Represents a dependency of the parent `Node` object.
-- References a `Node` object from the top-level object's `nodes` array.
-- The `property` field must be the name of a property of the referenced `Node`.
+- `Dependency.node_id` references a `Node` object from the top-level object's `nodes` array.
+- The `property` field must be a key that exists in the referenced `Node`'s `data` object.
 - Exactly one comparison field must be present.
 - A dependency is satisfied when applying the comparison field to the specified property on the referenced `Node` evaluates to `true`.
 ````
 type Dependency {
     node_id: Node.meta.id,
-    property: string,
+    property: Node.data.key,
 
     // Comparison fields:
     equals: scalar?,
