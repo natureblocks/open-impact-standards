@@ -66,7 +66,7 @@ class TestSchemaValidation:
         logger.debug(
             "\nNode ids in schema:\n" + "\n".join([str(id) for id in node_ids])
         )
-    
+
     def test_node_data(self):
         validator = SchemaValidator()
 
@@ -74,12 +74,19 @@ class TestSchemaValidation:
         assert not errors
 
         # Introduce an error
-        validator.schema["nodes"][1]["depends_on"]["dependencies"][0]["property"] = "not_a_property"
+        validator.schema["nodes"][1]["depends_on"]["dependencies"][0][
+            "field_name"
+        ] = "not_a_field"
         errors = validator.validate()
         assert len(errors) > 0
-        assert "root.nodes[1].depends_on.dependencies[0].property (node id: 1): expected any \"data.keys\" field from root.nodes, got \"not_a_property\"" in errors
+        assert (
+            'root.nodes[1].depends_on.dependencies[0].field_name (node id: 1): expected any "data.keys" field from root.nodes, got "not_a_field"'
+            in errors
+        )
 
-        validator.schema["nodes"][1]["depends_on"]["dependencies"][0]["property"] = "is_forest"
+        validator.schema["nodes"][1]["depends_on"]["dependencies"][0][
+            "field_name"
+        ] = "is_forest"
 
     def test_duplicate_node_dependency_sets(self):
         validator = SchemaValidator()
@@ -94,14 +101,14 @@ class TestSchemaValidation:
         assert len(errors) == 2
         assert (
             errors[0]
-            == "Any recurring DependencySet objects (Node.depends_on) should be added to root.recurring_dependencies, and nodes should specify a DependencySetReference with the alias of the DependencySet object."
+            == "Any recurring DependencySet objects (Node.depends_on) should be added to root.referenced_dependency_sets, and nodes should specify a DependencySetReference with the alias of the DependencySet object."
         )
         assert (
             errors[1]
             == "The following node ids specify identical dependency sets: [2, 3]"
         )
 
-        schema["recurring_dependencies"].append(dependency_set)
+        schema["referenced_dependency_sets"].append(dependency_set)
         ds_reference = {"alias": "common_ds"}
         schema["nodes"][2]["depends_on"] = {"dependencies": [ds_reference]}
         schema["nodes"][3]["depends_on"] = {"dependencies": [ds_reference]}
@@ -117,12 +124,12 @@ class TestSchemaValidation:
             "gate_type": "OR",
             "dependencies": [
                 ds_reference,
-                {"node_id": 3, "property": "completed", "equals": True},
+                {"node_id": 3, "field_name": "completed", "equals": True},
             ],
         }
         schema["nodes"][5]["depends_on"] = {
             "dependencies": [
-                {"property": "completed", "node_id": 3, "equals": True},
+                {"field_name": "completed", "node_id": 3, "equals": True},
                 ds_reference,
             ],
             "gate_type": "OR",
@@ -133,14 +140,14 @@ class TestSchemaValidation:
         assert len(errors) == 2
         assert (
             errors[0]
-            == "Any recurring DependencySet objects (Node.depends_on) should be added to root.recurring_dependencies, and nodes should specify a DependencySetReference with the alias of the DependencySet object."
+            == "Any recurring DependencySet objects (Node.depends_on) should be added to root.referenced_dependency_sets, and nodes should specify a DependencySetReference with the alias of the DependencySet object."
         )
         assert (
             errors[1]
             == "The following node ids specify identical dependency sets: [4, 5]"
         )
 
-        schema["recurring_dependencies"].append(schema["nodes"][4]["depends_on"])
+        schema["referenced_dependency_sets"].append(schema["nodes"][4]["depends_on"])
         ds_reference = {"alias": "common_ds#2"}
         schema["nodes"][4]["depends_on"] = {"dependencies": [ds_reference]}
         schema["nodes"][5]["depends_on"] = {"dependencies": [ds_reference]}
@@ -152,7 +159,7 @@ class TestSchemaValidation:
                     "dependencies": [
                         {
                             "node_id": dependency_node_id,
-                            "property": "completed",
+                            "field_name": "completed",
                             "equals": True,
                         }
                     ]
@@ -193,24 +200,20 @@ class TestSchemaValidation:
         schema["nodes"].append(fixtures.node(3))
         schema["nodes"].append(fixtures.node(4))
         _set_dependency_node_id(schema, 2, 3)
-        schema["nodes"][1]["data"] = {
-            "jumped_through_hoops": {
-                "field_type": "BOOLEAN"
-            }
-        }
-        schema["recurring_dependencies"].append(
+        schema["nodes"][1]["data"] = {"jumped_through_hoops": {"field_type": "BOOLEAN"}}
+        schema["referenced_dependency_sets"].append(
             {
                 "alias": "common_ds",
                 "gate_type": "AND",
                 "dependencies": [
                     {
                         "node_id": 1,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": True,
                     },
                     {
                         "node_id": 1,
-                        "property": "jumped_through_hoops",
+                        "field_name": "jumped_through_hoops",
                         "equals": True,
                     },
                 ],
@@ -234,7 +237,7 @@ class TestSchemaValidation:
             "dependencies": [
                 {
                     "node_id": 2,
-                    "property": "completed",
+                    "field_name": "completed",
                     "equals": True,
                 }
             ]
@@ -349,7 +352,7 @@ class TestSchemaValidation:
                     "dependencies": [
                         {
                             "node_id": 0,
-                            "property": "completed",
+                            "field_name": "completed",
                             # Should not be able to specify more than one mutually exclusive property
                             "equals": True,
                             "greater_than": 0,
@@ -386,14 +389,14 @@ class TestSchemaValidation:
 
         # Modifier:
         # "dependencies" property of dependency_set objects
-        # in root.recurring_dependencies must contain at least two items
+        # in root.referenced_dependency_sets must contain at least two items
         schema = fixtures.basic_schema_with_nodes(2)
-        schema["recurring_dependencies"] = [
+        schema["referenced_dependency_sets"] = [
             {
                 "alias": "test",
                 "gate_type": "AND",
                 "dependencies": [
-                    {"node_id": 0, "property": "completed", "equals": True}
+                    {"node_id": 0, "field_name": "completed", "equals": True}
                 ],
             }
         ]
@@ -401,11 +404,11 @@ class TestSchemaValidation:
         assert len(errors) == 1
         assert (
             errors[0]
-            == "root.recurring_dependencies[0].dependencies: must contain at least 2 item(s), got 1"
+            == "root.referenced_dependency_sets[0].dependencies: must contain at least 2 item(s), got 1"
         )
 
-        schema["recurring_dependencies"][0]["dependencies"].append(
-            {"node_id": 1, "property": "completed", "equals": True}
+        schema["referenced_dependency_sets"][0]["dependencies"].append(
+            {"node_id": 1, "field_name": "completed", "equals": True}
         )
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
@@ -418,8 +421,8 @@ class TestSchemaValidation:
         schema = fixtures.basic_schema_with_nodes(3)
         schema["nodes"][2]["depends_on"] = {
             "dependencies": [
-                {"node_id": 0, "property": "completed", "equals": True},
-                {"node_id": 1, "property": "completed", "equals": True},
+                {"node_id": 0, "field_name": "completed", "equals": True},
+                {"node_id": 1, "field_name": "completed", "equals": True},
             ]
         }
         errors = validator.validate(json_string=json.dumps(schema))
@@ -633,7 +636,7 @@ class TestSchemaValidation:
 
         schema = fixtures.basic_schema_with_nodes(2)
 
-        schema["recurring_dependencies"] = [
+        schema["referenced_dependency_sets"] = [
             fixtures.dependency_set("some_alias"),
             fixtures.dependency_set("some_alias"),
         ]
@@ -642,10 +645,10 @@ class TestSchemaValidation:
         assert len(errors) == 1
         assert (
             errors[0]
-            == 'root.recurring_dependencies: duplicate value provided for unique field "alias": "some_alias"'
+            == 'root.referenced_dependency_sets: duplicate value provided for unique field "alias": "some_alias"'
         )
 
-        schema["recurring_dependencies"].pop()
+        schema["referenced_dependency_sets"].pop()
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
@@ -781,7 +784,7 @@ class TestSchemaValidation:
         )
 
         schema["nodes"][1]["depends_on"]["dependencies"].append(
-            {"node_id": 0, "property": "completed", "equals": True}
+            {"node_id": 0, "field_name": "completed", "equals": True}
         )
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors

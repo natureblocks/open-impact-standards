@@ -14,7 +14,7 @@ def basic_schema():
         "parties": [],
         "active_nodes": [],
         "nodes": [],
-        "recurring_dependencies": [],
+        "referenced_dependency_sets": [],
     }
 
 
@@ -37,6 +37,6 @@ def node(node_id=None):
 def dependency_set(alias, gate_type="AND", num_dependencies=2):
     dependencies = []
     for i in range(num_dependencies):
-        dependencies.append({"node_id": i, "property": "completed", "equals": True})
+        dependencies.append({"node_id": i, "field_name": "completed", "equals": True})
 
     return {"alias": alias, "gate_type": gate_type, "dependencies": dependencies}

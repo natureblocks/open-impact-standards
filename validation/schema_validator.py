@@ -574,7 +574,7 @@ class SchemaValidator:
 
         if len(errors):
             error_explanation = [
-                "Any recurring DependencySet objects (Node.depends_on) should be added to root.recurring_dependencies, and nodes should specify a DependencySetReference with the alias of the DependencySet object."
+                "Any recurring DependencySet objects (Node.depends_on) should be added to root.referenced_dependency_sets, and nodes should specify a DependencySetReference with the alias of the DependencySet object."
             ]
             return error_explanation + errors
 
@@ -582,7 +582,7 @@ class SchemaValidator:
 
     def _detect_circular_dependencies(self):
         def _get_recurring_dependency_set(alias):
-            for ds in self.schema["recurring_dependencies"]:
+            for ds in self.schema["referenced_dependency_sets"]:
                 if ds["alias"] == alias:
                     return ds
 

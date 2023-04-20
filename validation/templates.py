@@ -15,7 +15,7 @@ root_object = {
             },
             "unique": ["meta.id"],
         },
-        "recurring_dependencies": {
+        "referenced_dependency_sets": {
             "type": "array",
             "values": {
                 "type": "object",
@@ -35,7 +35,7 @@ dependency_set_reference = {
         "alias": {
             "type": "reference",
             "references_any": {
-                "from": "root.recurring_dependencies",
+                "from": "root.referenced_dependency_sets",
                 "property": "alias",
             },
         }
@@ -52,7 +52,7 @@ dependency = {
                 "property": "meta.id",
             },
         },
-        "property": {
+        "field_name": {
             "type": "reference",
             "references_any": {
                 "from": "root.nodes",
@@ -128,15 +128,6 @@ dependency_set = {
     ],
 }
 
-field = {
-    "type": "object",
-    "properties": {
-        "field_type": {"type": "enum", "values": ["STRING", "NUMERIC", "BOOLEAN"]},
-        "description": {"type": "string"},
-    },
-    "optional": ["description"],
-}
-
 node = {
     "type": "object",
     "properties": {
@@ -152,7 +143,7 @@ node = {
                         "from": "root.parties",
                         "property": "name",
                     },
-                }
+                },
             },
         },
         "data": {
@@ -162,9 +153,15 @@ node = {
             },
             "values": {
                 "type": "object",
-                "template": "field",
+                "properties": {
+                    "field_type": {
+                        "type": "enum",
+                        "values": ["STRING", "NUMERIC", "BOOLEAN"],
+                    },
+                    "description": {"type": "string"},
+                },
+                "optional": ["description"],
             },
-            "optional": ["string_fields", "numeric_fields", "boolean_fields"],
         },
         "depends_on": {
             "type": "object",

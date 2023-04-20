@@ -8,7 +8,7 @@
         {"name": "Government Representatives"},
         {"name": "Carbon Auditor"}
     ],
-    "recurring_dependencies": [],
+    "referenced_dependency_sets": [],
     "nodes": [
         {
             "meta": {
@@ -39,12 +39,12 @@
                 "dependencies": [
                     {
                         "node_id": 0,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     },
                     {
                         "node_id": 0,
-                        "property": "did_the_thing",
+                        "field_name": "did_the_thing",
                         "equals": true
                     }
                 ]

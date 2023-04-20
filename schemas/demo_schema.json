@@ -8,19 +8,19 @@
         {"name": "Government Representatives"},
         {"name": "Carbon Auditor"}
     ],
-    "recurring_dependencies": [
+    "referenced_dependency_sets": [
         {
             "alias": "Land owner or Tenant#0000",
             "gate_type": "OR",
             "dependencies": [
                 {
                     "node_id": 13,
-                    "property": "completed",
+                    "field_name": "completed",
                     "equals": true
                 },
                 {
                     "node_id": 14,
-                    "property": "completed",
+                    "field_name": "completed",
                     "equals": true
                 }
             ]
@@ -31,12 +31,12 @@
             "dependencies": [
                 {
                     "node_id": 34,
-                    "property": "completed",
+                    "field_name": "completed",
                     "equals": true
                 },
                 {
                     "node_id": 35,
-                    "property": "completed",
+                    "field_name": "completed",
                     "equals": true
                 }
             ]
@@ -47,12 +47,12 @@
             "dependencies": [
                 {
                     "node_id": 26,
-                    "property": "completed",
+                    "field_name": "completed",
                     "equals": true
                 },
                 {
                     "node_id": 27,
-                    "property": "completed",
+                    "field_name": "completed",
                     "equals": true
                 }
             ]
@@ -84,7 +84,7 @@
                 "dependencies": [
                     {
                         "node_id": 0,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -104,7 +104,7 @@
                 "dependencies": [
                     {
                         "node_id": 1,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -124,7 +124,7 @@
                 "dependencies": [
                     {
                         "node_id": 1,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -144,7 +144,7 @@
                 "dependencies": [
                     {
                         "node_id": 1,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -164,7 +164,7 @@
                 "dependencies": [
                     {
                         "node_id": 1,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -184,7 +184,7 @@
                 "dependencies": [
                     {
                         "node_id": 1,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -208,22 +208,22 @@
                 "dependencies": [
                     {
                         "node_id": 2,
-                        "property": "answer",
+                        "field_name": "answer",
                         "greater_than": 1000
                     },
                     {
                         "node_id": 3,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     },
                     {
                         "node_id": 4,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     },
                     {
                         "node_id": 5,
-                        "property": "something",
+                        "field_name": "something",
                         "one_of": [
                             "a",
                             1,
@@ -233,7 +233,7 @@
                     },
                     {
                         "node_id": 6,
-                        "property": "answer",
+                        "field_name": "answer",
                         "equals": "South Africa"
                     }
                 ]
@@ -253,7 +253,7 @@
                 "dependencies": [
                     {
                         "node_id": 7,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -297,12 +297,12 @@
                 "dependencies": [
                     {
                         "node_id": 9,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     },
                     {
                         "node_id": 10,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -322,7 +322,7 @@
                 "dependencies": [
                     {
                         "node_id": 8,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -341,12 +341,12 @@
                 "dependencies": [
                     {
                         "node_id": 11,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     },
                     {
                         "node_id": 12,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -363,7 +363,7 @@
                 "dependencies": [
                     {
                         "node_id": 8,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -421,12 +421,12 @@
                 "dependencies": [
                     {
                         "node_id": 15,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     },
                     {
                         "node_id": 16,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -446,7 +446,7 @@
                 "dependencies": [
                     {
                         "node_id": 17,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -466,7 +466,7 @@
                 "dependencies": [
                     {
                         "node_id": 17,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -486,7 +486,7 @@
                 "dependencies": [
                     {
                         "node_id": 17,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -506,7 +506,7 @@
                 "dependencies": [
                     {
                         "node_id": 17,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -526,7 +526,7 @@
                 "dependencies": [
                     {
                         "node_id": 17,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -546,7 +546,7 @@
                 "dependencies": [
                     {
                         "node_id": 18,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -577,7 +577,7 @@
                 "dependencies": [
                     {
                         "node_id": 19,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -596,17 +596,17 @@
                 "dependencies": [
                     {
                         "node_id": 18,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     },
                     {
                         "node_id": 20,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     },
                     {
                         "node_id": 25,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -625,27 +625,27 @@
                 "dependencies": [
                     {
                         "node_id": 20,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     },
                     {
                         "node_id": 21,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     },
                     {
                         "node_id": 22,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     },
                     {
                         "node_id": 23,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     },
                     {
                         "node_id": 24,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -665,7 +665,7 @@
                 "dependencies": [
                     {
                         "node_id": 8,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -685,7 +685,7 @@
                 "dependencies": [
                     {
                         "node_id": 28,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -705,7 +705,7 @@
                 "dependencies": [
                     {
                         "node_id": 29,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -725,7 +725,7 @@
                 "dependencies": [
                     {
                         "node_id": 29,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -745,7 +745,7 @@
                 "dependencies": [
                     {
                         "node_id": 29,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -765,7 +765,7 @@
                 "dependencies": [
                     {
                         "node_id": 30,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -782,7 +782,7 @@
                 "dependencies": [
                     {
                         "node_id": 31,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -799,7 +799,7 @@
                 "dependencies": [
                     {
                         "node_id": 32,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -893,22 +893,22 @@
                 "dependencies": [
                     {
                         "node_id": 36,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     },
                     {
                         "node_id": 37,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     },
                     {
                         "node_id": 38,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     },
                     {
                         "node_id": 39,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -941,17 +941,17 @@
                 "dependencies": [
                     {
                         "node_id": 33,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     },
                     {
                         "node_id": 40,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     },
                     {
                         "node_id": 41,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -973,7 +973,7 @@
                 "dependencies": [
                     {
                         "node_id": 42,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     },
                     {
@@ -996,7 +996,7 @@
                 "dependencies": [
                     {
                         "node_id": 43,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -1016,7 +1016,7 @@
                 "dependencies": [
                     {
                         "node_id": 44,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -1036,7 +1036,7 @@
                 "dependencies": [
                     {
                         "node_id": 45,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -1056,7 +1056,7 @@
                 "dependencies": [
                     {
                         "node_id": 45,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -1076,7 +1076,7 @@
                 "dependencies": [
                     {
                         "node_id": 45,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -1095,17 +1095,17 @@
                 "dependencies": [
                     {
                         "node_id": 46,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     },
                     {
                         "node_id": 47,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     },
                     {
                         "node_id": 48,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]

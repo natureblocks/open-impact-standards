@@ -51,7 +51,7 @@ class DependencyGraph:
         self.graph = nx.DiGraph()
 
         self.nodes = {n["meta"]["id"]: n for n in self.schema["nodes"]}
-        self.dependency_sets = self.schema["recurring_dependencies"]
+        self.dependency_sets = self.schema["referenced_dependency_sets"]
 
         self.edge_tuples = []
         self.gates = {}

@@ -15,13 +15,13 @@ __Top-level json object:__
 - `standard` is the name of the open standard.
 - `parties` is the list of parties relevant to the open standard.
 - `nodes` is a list containing the `Node` objects that comprise the standard's dependency chart.
-- If two or more `Node` objects specify an identical `DependencySet` object (`Node.depends_on`), the `DependencySet` is added to the `recurring_dependencies` array and referenced by those nodes. `DependencySet` objects can be referenced in `Node.depends_on` using a `DependencySetReference` object.
+- If two or more `Node` objects specify an identical `DependencySet` object (`Node.depends_on`), the `DependencySet` is added to the `referenced_dependency_sets` array and referenced by those nodes. `DependencySet` objects can be referenced in `Node.depends_on` using a `DependencySetReference` object.
 ````
 {
     standard: string,
     parties: [Party],
     nodes: [Node],
-    recurring_dependencies: [DependencySet]
+    referenced_dependency_sets: [DependencySet]
 }
 ````
 __Node object type:__
@@ -84,7 +84,7 @@ enum GateType {
 }
 ````
 __DependencySetReference object type:__
-- The `alias` field references the alias (unique identifier) of a recurring `DependencySet` object that has been added to the top-level object's `recurring_dependencies` array.
+- The `alias` field references the alias (unique identifier) of a recurring `DependencySet` object that has been added to the top-level object's `referenced_dependency_sets` array.
 ````
 type DependencySetReference {
     alias: DependencySet.alias
@@ -93,13 +93,13 @@ type DependencySetReference {
 __Dependency object type:__
 - Represents a dependency of the parent `Node` object.
 - `Dependency.node_id` references a `Node` object from the top-level object's `nodes` array.
-- The `property` field must be a key that exists in the referenced `Node`'s `data` object.
+- `field_name` must be a key that exists in the referenced `Node`'s `data` object.
 - Exactly one comparison field must be present.
 - A dependency is satisfied when applying the comparison field to the specified property on the referenced `Node` evaluates to `true`.
 ````
 type Dependency {
     node_id: Node.meta.id,
-    property: Node.data.key,
+    field_name: Node.data.key,
 
     // Comparison fields:
     equals: scalar?,

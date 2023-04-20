@@ -8,19 +8,19 @@
         {"name": "Government Representatives"},
         {"name": "Carbon Auditor"}
     ],
-    "recurring_dependencies": [
+    "referenced_dependency_sets": [
         {
             "alias": "Land owner or Tenant#0000",
             "gate_type": "OR",
             "dependencies": [
                 {
                     "node_id": 13,
-                    "property": "completed",
+                    "field_name": "completed",
                     "equals": true
                 },
                 {
                     "node_id": 14,
-                    "property": "completed",
+                    "field_name": "completed",
                     "equals": true
                 }
             ]
@@ -52,7 +52,7 @@
                 "dependencies": [
                     {
                         "node_id": 7,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -96,12 +96,12 @@
                 "dependencies": [
                     {
                         "node_id": 9,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     },
                     {
                         "node_id": 10,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -121,7 +121,7 @@
                 "dependencies": [
                     {
                         "node_id": 8,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -140,12 +140,12 @@
                 "dependencies": [
                     {
                         "node_id": 11,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     },
                     {
                         "node_id": 12,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -162,7 +162,7 @@
                 "dependencies": [
                     {
                         "node_id": 8,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
@@ -217,12 +217,12 @@
                 "dependencies": [
                     {
                         "node_id": 15,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     },
                     {
                         "node_id": 16,
-                        "property": "completed",
+                        "field_name": "completed",
                         "equals": true
                     }
                 ]
