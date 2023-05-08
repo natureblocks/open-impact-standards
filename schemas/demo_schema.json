@@ -16,12 +16,16 @@
                 {
                     "node_id": 13,
                     "field_name": "completed",
-                    "equals": true
+                    "comparison_operator": "EQUALS",
+                    "comparison_value_type": "BOOLEAN",
+                    "boolean_comparison_value": true
                 },
                 {
                     "node_id": 14,
                     "field_name": "completed",
-                    "equals": true
+                    "comparison_operator": "EQUALS",
+                    "comparison_value_type": "BOOLEAN",
+                    "boolean_comparison_value": true
                 }
             ]
         },
@@ -32,12 +36,16 @@
                 {
                     "node_id": 34,
                     "field_name": "completed",
-                    "equals": true
+                    "comparison_operator": "EQUALS",
+                    "comparison_value_type": "BOOLEAN",
+                    "boolean_comparison_value": true
                 },
                 {
                     "node_id": 35,
                     "field_name": "completed",
-                    "equals": true
+                    "comparison_operator": "EQUALS",
+                    "comparison_value_type": "BOOLEAN",
+                    "boolean_comparison_value": true
                 }
             ]
         },
@@ -48,17 +56,21 @@
                 {
                     "node_id": 26,
                     "field_name": "completed",
-                    "equals": true
+                    "comparison_operator": "EQUALS",
+                    "comparison_value_type": "BOOLEAN",
+                    "boolean_comparison_value": true
                 },
                 {
                     "node_id": 27,
                     "field_name": "completed",
-                    "equals": true
+                    "comparison_operator": "EQUALS",
+                    "comparison_value_type": "BOOLEAN",
+                    "boolean_comparison_value": true
                 }
             ]
         }
     ],
-    "nodes": [
+    "state_nodes": [
         {
             "meta": {
                 "id": 0,
@@ -85,7 +97,9 @@
                     {
                         "node_id": 0,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -105,7 +119,9 @@
                     {
                         "node_id": 1,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -125,7 +141,9 @@
                     {
                         "node_id": 1,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -145,7 +163,9 @@
                     {
                         "node_id": 1,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -165,7 +185,9 @@
                     {
                         "node_id": 1,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -185,7 +207,9 @@
                     {
                         "node_id": 1,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -209,32 +233,41 @@
                     {
                         "node_id": 2,
                         "field_name": "answer",
-                        "greater_than": 1000
+                        "comparison_operator": "GREATER_THAN",
+                        "comparison_value_type": "NUMERIC",
+                        "numeric_comparison_value": 1000
                     },
                     {
                         "node_id": 3,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     },
                     {
                         "node_id": 4,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     },
                     {
                         "node_id": 5,
                         "field_name": "something",
-                        "one_of": [
+                        "comparison_operator": "ONE_OF",
+                        "comparison_value_type": "STRING_LIST",
+                        "string_list_comparison_value": [
                             "a",
-                            1,
-                            3.14,
-                            true
+                            "b",
+                            "c"
                         ]
                     },
                     {
                         "node_id": 6,
                         "field_name": "answer",
-                        "equals": "South Africa"
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "STRING",
+                        "string_comparison_value": "South Africa"
                     }
                 ]
             }
@@ -254,7 +287,9 @@
                     {
                         "node_id": 7,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -298,12 +333,16 @@
                     {
                         "node_id": 9,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     },
                     {
                         "node_id": 10,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -323,7 +362,9 @@
                     {
                         "node_id": 8,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -342,12 +383,16 @@
                     {
                         "node_id": 11,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     },
                     {
                         "node_id": 12,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -364,7 +409,9 @@
                     {
                         "node_id": 8,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -422,12 +469,16 @@
                     {
                         "node_id": 15,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     },
                     {
                         "node_id": 16,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -447,7 +498,9 @@
                     {
                         "node_id": 17,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -467,7 +520,9 @@
                     {
                         "node_id": 17,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -487,7 +542,9 @@
                     {
                         "node_id": 17,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -507,7 +564,9 @@
                     {
                         "node_id": 17,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -527,7 +586,9 @@
                     {
                         "node_id": 17,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -547,7 +608,9 @@
                     {
                         "node_id": 18,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -578,7 +641,9 @@
                     {
                         "node_id": 19,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -597,17 +662,23 @@
                     {
                         "node_id": 18,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     },
                     {
                         "node_id": 20,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     },
                     {
                         "node_id": 25,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -626,27 +697,37 @@
                     {
                         "node_id": 20,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     },
                     {
                         "node_id": 21,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     },
                     {
                         "node_id": 22,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     },
                     {
                         "node_id": 23,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     },
                     {
                         "node_id": 24,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -666,7 +747,9 @@
                     {
                         "node_id": 8,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -686,7 +769,9 @@
                     {
                         "node_id": 28,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -706,7 +791,9 @@
                     {
                         "node_id": 29,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -726,7 +813,9 @@
                     {
                         "node_id": 29,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -746,7 +835,9 @@
                     {
                         "node_id": 29,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -766,7 +857,9 @@
                     {
                         "node_id": 30,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -783,7 +876,9 @@
                     {
                         "node_id": 31,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -800,7 +895,9 @@
                     {
                         "node_id": 32,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -894,22 +991,30 @@
                     {
                         "node_id": 36,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     },
                     {
                         "node_id": 37,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     },
                     {
                         "node_id": 38,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     },
                     {
                         "node_id": 39,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -942,17 +1047,23 @@
                     {
                         "node_id": 33,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     },
                     {
                         "node_id": 40,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     },
                     {
                         "node_id": 41,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -974,7 +1085,9 @@
                     {
                         "node_id": 42,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     },
                     {
                         "alias": "Plant Area or BMP#0000"
@@ -997,7 +1110,9 @@
                     {
                         "node_id": 43,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -1017,7 +1132,9 @@
                     {
                         "node_id": 44,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -1037,7 +1154,9 @@
                     {
                         "node_id": 45,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -1057,7 +1176,9 @@
                     {
                         "node_id": 45,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -1077,7 +1198,9 @@
                     {
                         "node_id": 45,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -1096,17 +1219,23 @@
                     {
                         "node_id": 46,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     },
                     {
                         "node_id": 47,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     },
                     {
                         "node_id": 48,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }

@@ -16,17 +16,22 @@
                 {
                     "node_id": 13,
                     "field_name": "completed",
-                    "equals": true
+                    "comparison_operator": "EQUALS",
+                    "comparison_value_type": "BOOLEAN",
+                    "boolean_comparison_value": true
+                    
                 },
                 {
                     "node_id": 14,
                     "field_name": "completed",
-                    "equals": true
+                    "comparison_operator": "EQUALS",
+                    "comparison_value_type": "BOOLEAN",
+                    "boolean_comparison_value": true
                 }
             ]
         }
     ],
-    "nodes": [
+    "state_nodes": [
         {
             "meta": {
                 "id": 7,
@@ -53,7 +58,9 @@
                     {
                         "node_id": 7,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -97,12 +104,16 @@
                     {
                         "node_id": 9,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     },
                     {
                         "node_id": 10,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -122,7 +133,9 @@
                     {
                         "node_id": 8,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -141,12 +154,16 @@
                     {
                         "node_id": 11,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     },
                     {
                         "node_id": 12,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -163,7 +180,9 @@
                     {
                         "node_id": 8,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -218,12 +237,16 @@
                     {
                         "node_id": 15,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     },
                     {
                         "node_id": 16,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }

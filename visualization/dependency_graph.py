@@ -50,7 +50,7 @@ class DependencyGraph:
     def _json_schema_to_graph(self):
         self.graph = nx.DiGraph()
 
-        self.nodes = {n["meta"]["id"]: n for n in self.schema["nodes"]}
+        self.nodes = {n["meta"]["id"]: n for n in self.schema["state_nodes"]}
         self.dependency_sets = self.schema["referenced_dependency_sets"]
 
         self.edge_tuples = []

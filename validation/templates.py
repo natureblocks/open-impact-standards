@@ -7,11 +7,11 @@ root_object = {
     "properties": {
         "standard": {"type": "string"},
         "parties": {"type": "array", "values": {"type": "object", "template": "party"}},
-        "nodes": {
+        "state_nodes": {
             "type": "array",
             "values": {
                 "type": "object",
-                "template": "node",
+                "template": "state_node",
             },
             "unique": ["meta.id"],
         },
@@ -48,60 +48,174 @@ dependency = {
         "node_id": {
             "type": "reference",
             "references_any": {
-                "from": "root.nodes",
+                "from": "root.state_nodes",
                 "property": "meta.id",
             },
         },
         "field_name": {
             "type": "reference",
             "references_any": {
-                "from": "root.nodes",
+                "from": "root.state_nodes",
                 "property": "data.keys",
             },
         },
-        "equals": {"types": ["string", "decimal", "boolean"]},
-        "does_not_equal": {"types": ["string", "decimal", "boolean"]},
-        "greater_than": {"types": ["string", "decimal", "boolean"]},
-        "less_than": {"types": ["string", "decimal", "boolean"]},
-        "greater_than_or_equal_to": {"types": ["string", "decimal", "boolean"]},
-        "less_than_or_equal_to": {"types": ["string", "decimal", "boolean"]},
-        "matches_regex": {"type": "string"},
-        "does_not_match_regex": {"type": "string"},
-        "contains": {"types": ["string", "decimal", "boolean"]},
-        "does_not_contain": {"types": ["string", "decimal", "boolean"]},
-        "any_of": {
-            "type": "array",
-            "values": {"types": ["string", "decimal", "boolean"]},
+        "comparison_operator": {
+            "type": "enum",
+            "values": [
+                "EQUALS",
+                "DOES_NOT_EQUAL",
+                "GREATER_THAN",
+                "LESS_THAN",
+                "GREATER_THAN_OR_EQUAL_TO",
+                "LESS_THAN_OR_EQUAL_TO",
+                "MATCHES_REGEX",
+                "DOES_NOT_MATCH_REGEX",
+                "CONTAINS",
+                "DOES_NOT_CONTAIN",
+                "ANY_OF",
+                "NONE_OF",
+                "ONE_OF",
+                "ALL_OF",
+            ],
         },
-        "none_of": {
-            "type": "array",
-            "values": {"types": ["string", "decimal", "boolean"]},
+        "comparison_value_type": {
+            "type": "enum",
+            "values": ["STRING", "NUMERIC", "BOOLEAN", "STRING_LIST", "NUMERIC_LIST"],
         },
-        "one_of": {
+        "string_comparison_value": {"type": "string"},
+        "numeric_comparison_value": {"type": "decimal"},
+        "boolean_comparison_value": {"type": "boolean"},
+        "string_list_comparison_value": {
             "type": "array",
-            "values": {"types": ["string", "decimal", "boolean"]},
+            "values": {"type": "string"},
         },
-        "all_of": {
+        "numeric_list_comparison_value": {
             "type": "array",
-            "values": {"types": ["string", "decimal", "boolean"]},
+            "values": {"type": "decimal"},
         },
     },
-    "mutually_exclusive": [
-        "equals",
-        "does_not_equal",
-        "greater_than",
-        "less_than",
-        "greater_than_or_equal_to",
-        "less_than_or_equal_to",
-        "matches_regex",
-        "does_not_match_regex",
-        "contains",
-        "does_not_contain",
-        "any_of",
-        "none_of",
-        "one_of",
-        "all_of",
-    ],
+    "switch": {
+        "property": "comparison_value_type",
+        "cases": [
+            {
+                "equals": "STRING",
+                "then": {
+                    "optional": [
+                        "numeric_comparison_value",
+                        "boolean_comparison_value",
+                        "string_list_comparison_value",
+                        "numeric_list_comparison_value",
+                    ],
+                    "property_modifiers": {
+                        "comparison_operator": {
+                            "type": "enum",
+                            "values": [
+                                "EQUALS",
+                                "DOES_NOT_EQUAL",
+                                "MATCHES_REGEX",
+                                "DOES_NOT_MATCH_REGEX",
+                                "CONTAINS",
+                                "DOES_NOT_CONTAIN",
+                            ],
+                        },
+                    },
+                },
+                "break": True,
+            },
+            {
+                "equals": "NUMERIC",
+                "then": {
+                    "optional": [
+                        "string_comparison_value",
+                        "boolean_comparison_value",
+                        "string_list_comparison_value",
+                        "numeric_list_comparison_value",
+                    ],
+                    "property_modifiers": {
+                        "comparison_operator": {
+                            "type": "enum",
+                            "values": [
+                                "EQUALS",
+                                "DOES_NOT_EQUAL",
+                                "GREATER_THAN",
+                                "LESS_THAN",
+                                "GREATER_THAN_OR_EQUAL_TO",
+                                "LESS_THAN_OR_EQUAL_TO",
+                            ],
+                        },
+                    },
+                },
+                "break": True,
+            },
+            {
+                "equals": "BOOLEAN",
+                "then": {
+                    "optional": [
+                        "string_comparison_value",
+                        "numeric_comparison_value",
+                        "string_list_comparison_value",
+                        "numeric_list_comparison_value",
+                    ],
+                    "property_modifiers": {
+                        "comparison_operator": {
+                            "type": "enum",
+                            "values": ["EQUALS"],
+                        },
+                    },
+                },
+                "break": True,
+            },
+            {
+                "equals": "STRING_LIST",
+                "then": {
+                    "optional": [
+                        "string_comparison_value",
+                        "numeric_comparison_value",
+                        "boolean_comparison_value",
+                        "numeric_list_comparison_value",
+                    ],
+                    "property_modifiers": {
+                        "comparison_operator": {
+                            "type": "enum",
+                            "values": [
+                                "EQUALS",
+                                "DOES_NOT_EQUAL",
+                                "ANY_OF",
+                                "NONE_OF",
+                                "ONE_OF",
+                                "ALL_OF",
+                            ],
+                        },
+                    },
+                },
+                "break": True,
+            },
+            {
+                "equals": "NUMERIC_LIST",
+                "then": {
+                    "optional": [
+                        "string_comparison_value" "numeric_comparison_value",
+                        "boolean_comparison_value",
+                        "string_list_comparison_value",
+                    ],
+                    "property_modifiers": {
+                        "comparison_operator": {
+                            "type": "enum",
+                            "values": [
+                                "EQUALS",
+                                "DOES_NOT_EQUAL",
+                                "ANY_OF",
+                                "NONE_OF",
+                                "ONE_OF",
+                                "ALL_OF",
+                            ],
+                        },
+                    },
+                },
+                "break": True,
+            },
+        ],
+    },
 }
 
 dependency_set = {
@@ -128,7 +242,7 @@ dependency_set = {
     ],
 }
 
-node = {
+state_node = {
     "type": "object",
     "properties": {
         "meta": {
@@ -156,7 +270,13 @@ node = {
                 "properties": {
                     "field_type": {
                         "type": "enum",
-                        "values": ["STRING", "NUMERIC", "BOOLEAN"],
+                        "values": [
+                            "STRING",
+                            "NUMERIC",
+                            "BOOLEAN",
+                            "STRING_LIST",
+                            "NUMERIC_LIST",
+                        ],
                     },
                     "description": {"type": "string"},
                 },

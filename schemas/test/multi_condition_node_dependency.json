@@ -9,7 +9,7 @@
         {"name": "Carbon Auditor"}
     ],
     "referenced_dependency_sets": [],
-    "nodes": [
+    "state_nodes": [
         {
             "meta": {
                 "id": 0,
@@ -40,12 +40,16 @@
                     {
                         "node_id": 0,
                         "field_name": "completed",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     },
                     {
                         "node_id": 0,
                         "field_name": "did_the_thing",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }

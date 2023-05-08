@@ -9,7 +9,7 @@
         {"name": "Carbon Auditor"}
     ],
     "referenced_dependency_sets": [],
-    "nodes": [
+    "state_nodes": [
         {
             "meta": {
                 "id": 0,
@@ -53,7 +53,9 @@
                     {
                         "node_id": 0,
                         "field_name": "is_forest",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }
@@ -70,7 +72,9 @@
                     {
                         "node_id": 1,
                         "field_name": "agreement_decided",
-                        "equals": true
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
                     }
                 ]
             }

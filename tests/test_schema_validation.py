@@ -74,17 +74,17 @@ class TestSchemaValidation:
         assert not errors
 
         # Introduce an error
-        validator.schema["nodes"][1]["depends_on"]["dependencies"][0][
+        validator.schema["state_nodes"][1]["depends_on"]["dependencies"][0][
             "field_name"
         ] = "not_a_field"
         errors = validator.validate()
         assert len(errors) > 0
         assert (
-            'root.nodes[1].depends_on.dependencies[0].field_name (node id: 1): expected any "data.keys" field from root.nodes, got "not_a_field"'
+            'root.state_nodes[1].depends_on.dependencies[0].field_name (node id: 1): expected any "data.keys" field from root.state_nodes, got "not_a_field"'
             in errors
         )
 
-        validator.schema["nodes"][1]["depends_on"]["dependencies"][0][
+        validator.schema["state_nodes"][1]["depends_on"]["dependencies"][0][
             "field_name"
         ] = "is_forest"
 
@@ -94,8 +94,8 @@ class TestSchemaValidation:
         schema = fixtures.basic_schema_with_nodes(4)
 
         dependency_set = fixtures.dependency_set("common_ds", "AND", 2)
-        schema["nodes"][2]["depends_on"] = dependency_set
-        schema["nodes"][3]["depends_on"] = dependency_set
+        schema["state_nodes"][2]["depends_on"] = dependency_set
+        schema["state_nodes"][3]["depends_on"] = dependency_set
 
         errors = validator.validate(json_string=json.dumps(schema))
         assert len(errors) == 2
@@ -110,26 +110,26 @@ class TestSchemaValidation:
 
         schema["referenced_dependency_sets"].append(dependency_set)
         ds_reference = {"alias": "common_ds"}
-        schema["nodes"][2]["depends_on"] = {"dependencies": [ds_reference]}
-        schema["nodes"][3]["depends_on"] = {"dependencies": [ds_reference]}
+        schema["state_nodes"][2]["depends_on"] = {"dependencies": [ds_reference]}
+        schema["state_nodes"][3]["depends_on"] = {"dependencies": [ds_reference]}
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
-        schema["nodes"].append(fixtures.node(4))
-        schema["nodes"].append(fixtures.node(5))
+        schema["state_nodes"].append(fixtures.node(4))
+        schema["state_nodes"].append(fixtures.node(5))
 
         # Same dependency set, but the properties are ordered differently
-        schema["nodes"][4]["depends_on"] = {
+        schema["state_nodes"][4]["depends_on"] = {
             "alias": "common_ds#2",
             "gate_type": "OR",
             "dependencies": [
                 ds_reference,
-                {"node_id": 3, "field_name": "completed", "equals": True},
+                fixtures.dependency(3),
             ],
         }
-        schema["nodes"][5]["depends_on"] = {
+        schema["state_nodes"][5]["depends_on"] = {
             "dependencies": [
-                {"field_name": "completed", "node_id": 3, "equals": True},
+                fixtures.dependency(3),
                 ds_reference,
             ],
             "gate_type": "OR",
@@ -147,25 +147,21 @@ class TestSchemaValidation:
             == "The following node ids specify identical dependency sets: [4, 5]"
         )
 
-        schema["referenced_dependency_sets"].append(schema["nodes"][4]["depends_on"])
+        schema["referenced_dependency_sets"].append(
+            schema["state_nodes"][4]["depends_on"]
+        )
         ds_reference = {"alias": "common_ds#2"}
-        schema["nodes"][4]["depends_on"] = {"dependencies": [ds_reference]}
-        schema["nodes"][5]["depends_on"] = {"dependencies": [ds_reference]}
+        schema["state_nodes"][4]["depends_on"] = {"dependencies": [ds_reference]}
+        schema["state_nodes"][5]["depends_on"] = {"dependencies": [ds_reference]}
 
     def test_circular_dependencies(self):
         def _set_dependency_node_id(schema, node_id, dependency_node_id):
-            if "depends_on" not in schema["nodes"][node_id]:
-                schema["nodes"][node_id]["depends_on"] = {
-                    "dependencies": [
-                        {
-                            "node_id": dependency_node_id,
-                            "field_name": "completed",
-                            "equals": True,
-                        }
-                    ]
+            if "depends_on" not in schema["state_nodes"][node_id]:
+                schema["state_nodes"][node_id]["depends_on"] = {
+                    "dependencies": [fixtures.dependency(dependency_node_id)]
                 }
             else:
-                schema["nodes"][node_id]["depends_on"]["dependencies"][0][
+                schema["state_nodes"][node_id]["depends_on"]["dependencies"][0][
                     "node_id"
                 ] = dependency_node_id
 
@@ -179,7 +175,7 @@ class TestSchemaValidation:
         assert errors[0] == "A node cannot have itself as a dependency (id: 0)"
 
         # Two nodes should not be able to depend on each other
-        schema["nodes"].append(fixtures.node(1))
+        schema["state_nodes"].append(fixtures.node(1))
         _set_dependency_node_id(schema, 0, 1)
         _set_dependency_node_id(schema, 1, 0)
 
@@ -188,7 +184,7 @@ class TestSchemaValidation:
         assert errors[0] == "Circular dependency detected (dependency path: [0, 1])"
 
         # Three or more nodes should not be able to form a circular dependency
-        schema["nodes"].append(fixtures.node(2))
+        schema["state_nodes"].append(fixtures.node(2))
         _set_dependency_node_id(schema, 1, 2)
         _set_dependency_node_id(schema, 2, 0)
 
@@ -197,31 +193,25 @@ class TestSchemaValidation:
         assert errors[0] == "Circular dependency detected (dependency path: [0, 1, 2])"
 
         # What if a recurring dependency set helps form a circular dependency?
-        schema["nodes"].append(fixtures.node(3))
-        schema["nodes"].append(fixtures.node(4))
+        schema["state_nodes"].append(fixtures.node(3))
+        schema["state_nodes"].append(fixtures.node(4))
         _set_dependency_node_id(schema, 2, 3)
-        schema["nodes"][1]["data"] = {"jumped_through_hoops": {"field_type": "BOOLEAN"}}
+        schema["state_nodes"][1]["data"] = {
+            "jumped_through_hoops": {"field_type": "BOOLEAN"}
+        }
         schema["referenced_dependency_sets"].append(
             {
                 "alias": "common_ds",
                 "gate_type": "AND",
                 "dependencies": [
-                    {
-                        "node_id": 1,
-                        "field_name": "completed",
-                        "equals": True,
-                    },
-                    {
-                        "node_id": 1,
-                        "field_name": "jumped_through_hoops",
-                        "equals": True,
-                    },
+                    fixtures.dependency(1),
+                    fixtures.dependency(node_id=1, field_name="jumped_through_hoops"),
                 ],
             }
         )
         common_ds_reference = {"alias": "common_ds"}
-        schema["nodes"][3]["depends_on"] = {"dependencies": [common_ds_reference]}
-        schema["nodes"][4]["depends_on"] = {"dependencies": [common_ds_reference]}
+        schema["state_nodes"][3]["depends_on"] = {"dependencies": [common_ds_reference]}
+        schema["state_nodes"][4]["depends_on"] = {"dependencies": [common_ds_reference]}
 
         errors = validator.validate(json_string=json.dumps(schema))
         assert len(errors) == 1
@@ -233,20 +223,14 @@ class TestSchemaValidation:
         validator = SchemaValidator()
 
         schema = fixtures.basic_schema_with_nodes(2)
-        schema["nodes"][1]["depends_on"] = {
-            "dependencies": [
-                {
-                    "node_id": 2,
-                    "field_name": "completed",
-                    "equals": True,
-                }
-            ]
+        schema["state_nodes"][1]["depends_on"] = {
+            "dependencies": [fixtures.dependency(2)]
         }
 
         errors = validator.validate(json_string=json.dumps(schema))
         assert errors
         assert (
-            'root.nodes[1].depends_on.dependencies[0].node_id (node id: 1): expected any "meta.id" field from root.nodes, got 2'
+            'root.state_nodes[1].depends_on.dependencies[0].node_id (node id: 1): expected any "meta.id" field from root.state_nodes, got 2'
             in errors
         )
 
@@ -256,7 +240,7 @@ class TestSchemaValidation:
         schema = fixtures.basic_schema_with_nodes(5)
 
         def set_node_id(idx, node_id):
-            schema["nodes"][idx]["meta"]["id"] = node_id
+            schema["state_nodes"][idx]["meta"]["id"] = node_id
 
         node_ids = {
             0: 5,
@@ -271,16 +255,16 @@ class TestSchemaValidation:
 
         # introduce an error to check if the correct node id is displayed in the context
         node_idx = 0
-        schema["nodes"][node_idx]["meta"]["applies_to"] = "Vandelay Industries"
+        schema["state_nodes"][node_idx]["meta"]["applies_to"] = "Vandelay Industries"
         errors = validator.validate(json_string=json.dumps(schema))
         assert len(errors) == 1
         assert (
-            f'root.nodes[0].meta.applies_to (node id: {node_ids[node_idx]}): expected any "name" field from root.parties, got "Vandelay Industries"'
+            f'root.state_nodes[0].meta.applies_to (node id: {node_ids[node_idx]}): expected any "name" field from root.parties, got "Vandelay Industries"'
             in errors
         )
 
         # fix the error
-        schema["nodes"][node_idx]["meta"]["applies_to"] = "Project"
+        schema["state_nodes"][node_idx]["meta"]["applies_to"] = "Project"
 
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
@@ -325,22 +309,24 @@ class TestSchemaValidation:
 
         schema = fixtures.basic_schema()
         schema["parties"].append({"name": "Project"})
-        schema["nodes"].append(fixtures.node())
-        assert "references" not in schema["nodes"][0]
+        schema["state_nodes"].append(fixtures.node())
+        assert "references" not in schema["state_nodes"][0]
 
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
-        schema["nodes"][0]["references"] = ["some reference"]
+        schema["state_nodes"][0]["references"] = ["some reference"]
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
     def test_mutually_exclusive_properties(self):
+        return  # The schema spec does not currently include mutually exclusive properties
+
         validator = SchemaValidator()
 
         schema = fixtures.basic_schema_with_nodes(1)
         schema["parties"].append({"name": "Project"})
-        schema["nodes"].append(
+        schema["state_nodes"].append(
             {
                 "meta": {
                     "id": 1,
@@ -353,19 +339,25 @@ class TestSchemaValidation:
                         {
                             "node_id": 0,
                             "field_name": "completed",
+                            "comparison_operator": "EQUALS",
+                            "comparison_value_type": "BOOLEAN",
                             # Should not be able to specify more than one mutually exclusive property
-                            "equals": True,
-                            "greater_than": 0,
-                            "one_of": ["a", "b", "c"],
+                            "boolean_comparison_value": True,
+                            "string_comparison_value": "yes",
+                            "numeric_comparison_value": 1,
                         }
                     ]
                 },
             }
         )
 
-        context = "root.nodes[1].depends_on.dependencies[0] (node id: 1)"
+        context = "root.state_nodes[1].depends_on.dependencies[0] (node id: 1)"
         conformance_error = f"{context}: object does not conform to any of the allowed template specifications: ['dependency', 'dependency_set_reference']"
-        mutually_exclusive = ["equals", "greater_than", "one_of"]
+        mutually_exclusive = [
+            "string_comparison_value",
+            "numeric_comparison_value",
+            "boolean_comparison_value",
+        ]
 
         # Remove one mutually exclusive property at a time until there is only one left
         while len(mutually_exclusive) > 1:
@@ -376,7 +368,7 @@ class TestSchemaValidation:
                 in errors
             )
 
-            del schema["nodes"][1]["depends_on"]["dependencies"][0][
+            del schema["state_nodes"][1]["depends_on"]["dependencies"][0][
                 mutually_exclusive.pop()
             ]
 
@@ -395,9 +387,7 @@ class TestSchemaValidation:
             {
                 "alias": "test",
                 "gate_type": "AND",
-                "dependencies": [
-                    {"node_id": 0, "field_name": "completed", "equals": True}
-                ],
+                "dependencies": [fixtures.dependency(0)],
             }
         ]
         errors = validator.validate(json_string=json.dumps(schema))
@@ -408,7 +398,7 @@ class TestSchemaValidation:
         )
 
         schema["referenced_dependency_sets"][0]["dependencies"].append(
-            {"node_id": 1, "field_name": "completed", "equals": True}
+            fixtures.dependency(1)
         )
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
@@ -419,21 +409,64 @@ class TestSchemaValidation:
         # If a dependency_set has more than one dependency,
         # "alias" and "gate_type" are required
         schema = fixtures.basic_schema_with_nodes(3)
-        schema["nodes"][2]["depends_on"] = {
+        schema["state_nodes"][2]["depends_on"] = {
             "dependencies": [
-                {"node_id": 0, "field_name": "completed", "equals": True},
-                {"node_id": 1, "field_name": "completed", "equals": True},
+                fixtures.dependency(0),
+                fixtures.dependency(1),
             ]
         }
         errors = validator.validate(json_string=json.dumps(schema))
         assert len(errors) == 2
-        expected_context = "root.nodes[2].depends_on (node id: 2)"
+        expected_context = "root.state_nodes[2].depends_on (node id: 2)"
         assert f"{expected_context}: missing required property: alias" in errors
         assert f"{expected_context}: missing required property: gate_type" in errors
 
         # If a dependency_set has one or fewer dependencies,
         # "alias" and "gate_type" are optional
-        schema["nodes"][2]["depends_on"]["dependencies"].pop()
+        schema["state_nodes"][2]["depends_on"]["dependencies"].pop()
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+    def test_template_switch_statement(self):
+        validator = SchemaValidator()
+
+        schema = fixtures.basic_schema_with_nodes(2)
+
+        schema["state_nodes"][1]["depends_on"] = {
+            "dependencies": [
+                fixtures.dependency(
+                    0,
+                    comparison_value_type="STRING",
+                    comparison_operator="GREATER_THAN",
+                ),
+            ]
+        }
+        allowed_comparison_operators = [
+            "EQUALS",
+            "DOES_NOT_EQUAL",
+            "MATCHES_REGEX",
+            "DOES_NOT_MATCH_REGEX",
+            "CONTAINS",
+            "DOES_NOT_CONTAIN",
+        ]
+
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            f'root.state_nodes[1].depends_on.dependencies[0].comparison_operator (node id: 1): invalid enum value: expected one of {allowed_comparison_operators}, got "GREATER_THAN"'
+            in errors
+        )
+        assert (
+            "root.state_nodes[1].depends_on.dependencies[0] (node id: 1): missing required property: string_comparison_value"
+            in errors
+        )
+
+        schema["state_nodes"][1]["depends_on"]["dependencies"][0][
+            "comparison_operator"
+        ] = "CONTAINS"
+        schema["state_nodes"][1]["depends_on"]["dependencies"][0][
+            "string_comparison_value"
+        ] = "some string"
+
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
@@ -581,18 +614,18 @@ class TestSchemaValidation:
         validator = SchemaValidator()
 
         schema = fixtures.basic_schema_with_nodes(1)
-        assert len(schema["nodes"]) == 1
+        assert len(schema["state_nodes"]) == 1
 
         schema["parties"] = [{"name": "Project"}]
-        schema["nodes"][0]["meta"]["applies_to"] = "something else"
+        schema["state_nodes"][0]["meta"]["applies_to"] = "something else"
         errors = validator.validate(json_string=json.dumps(schema))
         assert len(errors) == 1
         assert (
             errors[0]
-            == 'root.nodes[0].meta.applies_to (node id: 0): expected any "name" field from root.parties, got "something else"'
+            == 'root.state_nodes[0].meta.applies_to (node id: 0): expected any "name" field from root.parties, got "something else"'
         )
 
-        schema["nodes"][0]["meta"]["applies_to"] = "Project"
+        schema["state_nodes"][0]["meta"]["applies_to"] = "Project"
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
@@ -656,17 +689,20 @@ class TestSchemaValidation:
         validator = SchemaValidator()
 
         schema = fixtures.basic_schema_with_nodes(2)
-        schema["nodes"][0]["meta"]["id"] = 1
-        assert schema["nodes"][0]["meta"]["id"] == schema["nodes"][1]["meta"]["id"]
+        schema["state_nodes"][0]["meta"]["id"] = 1
+        assert (
+            schema["state_nodes"][0]["meta"]["id"]
+            == schema["state_nodes"][1]["meta"]["id"]
+        )
 
         errors = validator.validate(json_string=json.dumps(schema))
         assert len(errors) == 1
         assert (
             errors[0]
-            == 'root.nodes (node id: 1): duplicate value provided for unique field "meta.id": 1'
+            == 'root.state_nodes (node id: 1): duplicate value provided for unique field "meta.id": 1'
         )
 
-        schema["nodes"][0]["meta"]["id"] = 0
+        schema["state_nodes"][0]["meta"]["id"] = 0
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
@@ -772,7 +808,7 @@ class TestSchemaValidation:
         validator = SchemaValidator()
 
         schema = fixtures.basic_schema_with_nodes(2)
-        schema["nodes"][1]["depends_on"] = {
+        schema["state_nodes"][1]["depends_on"] = {
             "dependencies": []  # empty array, where min_length is 1
         }
 
@@ -780,11 +816,11 @@ class TestSchemaValidation:
         assert len(errors) == 1
         assert (
             errors[0]
-            == "root.nodes[1].depends_on.dependencies (node id: 1): must contain at least 1 item(s), got 0"
+            == "root.state_nodes[1].depends_on.dependencies (node id: 1): must contain at least 1 item(s), got 0"
         )
 
-        schema["nodes"][1]["depends_on"]["dependencies"].append(
-            {"node_id": 0, "field_name": "completed", "equals": True}
+        schema["state_nodes"][1]["depends_on"]["dependencies"].append(
+            fixtures.dependency(0)
         )
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors

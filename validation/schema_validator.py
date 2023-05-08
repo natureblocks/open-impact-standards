@@ -43,8 +43,8 @@ class SchemaValidator:
             raise Exception(f"Invalid schema")
 
         next_id = 0
-        if "nodes" in self.schema:
-            node_ids = [node["meta"]["id"] for node in self.schema["nodes"]]
+        if "state_nodes" in self.schema:
+            node_ids = [node["meta"]["id"] for node in self.schema["state_nodes"]]
             next_id = max(node_ids) + 1
 
         return next_id
@@ -55,7 +55,7 @@ class SchemaValidator:
             self.print_errors()
             raise Exception(f"Invalid schema")
 
-        return [node["meta"]["id"] for node in self.schema["nodes"]]
+        return [node["meta"]["id"] for node in self.schema["state_nodes"]]
 
     def _validate_field(self, path, field, template):
         if "types" in template:
@@ -455,7 +455,7 @@ class SchemaValidator:
             template_name = template["template"]
             referenced_template = getattr(templates, template_name)
 
-            if template_name == "node":
+            if template_name == "state_node":
                 self._collect_node_dependency_set(path, field)
 
             if (
@@ -482,18 +482,36 @@ class SchemaValidator:
         return modified_template
 
     def _evaluate_template_conditionals(self, field, template):
-        if "if" not in template:
+        if "if" not in template and "switch" not in template:
             return template
 
         modified_template = copy.deepcopy(template)
-        for condition in template["if"]:
-            if self._template_condition_is_true(condition, field):
-                for key in condition["then"]:
-                    modified_template[key] = condition["then"][key]
-            elif "else" in condition:
-                raise NotImplementedError(
-                    "else conditionals not yet supported for templates"
-                )
+
+        if "if" in template:
+            for condition in modified_template["if"]:
+                if self._template_condition_is_true(condition, field):
+                    for key in condition["then"]:
+                        modified_template[key] = condition["then"][key]
+                elif "else" in condition:
+                    raise NotImplementedError(
+                        "else conditionals not yet supported for templates"
+                    )
+
+        if "switch" in template:
+            for case in modified_template["switch"]["cases"]:
+                if (
+                    template["switch"]["property"] in field
+                    and case["equals"] == field[template["switch"]["property"]]
+                ):
+                    for key in case["then"]:
+                        if key == "property_modifiers":
+                            for prop, prop_modifiers in case["then"][key].items():
+                                modified_template["properties"][prop] = prop_modifiers
+                        else:
+                            modified_template[key] = case["then"][key]
+
+                    if case["break"]:
+                        break
 
         return modified_template
 
@@ -637,8 +655,9 @@ class SchemaValidator:
         # For paths that should include some sort of context,
         # add the path and context resolver here.
         context_resolvers = {
-            "root.nodes": lambda path: "node id: " + str(self._resolve_node_id(path))
-            if path != "root.nodes"
+            "root.state_nodes": lambda path: "node id: "
+            + str(self._resolve_node_id(path))
+            if path != "root.state_nodes"
             else ""
         }
 
@@ -657,7 +676,7 @@ class SchemaValidator:
             f"Cannot resolve node id: path does not lead to a node object ({path})"
         )
 
-        if "root.nodes" not in path:
+        if "root.state_nodes" not in path:
             raise ex
 
         idx = path.find("]")
