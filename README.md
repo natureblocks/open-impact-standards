@@ -6,7 +6,7 @@ The below psuedocode blocks describe the structure of valid json objects within 
 
 __Notes for psuedocode interpretation:__
 - Capitalized value types indicate object types or enumeration types that are defined by this specification (e.g. `parties: [Party]` indicates that the `parties` array can only contain objects of type `Party`).
-- Some field types indicate a specific field from another object that must exist within the schema (e.g. `node_id: StateNode.meta.id` indicates that the `node_id` field must reference the `id` field of an existing `StateNode` object).
+- Some field types indicate a specific field from another object that must exist within the schema (e.g. `node_id: StateNode.meta.id` indicates that the `node_id` field must reference the `id` field of an existing `StateNode.meta` object).
 - `?` indicates an optional field.
 - `|` can be read as "or", and is used to indicate that a field, array, or json object can contain a more than one type of object.
 - `//` indicates an inline code comment.
@@ -97,7 +97,7 @@ __Dependency object type:__
 - `Dependency.node_id` references a `StateNode` object from the top-level object's `state_nodes` array.
 - `field_name` must be a key that exists in the referenced `StateNode`'s `data` object.
 - A dependency is satisfied when applying the `comparison_operator` to the applicable comparison value field and the specified field on the referenced `StateNode` evaluates to `true`.
-- `comparison_value_type` indicates the applicable comparison value field for the dependency. Only the indicted comparison value field is required. Values of non-applicable comparison value fields are ignored during dependency evaluation. 
+- `comparison_value_type` indicates the applicable comparison value field for the dependency. Only the indicated comparison value field is required. Values of non-applicable comparison value fields are ignored during dependency evaluation.
 ````
 type Dependency {
     node_id: StateNode.meta.id,
