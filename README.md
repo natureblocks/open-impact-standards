@@ -6,7 +6,7 @@ The below psuedocode blocks describe the structure of valid json objects within 
 
 __Notes for psuedocode interpretation:__
 - Capitalized value types indicate object types or enumeration types that are defined by this specification (e.g. `parties: [Party]` indicates that the `parties` array can only contain objects of type `Party`).
-- Some field types indicate a specific field from another object that must exist within the schema (e.g. `node_id: Node.meta.id` indicates that the `node_id` field must reference the `id` field of an existing `Node` object).
+- Some field types indicate a specific field from another object that must exist within the schema (e.g. `node_id: StateNode.meta.id` indicates that the `node_id` field must reference the `id` field of an existing `StateNode` object).
 - `?` indicates an optional field.
 - `|` can be read as "or", and is used to indicate that a field, array, or json object can contain a more than one type of object.
 - `//` indicates an inline code comment.
@@ -14,24 +14,24 @@ __Notes for psuedocode interpretation:__
 __Top-level json object:__
 - `standard` is the name of the open standard.
 - `parties` is the list of parties relevant to the open standard.
-- `nodes` is a list containing the `Node` objects that comprise the standard's dependency chart.
-- If two or more `Node` objects specify an identical `DependencySet` object (`Node.depends_on`), the `DependencySet` is added to the `referenced_dependency_sets` array and referenced by those nodes. `DependencySet` objects can be referenced in `Node.depends_on` using a `DependencySetReference` object.
+- `state_nodes` is a list containing the `StateNode` objects that comprise the standard's dependency chart.
+- If two or more `StateNode` objects specify an identical `DependencySet` object (`StateNode.depends_on`), the `DependencySet` is added to the `referenced_dependency_sets` array and referenced by those nodes. `DependencySet` objects can be referenced in `StateNode.depends_on` using a `DependencySetReference` object.
 ````
 {
     standard: string,
     parties: [Party],
-    nodes: [Node],
+    state_nodes: [StateNode],
     referenced_dependency_sets: [DependencySet]
 }
 ````
-__Node object type:__
-- The keys of the `Node.data` object (denoted as `<field_name>` below) should be the names of any fields that instances of that node would have. There is no limit to the number of `<field_name>` keys that can be specified for a given node.
+__StateNode object type:__
+- The keys of the `StateNode.data` object (denoted as `<field_name>` below) should be the names of any fields that instances of that node would have. There is no limit to the number of `<field_name>` keys that can be specified for a given node.
 ````
-type Node {
+type StateNode {
     meta: {
         id: integer
         description: string,
-        node_type: NodeType,
+        node_type: StateNodeType,
         applies_to: Party.name
     },
     data: {
@@ -43,9 +43,9 @@ type Node {
     depends_on: DependencySet?
 }
 ````
-__NodeType enumeration:__
+__StateNodeType enumeration:__
 ````
-enum NodeType {
+enum StateNodeType {
     ACTION,
     STATE,
     QUESTION
@@ -56,7 +56,9 @@ __FieldType enumeration:__
 enum FieldType {
     STRING,
     NUMERIC,
-    BOOLEAN
+    BOOLEAN,
+    STRING_LIST,
+    NUMERIC_LIST
 }
 ````
 __DependencySet object type:__
@@ -71,7 +73,7 @@ type DependencySet {
     dependencies: [Dependency | DependencySetReference]
 }
 ````
-__Gate type enumeration:__
+__GateType enumeration:__
 - Logic gate types through which groups of dependencies (`DependencySet` objects) can be evaluated.
 ````
 enum GateType {
@@ -91,25 +93,43 @@ type DependencySetReference {
 }
 ````
 __Dependency object type:__
-- Represents a dependency of the parent `Node` object.
-- `Dependency.node_id` references a `Node` object from the top-level object's `nodes` array.
-- `field_name` must be a key that exists in the referenced `Node`'s `data` object.
-- Exactly one comparison field must be present.
-- A dependency is satisfied when applying the comparison field to the specified property on the referenced `Node` evaluates to `true`.
+- Represents a dependency of the parent `StateNode` object.
+- `Dependency.node_id` references a `StateNode` object from the top-level object's `state_nodes` array.
+- `field_name` must be a key that exists in the referenced `StateNode`'s `data` object.
+- A dependency is satisfied when applying the `comparison_operator` to the applicable comparison value field and the specified field on the referenced `StateNode` evaluates to `true`.
+- `comparison_value_type` indicates the applicable comparison value field for the dependency. Only the indicted comparison value field is required. Values of non-applicable comparison value fields are ignored during dependency evaluation. 
 ````
 type Dependency {
-    node_id: Node.meta.id,
-    field_name: Node.data.key,
+    node_id: StateNode.meta.id,
+    field_name: StateNode.data.key,
+    comparison_operator: ComparisonOperator,
+    comparison_value_type: FieldType,
 
-    // Comparison fields:
-    equals: scalar?,
-    does_not_equal: scalar?,
-    greater_than: scalar?,
-    less_than: scalar?,
-    regex: string?,
-    any_of: [scalar]?,
-    one_of: [scalar]?,
-    none_of: [scalar]?
+    // Comparison value fields
+    string_comparison_value: string,
+    numeric_comparison_value: number,
+    boolean_comparison_value: boolean,
+    string_list_comparison_value: [string],
+    numeric_list_comparison_value: [number]
+}
+````
+__ComparisonOperator enumeration:__
+````
+enum ComparisonOperator {
+    EQUALS,
+    DOES_NOT_EQUAL,
+    GREATER_THAN,
+    LESS_THAN,
+    GREATER_THAN_OR_EQUAL_TO,
+    LESS_THAN_OR_EQUAL_TO,
+    MATCHES_REGEX,
+    DOES_NOT_MATCH_REGEX,
+    CONTAINS,
+    DOES_NOT_CONTAIN,
+    ANY_OF,
+    NONE_OF,
+    ONE_OF,
+    ALL_OF
 }
 ````
 __Party object:__

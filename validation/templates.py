@@ -1,4 +1,4 @@
-from enums import gate_types, node_types
+from enums import gate_types, state_node_types
 
 RESERVED_KEYWORDS = ["root", "keys", "values"]
 
@@ -250,7 +250,7 @@ state_node = {
             "properties": {
                 "id": {"type": "integer"},
                 "description": {"type": "string"},
-                "node_type": {"type": "enum", "values": node_types},
+                "node_type": {"type": "enum", "values": state_node_types},
                 "applies_to": {
                     "type": "reference",
                     "references_any": {
