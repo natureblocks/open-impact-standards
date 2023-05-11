@@ -3,7 +3,7 @@ import hashlib
 import json
 import re
 
-from validation import templates, utils
+from validation import templates, oisql, utils
 
 
 class SchemaValidator:
@@ -13,6 +13,7 @@ class SchemaValidator:
 
         # for including helpful context information in error messages
         self._path_context = ""
+        self._context_path = None
 
     def validate(self, schema_dict=None, json_file_path=None, json_string=None):
         if schema_dict is not None:
@@ -57,11 +58,19 @@ class SchemaValidator:
 
         return [node["meta"]["id"] for node in self.schema["state_nodes"]]
 
-    def _validate_field(self, path, field, template):
+    def _validate_field(
+        self, path, field, template, parent_object_template=None, parent_object=None
+    ):
         if "types" in template:
             return self._validate_multi_type_field(path, field, template["types"])
 
         expected_type = template["type"]
+
+        if expected_type == "reference":
+            return self._validate_reference(
+                path, field, template, parent_object_template, parent_object
+            )
+
         type_validator = getattr(self, "_validate_" + expected_type, None)
 
         if type_validator is None:
@@ -69,7 +78,6 @@ class SchemaValidator:
                 "no validation method exists for type: " + expected_type
             )
 
-        self._set_path_context(path)
         return type_validator(path, field, template)
 
     def _validate_multi_type_field(self, path, field, allowed_types):
@@ -93,7 +101,7 @@ class SchemaValidator:
         if not isinstance(field, dict):
             return [f"{self._context(path)}: expected object, got {str(type(field))}"]
 
-        if "templates" in template:
+        if "any_of_templates" in template:
             return self._validate_multi_template_object(path, field, template)
 
         template = self._resolve_template(path, field, template)
@@ -117,6 +125,8 @@ class SchemaValidator:
                         path=f"{path}.{key}",
                         field=field[key],
                         template=template["properties"][key],
+                        parent_object_template=template,
+                        parent_object=field,
                     )
                 elif key in templates.RESERVED_KEYWORDS:
                     errors += [
@@ -142,24 +152,25 @@ class SchemaValidator:
         return errors
 
     def _validate_multi_template_object(self, path, field, template):
-        allowed_templates = template["templates"]
-        template_errors = []
-        for template_name in allowed_templates:
-            errors = self._validate_object(
-                path, field, getattr(templates, template_name)
-            )
-            if not errors:
-                return []
-            else:
-                template_errors += (
-                    [f"--- begin '{template_name}' template errors ---"]
-                    + errors
-                    + [f"--- end '{template_name}' template errors ---"]
+        if "any_of_templates" in template:
+            allowed_templates = template["any_of_templates"]
+            template_errors = []
+            for template_name in allowed_templates:
+                errors = self._validate_object(
+                    path, field, utils.get_template(template_name)
                 )
+                if not errors:
+                    return []
+                else:
+                    template_errors += (
+                        [f"--- begin '{template_name}' template errors ---"]
+                        + errors
+                        + [f"--- end '{template_name}' template errors ---"]
+                    )
 
-        return [
-            f"{self._context(path)}: object does not conform to any of the allowed template specifications: {str(allowed_templates)}"
-        ] + template_errors
+            return [
+                f"{self._context(path)}: object does not conform to any of the allowed template specifications: {str(allowed_templates)}"
+            ] + template_errors
 
     def _validate_array(self, path, field, template):
         if not isinstance(field, list):
@@ -193,30 +204,48 @@ class SchemaValidator:
             f"{self._context(path)}: invalid enum value: expected one of {str(template['values'])}, got {json.dumps(field)}"
         ]
 
-    def _validate_reference(self, path, field, template):
+    def _validate_reference(
+        self, path, field, template, parent_object_template=None, parent_object=None
+    ):
+        template_vars = (
+            parent_object_template["template_vars"]
+            if parent_object_template and "template_vars" in parent_object_template
+            else {}
+        )
+
         if "referenced_value" in template:
             # looking for a specific value
-            reference_path = template["referenced_value"].split(".")
+            reference_path = self._resolve_path_variables(
+                template["referenced_value"].split("."), template_vars, parent_object
+            )
+            sub_path = ".".join(reference_path[1:])
+
             if reference_path[0] == "{corresponding_value}":
-                expected_value = self._get_field(
-                    f"{path}.{field}.{'.'.join(reference_path[1:])}"
-                )
-                if field == expected_value:
-                    return []
-                else:
-                    return [
-                        f"{self._context(path)}: invalid key: expected {expected_value} ({'.'.join(reference_path)}), got {json.dumps(field)}"
-                    ]
+                expected_value = self._get_field(f"{path}.{field}.{sub_path}")
+            elif reference_path[0] == "root":
+                expected_value = self._get_field(sub_path)
             else:
                 raise NotImplementedError(
                     "unexpected reference template: " + str(template)
                 )
 
+            if field == expected_value:
+                return []
+            else:
+                return [
+                    f"{self._context(path)}: expected {expected_value} ({'.'.join(reference_path)}), got {json.dumps(field)}"
+                ]
+
         elif "references_any" in template:
             # looking for any matching value
-            return self._object_or_array_contains(
-                path, field, template["references_any"]
+            references_any = copy.deepcopy(template["references_any"])
+            references_any["from"] = ".".join(
+                self._resolve_path_variables(
+                    references_any["from"].split("."), template_vars
+                )
             )
+
+            return self._object_or_array_contains(path, field, references_any)
 
         else:
             raise NotImplementedError("unexpected reference template: " + str(template))
@@ -306,10 +335,13 @@ class SchemaValidator:
         return errors
 
     def _get_field(self, path, obj=None):
+        if not path:
+            return obj
+
         if obj is None:
             obj = self.schema
 
-        for key in path.split("."):
+        for key in path if isinstance(path, list) else path.split("."):
             if key == "root":
                 continue
 
@@ -453,7 +485,7 @@ class SchemaValidator:
     def _resolve_template(self, path, field, template):
         if "template" in template:
             template_name = template["template"]
-            referenced_template = getattr(templates, template_name)
+            referenced_template = utils.get_template(template_name)
 
             if template_name == "state_node":
                 self._collect_node_dependency_set(path, field)
@@ -470,7 +502,32 @@ class SchemaValidator:
             else:
                 template = referenced_template
 
+        if "resolvers" in template:
+            template = self._resolve_template_variables(field, template)
+
         return self._evaluate_template_conditionals(field, template)
+
+    def _resolve_path_variables(self, path_segments, template_vars, parent_object=None):
+        if not isinstance(path_segments, list):
+            raise Exception("path_segments must be a list")
+
+        for i in range(len(path_segments)):
+            var = path_segments[i]
+            if isinstance(var, list):
+                continue
+
+            # template variable?
+            if re.match(r"^\{\$\w+\}$", var):
+                path_segments[i] = template_vars[var[1:-1]]
+
+            # referenced field from parent object?
+            if re.match(r"^\{\w+\}$", var) and var not in [
+                "{this}",
+                "{corresponding_value}",
+            ]:
+                path_segments[i] = self._get_field(var[1:-1], parent_object)
+
+        return path_segments
 
     def _apply_template_modifiers(self, field, referenced_template, template_modifiers):
         modified_template = copy.deepcopy(referenced_template)
@@ -478,6 +535,22 @@ class SchemaValidator:
         for prop, prop_modifiers in template_modifiers.items():
             for key, val in prop_modifiers.items():
                 modified_template["properties"][prop][key] = val
+
+        return modified_template
+
+    def _resolve_template_variables(self, field, template):
+        modified_template = copy.deepcopy(template)
+
+        modified_template["template_vars"] = {}
+        for variable, resolver in template["resolvers"].items():
+            var = self._resolve_query(field, resolver)
+            if isinstance(var, str):
+                modified_template["template_vars"][variable] = var
+            else:
+                # Query resolution failed -- insert reserved keyword "ERROR".
+                # This allows validation to run to completion, which should
+                # reveal the root cause of the query resolution failure.
+                modified_template["template_vars"][variable] = "ERROR"
 
         return modified_template
 
@@ -652,6 +725,9 @@ class SchemaValidator:
         return []
 
     def _set_path_context(self, path):
+        if self._context_path and self._context_path in path:
+            return
+
         # For paths that should include some sort of context,
         # add the path and context resolver here.
         context_resolvers = {
@@ -662,11 +738,16 @@ class SchemaValidator:
         }
 
         self._path_context = []
+        self._context_path = None
         for path_segment, context_resolver in context_resolvers.items():
             if path_segment in path:
-                self._path_context.append(context_resolver(path))
+                context = context_resolver(path)
+                if context:
+                    self._path_context.append(context)
+                    self._context_path = path
 
     def _context(self, path):
+        self._set_path_context(path)
         return path + (
             f" ({','.join(self._path_context)})" if self._path_context else ""
         )
@@ -689,3 +770,115 @@ class SchemaValidator:
             raise ex
 
         return node["meta"]["id"]
+
+    def _resolve_query(self, obj, query):
+        """Query components:
+
+        "from" is a schema property or path to be resolved as the query source.
+            - Must begin with one of the following:
+                - "{this}" (obj argument)
+                - "root" (the root schema object)
+
+        "where" is a filter clause to be applied to the "from" clause.
+            "property" is the subject of the filter clause
+
+        "extract" is the property to resolve from the result of the above clauses.
+        """
+        if not self._matches_meta_template("query", query):
+            raise Exception(f"Invalid query: {query}")
+
+        from_path = query["from"].split(".")
+        if from_path[0] == "{this}":
+            from_collection = self._get_field(".".join(from_path[1:]), obj)
+        elif from_path[0] == "root":
+            from_collection = self._get_field(".".join(from_path[1:]))
+        else:
+            raise Exception(f"Query 'from' clause not supported: {query['from']}")
+
+        if "where" in query:
+            if isinstance(from_collection, list):
+                from_collection = [
+                    item
+                    for item in from_collection
+                    if self._matches_where_clause(item, query["where"], obj)
+                ]
+            else:
+                raise NotImplementedError(
+                    "Query 'where' clause not implemented for non-lists"
+                )
+
+        if isinstance(from_collection, list):
+            result = [
+                self._get_field(query["extract"], item) for item in from_collection
+            ]
+
+            return result[0] if len(result) == 1 else result
+        else:
+            return self._get_field(query["extract"], from_collection)
+
+    def _matches_where_clause(self, item, where_clause, parent_obj):
+        if self._matches_meta_template("condition", where_clause):
+            return self._evaluate_query_condition(where_clause, item, parent_obj)
+        elif self._matches_meta_template("condition_group", where_clause):
+            return self._evaluate_query_condition_group_recursive(
+                where_clause, item, parent_obj
+            )
+        else:
+            raise Exception(f"Invalid 'where' clause in query: {where_clause}")
+
+    def _evaluate_query_condition(self, condition, item, parent_obj):
+        left_operand = self._get_field(condition["property"], item)
+
+        if self._matches_meta_template("query", condition["value"]):
+            right_operand = self._resolve_query(parent_obj, condition["value"])
+        else:
+            # treat it as a literal value
+            right_operand = condition["value"]
+
+        if condition["operator"] == "EQUALS":
+            return left_operand == right_operand
+        elif condition["operator"] == "IN":
+            return left_operand in right_operand
+        else:
+            raise Exception(
+                f"Query 'where' clause operator not implemented: {condition['operator']}"
+            )
+
+    def _evaluate_query_condition_group_recursive(self, condition, item, parent_obj):
+        if condition["gate_type"] == "AND":
+            early_return_trigger = False
+            early_return_value = False
+            late_return_value = True
+        elif condition["gate_type"] == "OR":
+            early_return_trigger = True
+            early_return_value = True
+            late_return_value = False
+        else:
+            raise Exception(
+                f"Query 'gate_type' not implemented: {condition['gate_type']}"
+            )
+
+        for sub_condition in condition["conditions"]:
+            if self._matches_meta_template("condition", sub_condition):
+                if (
+                    self._evaluate_query_condition(sub_condition, item, parent_obj)
+                    == early_return_trigger
+                ):
+                    return early_return_value
+            elif self._matches_meta_template("condition_group", sub_condition):
+                if (
+                    self._evaluate_query_condition_group_recursive(
+                        sub_condition, item, parent_obj
+                    )
+                    == early_return_trigger
+                ):
+                    return early_return_value
+            else:
+                raise Exception(
+                    f"Invalid condition in query 'where' clause: {sub_condition}"
+                )
+
+        return late_return_value
+
+    def _matches_meta_template(self, template_name, obj):
+        return self._validate_object("", obj, getattr(oisql, template_name)) == []

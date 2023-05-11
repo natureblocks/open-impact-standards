@@ -1,12 +1,22 @@
 from enums import gate_types, state_node_types
 
-RESERVED_KEYWORDS = ["root", "keys", "values"]
+RESERVED_KEYWORDS = ["root", "keys", "values", "ERROR"]
 
 root_object = {
     "type": "object",
     "properties": {
         "standard": {"type": "string"},
         "parties": {"type": "array", "values": {"type": "object", "template": "party"}},
+        "node_definitions": {
+            "type": "object",
+            "keys": {
+                "type": "string",
+            },
+            "values": {
+                "type": "object",
+                "template": "node_definition",
+            },
+        },
         "state_nodes": {
             "type": "array",
             "values": {
@@ -26,6 +36,45 @@ root_object = {
             },
             "unique": ["alias"],
         },
+    },
+}
+
+node_definition = {
+    "type": "object",
+    "keys": {
+        "type": "string",
+    },
+    "values": {
+        "type": "object",
+        "properties": {
+            "field_type": {
+                "type": "enum",
+                "values": [
+                    "STRING",
+                    "NUMERIC",
+                    "BOOLEAN",
+                    "STRING_LIST",
+                    "NUMERIC_LIST",
+                    "EDGE",
+                    "EDGE_COLLECTION",
+                ],
+            },
+        },
+        "if": [
+            {
+                "property": "field_type",
+                "one_of": ["EDGE", "EDGE_COLLECTION"],
+                "then": {
+                    "tag": {
+                        "type": "reference",
+                        "references_any": {
+                            "from": "root.node_definitions",
+                            "property": "keys",
+                        },
+                    },
+                },
+            },
+        ]
     },
 }
 
@@ -55,9 +104,9 @@ dependency = {
         "field_name": {
             "type": "reference",
             "references_any": {
-                "from": "root.state_nodes",
-                "property": "data.keys",
-            },
+                "from": "root.node_definitions.{$tag}",
+                "property": "keys",
+            }
         },
         "comparison_operator": {
             "type": "enum",
@@ -79,8 +128,8 @@ dependency = {
             ],
         },
         "comparison_value_type": {
-            "type": "enum",
-            "values": ["STRING", "NUMERIC", "BOOLEAN", "STRING_LIST", "NUMERIC_LIST"],
+            "type": "reference",
+            "referenced_value": "root.node_definitions.{$tag}.{field_name}.field_type",
         },
         "string_comparison_value": {"type": "string"},
         "numeric_comparison_value": {"type": "decimal"},
@@ -92,6 +141,20 @@ dependency = {
         "numeric_list_comparison_value": {
             "type": "array",
             "values": {"type": "decimal"},
+        },
+    },
+    "resolvers": {
+        "$tag": {
+            "from": "root.state_nodes",
+            "where": {
+                "property": "meta.id",
+                "operator": "EQUALS",
+                "value": {
+                    "from": "{this}",
+                    "extract": "node_id"
+                }
+            },
+            "extract": "meta.tag",
         },
     },
     "switch": {
@@ -194,7 +257,8 @@ dependency = {
                 "equals": "NUMERIC_LIST",
                 "then": {
                     "optional": [
-                        "string_comparison_value" "numeric_comparison_value",
+                        "string_comparison_value",
+                        "numeric_comparison_value",
                         "boolean_comparison_value",
                         "string_list_comparison_value",
                     ],
@@ -227,7 +291,7 @@ dependency_set = {
             "type": "array",
             "values": {
                 "type": "object",
-                "templates": ["dependency", "dependency_set_reference"],
+                "any_of_templates": ["dependency", "dependency_set_reference"],
             },
             "min_length": 1,
         },
@@ -249,6 +313,7 @@ state_node = {
             "type": "object",
             "properties": {
                 "id": {"type": "integer"},
+                "tag": {"type": "string"},
                 "description": {"type": "string"},
                 "node_type": {"type": "enum", "values": state_node_types},
                 "applies_to": {

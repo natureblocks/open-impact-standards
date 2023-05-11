@@ -1,3 +1,15 @@
+from validation import templates, oisql
+
+
+def get_template(template_name):
+    if hasattr(templates, template_name):
+        return getattr(templates, template_name)
+    elif hasattr(oisql, template_name):
+        return getattr(oisql, template_name)
+
+    raise Exception(f"Template not found: {template_name}")
+
+
 def recursive_sort(obj):
     if isinstance(obj, dict):
         return sorted((k, recursive_sort(_normalize_type(v))) for k, v in obj.items())

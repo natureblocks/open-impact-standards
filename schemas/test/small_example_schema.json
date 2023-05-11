@@ -8,6 +8,11 @@
         {"name": "Government Representatives"},
         {"name": "Carbon Auditor"}
     ],
+    "node_definitions": {
+        "Placeholder": {
+            "completed": {"field_type": "BOOLEAN"}
+        }
+    },
     "referenced_dependency_sets": [
         {
             "alias": "Land owner or Tenant#0000",
@@ -37,10 +42,8 @@
                 "id": 7,
                 "description": "Set up survey",
                 "node_type": "ACTION",
-                "applies_to": "Project Developer"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
+                "applies_to": "Project Developer",
+                "tag": "Placeholder"
             }
         },
         {
@@ -48,10 +51,8 @@
                 "id": 8,
                 "description": "Make contact with them with preliminary set of questions",
                 "node_type": "ACTION",
-                "applies_to": "Project Developer"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
+                "applies_to": "Project Developer",
+                "tag": "Placeholder"
             },
             "depends_on": {
                 "dependencies": [
@@ -70,10 +71,8 @@
                 "id": 9,
                 "description": "Agreement decided between tenant and owner.",
                 "node_type": "ACTION",
-                "applies_to": "Land Representative"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
+                "applies_to": "Land Representative",
+                "tag": "Placeholder"
             }
         },
         {
@@ -81,10 +80,8 @@
                 "id": 10,
                 "description": "Guidance on what should be on the contract from Natureblocks",
                 "node_type": "ACTION",
-                "applies_to": "Project Developer"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
+                "applies_to": "Project Developer",
+                "tag": "Placeholder"
             }
         },
         {
@@ -92,10 +89,8 @@
                 "id": 11,
                 "description": "Written agreement to generate Carbon offsets",
                 "node_type": "ACTION",
-                "applies_to": "Land Representative"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
+                "applies_to": "Land Representative",
+                "tag": "Placeholder"
             },
             "depends_on": {
                 "alias": "Agreement and Guidance#0000",
@@ -123,10 +118,8 @@
                 "id": 12,
                 "description": "Laws and contracts adhered to by both parties",
                 "node_type": "STATE",
-                "applies_to": "Land Representative"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
+                "applies_to": "Land Representative",
+                "tag": "Placeholder"
             },
             "depends_on": {
                 "dependencies": [
@@ -192,10 +185,8 @@
                 "id": 15,
                 "description": "Land user has the rights to generate carbon offsets",
                 "node_type": "STATE",
-                "applies_to": "Project"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
+                "applies_to": "Project",
+                "tag": "Placeholder"
             },
             "depends_on": {
                 "dependencies": [
@@ -210,10 +201,8 @@
                 "id": 16,
                 "description": "No local laws would be broken by planting crops / trees / etc",
                 "node_type": "STATE",
-                "applies_to": "Project"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
+                "applies_to": "Project",
+                "tag": "Placeholder"
             },
             "depends_on": {
                 "dependencies": [

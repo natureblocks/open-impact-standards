@@ -8,6 +8,20 @@
         {"name": "Government Representatives"},
         {"name": "Carbon Auditor"}
     ],
+    "node_definitions": {
+        "Placeholder": {
+            "completed": {"field_type": "BOOLEAN"}
+        },
+        "NodeWithNumericAnswer": {
+            "answer": {"field_type": "NUMERIC"}
+        },
+        "NodeWithStringAnswer": {
+            "answer": {"field_type": "STRING"}
+        },
+        "NodeWithSomeList": {
+            "some_list": {"field_type": "STRING_LIST"}
+        }
+    },
     "referenced_dependency_sets": [
         {
             "alias": "Land owner or Tenant#0000",
@@ -76,7 +90,8 @@
                 "id": 0,
                 "description": "Gathered list of possible eligible farmers",
                 "node_type": "ACTION",
-                "applies_to": "Project Developer"
+                "applies_to": "Project Developer",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -87,7 +102,8 @@
                 "id": 1,
                 "description": "Develop list of preliminary questions",
                 "node_type": "ACTION",
-                "applies_to": "Project Developer"
+                "applies_to": "Project Developer",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -109,7 +125,8 @@
                 "id": 2,
                 "description": "Farm size?",
                 "node_type": "QUESTION",
-                "applies_to": "Land Representative"
+                "applies_to": "Land Representative",
+                "tag": "NodeWithNumericAnswer"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -131,7 +148,8 @@
                 "id": 3,
                 "description": "% HA plantations",
                 "node_type": "QUESTION",
-                "applies_to": "Land Representative"
+                "applies_to": "Land Representative",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -153,7 +171,8 @@
                 "id": 4,
                 "description": "% HA Dryland",
                 "node_type": "QUESTION",
-                "applies_to": "Land Representative"
+                "applies_to": "Land Representative",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -175,7 +194,8 @@
                 "id": 5,
                 "description": "% HA Field",
                 "node_type": "QUESTION",
-                "applies_to": "Land Representative"
+                "applies_to": "Land Representative",
+                "tag": "NodeWithSomeList"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -197,7 +217,8 @@
                 "id": 6,
                 "description": "Farm location?",
                 "node_type": "QUESTION",
-                "applies_to": "Land Representative"
+                "applies_to": "Land Representative",
+                "tag": "NodeWithStringAnswer"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -219,7 +240,8 @@
                 "id": 7,
                 "description": "Set up survey",
                 "node_type": "ACTION",
-                "applies_to": "Project Developer"
+                "applies_to": "Project Developer",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"},
@@ -253,7 +275,7 @@
                     },
                     {
                         "node_id": 5,
-                        "field_name": "something",
+                        "field_name": "some_list",
                         "comparison_operator": "ONE_OF",
                         "comparison_value_type": "STRING_LIST",
                         "string_list_comparison_value": [
@@ -277,7 +299,8 @@
                 "id": 8,
                 "description": "Make contact with them with preliminary set of questions",
                 "node_type": "ACTION",
-                "applies_to": "Project Developer"
+                "applies_to": "Project Developer",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -299,7 +322,8 @@
                 "id": 9,
                 "description": "Agreement decided between tenant and owner.",
                 "node_type": "ACTION",
-                "applies_to": "Land Representative"
+                "applies_to": "Land Representative",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -310,7 +334,8 @@
                 "id": 10,
                 "description": "Guidance on what should be on the contract from Natureblocks",
                 "node_type": "ACTION",
-                "applies_to": "Project Developer"
+                "applies_to": "Project Developer",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -321,7 +346,8 @@
                 "id": 11,
                 "description": "Written agreement to generate Carbon offsets",
                 "node_type": "ACTION",
-                "applies_to": "Land Representative"
+                "applies_to": "Land Representative",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -352,7 +378,8 @@
                 "id": 12,
                 "description": "Laws and contracts adhered to by both parties",
                 "node_type": "STATE",
-                "applies_to": "Land Representative"
+                "applies_to": "Land Representative",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -374,7 +401,8 @@
                 "id": 13,
                 "description": "Tenant of land",
                 "node_type": "STATE",
-                "applies_to": "Land Representative"
+                "applies_to": "Land Representative",
+                "tag": "Placeholder"
             },
             "depends_on": {
                 "alias": "Written Agreement, Laws and Contracts#0000",
@@ -402,7 +430,8 @@
                 "id": 14,
                 "description": "Is the owner of land",
                 "node_type": "STATE",
-                "applies_to": "Land Representative"
+                "applies_to": "Land Representative",
+                "tag": "Placeholder"
             },
             "depends_on": {
                 "dependencies": [
@@ -421,7 +450,8 @@
                 "id": 15,
                 "description": "Land user has the rights to generate carbon offsets",
                 "node_type": "STATE",
-                "applies_to": "Project"
+                "applies_to": "Project",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -439,7 +469,8 @@
                 "id": 16,
                 "description": "No local laws would be broken by planting crops / trees / etc",
                 "node_type": "STATE",
-                "applies_to": "Project"
+                "applies_to": "Project",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -457,7 +488,8 @@
                 "id": 17,
                 "description": "Usable land available",
                 "node_type": "STATE",
-                "applies_to": "Project"
+                "applies_to": "Project",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -488,7 +520,8 @@
                 "id": 18,
                 "description": "History (5y)",
                 "node_type": "ACTION",
-                "applies_to": "Project Developer"
+                "applies_to": "Project Developer",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -510,7 +543,8 @@
                 "id": 19,
                 "description": "Benefits information reviewed",
                 "node_type": "ACTION",
-                "applies_to": "Project Developer"
+                "applies_to": "Project Developer",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -532,7 +566,8 @@
                 "id": 20,
                 "description": "Agroforestry",
                 "node_type": "ACTION",
-                "applies_to": "Land Representative"
+                "applies_to": "Land Representative",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -554,7 +589,8 @@
                 "id": 21,
                 "description": "Farm big enough",
                 "node_type": "ACTION",
-                "applies_to": "Land Representative"
+                "applies_to": "Land Representative",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -576,7 +612,8 @@
                 "id": 22,
                 "description": "Capacity",
                 "node_type": "ACTION",
-                "applies_to": "Land Representative"
+                "applies_to": "Land Representative",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -598,7 +635,8 @@
                 "id": 23,
                 "description": "Unused lands",
                 "node_type": "ACTION",
-                "applies_to": "Land Representative"
+                "applies_to": "Land Representative",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -620,7 +658,8 @@
                 "id": 24,
                 "description": "No local laws would be broken by planting crops / trees / etc",
                 "node_type": "ACTION",
-                "applies_to": "Land Representative"
+                "applies_to": "Land Representative",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -631,7 +670,8 @@
                 "id": 25,
                 "description": "Farmer willing to make at least one or more changes",
                 "node_type": "STATE",
-                "applies_to": "Land Representative"
+                "applies_to": "Land Representative",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -653,7 +693,8 @@
                 "id": 26,
                 "description": "Better management Practices",
                 "node_type": "ACTION",
-                "applies_to": "Land Representative"
+                "applies_to": "Land Representative",
+                "tag": "Placeholder"
             },
             "depends_on": {
                 "alias": "BMC#0000",
@@ -688,7 +729,8 @@
                 "id": 27,
                 "description": "Additional plant area",
                 "node_type": "STATE",
-                "applies_to": "Project Developer"
+                "applies_to": "Project Developer",
+                "tag": "Placeholder"
             },
             "depends_on": {
                 "alias": "PA#0000",
@@ -737,7 +779,8 @@
                 "id": 28,
                 "description": "Cubic/ l water price x amount used",
                 "node_type": "ACTION",
-                "applies_to": "Project Developer"
+                "applies_to": "Project Developer",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -759,7 +802,8 @@
                 "id": 29,
                 "description": "All water information/ price and amount available",
                 "node_type": "ACTION",
-                "applies_to": "Carbon Auditor"
+                "applies_to": "Carbon Auditor",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -781,7 +825,8 @@
                 "id": 30,
                 "description": "Water rights",
                 "node_type": "ACTION",
-                "applies_to": "Government Representatives"
+                "applies_to": "Government Representatives",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -803,7 +848,8 @@
                 "id": 31,
                 "description": "Water table sufficient - Tested",
                 "node_type": "ACTION",
-                "applies_to": "Government Representatives"
+                "applies_to": "Government Representatives",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -825,7 +871,8 @@
                 "id": 32,
                 "description": "Water usage within local laws - Documentation",
                 "node_type": "ACTION",
-                "applies_to": "Government Representatives"
+                "applies_to": "Government Representatives",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -847,7 +894,8 @@
                 "id": 33,
                 "description": "Natural rivers",
                 "node_type": "STATE",
-                "applies_to": "Project"
+                "applies_to": "Project",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -869,7 +917,8 @@
                 "id": 34,
                 "description": "Borehole",
                 "node_type": "STATE",
-                "applies_to": "Project"
+                "applies_to": "Project",
+                "tag": "Placeholder"
             },
             "depends_on": {
                 "dependencies": [
@@ -888,7 +937,8 @@
                 "id": 35,
                 "description": "Scheme",
                 "node_type": "STATE",
-                "applies_to": "Project"
+                "applies_to": "Project",
+                "tag": "Placeholder"
             },
             "depends_on": {
                 "dependencies": [
@@ -907,7 +957,8 @@
                 "id": 36,
                 "description": "Pivots",
                 "node_type": "STATE",
-                "applies_to": "Land Representative"
+                "applies_to": "Land Representative",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -925,7 +976,8 @@
                 "id": 37,
                 "description": "Drippers",
                 "node_type": "STATE",
-                "applies_to": "Land Representative"
+                "applies_to": "Land Representative",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -943,7 +995,8 @@
                 "id": 38,
                 "description": "Sprinklers",
                 "node_type": "STATE",
-                "applies_to": "Land Representative"
+                "applies_to": "Land Representative",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -961,7 +1014,8 @@
                 "id": 39,
                 "description": "Other",
                 "node_type": "STATE",
-                "applies_to": "Land Representative"
+                "applies_to": "Land Representative",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -979,7 +1033,8 @@
                 "id": 40,
                 "description": "Has water rights (for irrigation)",
                 "node_type": "STATE",
-                "applies_to": "Project"
+                "applies_to": "Project",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -1024,7 +1079,8 @@
                 "id": 41,
                 "description": "Dependent on rain",
                 "node_type": "STATE",
-                "applies_to": "Project"
+                "applies_to": "Project",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -1035,7 +1091,8 @@
                 "id": 42,
                 "description": "Water access",
                 "node_type": "STATE",
-                "applies_to": "Project"
+                "applies_to": "Project",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -1073,7 +1130,8 @@
                 "id": 43,
                 "description": "Meets preliminary criteria",
                 "node_type": "STATE",
-                "applies_to": "Land Representative"
+                "applies_to": "Land Representative",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -1100,7 +1158,8 @@
                 "id": 44,
                 "description": "Expansion",
                 "node_type": "ACTION",
-                "applies_to": "Land Representative"
+                "applies_to": "Land Representative",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -1122,7 +1181,8 @@
                 "id": 45,
                 "description": "Risk analysis for more plantations",
                 "node_type": "ACTION",
-                "applies_to": "Project Developer"
+                "applies_to": "Project Developer",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -1144,7 +1204,8 @@
                 "id": 46,
                 "description": "Native biomes",
                 "node_type": "STATE",
-                "applies_to": "Project Developer"
+                "applies_to": "Project Developer",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -1166,7 +1227,8 @@
                 "id": 47,
                 "description": "Unique location",
                 "node_type": "STATE",
-                "applies_to": "Project Developer"
+                "applies_to": "Project Developer",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -1188,7 +1250,8 @@
                 "id": 48,
                 "description": "Space dedicated for project",
                 "node_type": "STATE",
-                "applies_to": "Project Developer"
+                "applies_to": "Project Developer",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {"field_type": "BOOLEAN"}
@@ -1210,7 +1273,8 @@
                 "id": 49,
                 "description": "Project information sufficient to do Feasibility study",
                 "node_type": "STATE",
-                "applies_to": "Project"
+                "applies_to": "Project",
+                "tag": "Placeholder"
             },
             "depends_on": {
                 "alias": "Project Info for Feasibility Study#0000",

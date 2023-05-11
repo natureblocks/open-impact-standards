@@ -14,6 +14,7 @@ def basic_schema():
         "parties": [],
         "state_nodes": [],
         "referenced_dependency_sets": [],
+        "node_definitions": {"Placeholder": {"completed": {"field_type": "BOOLEAN"}}},
     }
 
 
@@ -24,6 +25,7 @@ def node(node_id=None):
             "description": "test node",
             "node_type": "STATE",
             "applies_to": "Project",
+            "tag": "Placeholder",
         },
         "data": {"completed": {"field_type": "BOOLEAN"}},
     }

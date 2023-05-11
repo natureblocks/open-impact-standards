@@ -9,13 +9,26 @@
         {"name": "Carbon Auditor"}
     ],
     "referenced_dependency_sets": [],
+    "node_definitions": {
+        "PlaceholderA": {
+            "area": {"field_type": "NUMERIC"},
+            "number_of_trees": {"field_type": "NUMERIC"},
+            "type_of_forest": {"field_type": "STRING"},
+            "is_forest": {"field_type": "BOOLEAN"}
+        },
+        "PlaceholderB": {
+            "agreement_decided": {"field_type": "BOOLEAN"}
+        },
+        "PlaceholderC": {}
+    },
     "state_nodes": [
         {
             "meta": {
                 "id": 0,
                 "description": "Node 0",
                 "node_type": "STATE",
-                "applies_to": "Project Developer"
+                "applies_to": "Project Developer",
+                "tag": "PlaceholderA"
             },
             "data": {
                 "area": {
@@ -40,7 +53,8 @@
                 "id": 1,
                 "description": "Node 1",
                 "node_type": "ACTION",
-                "applies_to": "Project Developer"
+                "applies_to": "Project Developer",
+                "tag": "PlaceholderB"
             },
             "data": {
                 "agreement_decided": {
@@ -65,7 +79,8 @@
                 "id": 2,
                 "description": "Node 3",
                 "node_type": "STATE",
-                "applies_to": "Land Representative"
+                "applies_to": "Land Representative",
+                "tag": "PlaceholderC"
             },
             "depends_on": {
                 "dependencies": [

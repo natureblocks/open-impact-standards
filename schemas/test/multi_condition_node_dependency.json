@@ -9,13 +9,20 @@
         {"name": "Carbon Auditor"}
     ],
     "referenced_dependency_sets": [],
+    "node_definitions": {
+        "Placeholder": {
+            "completed": {"field_type": "BOOLEAN"},
+            "did_the_thing": {"field_type": "BOOLEAN"}
+        }
+    },
     "state_nodes": [
         {
             "meta": {
                 "id": 0,
                 "description": "Node 0",
                 "node_type": "ACTION",
-                "applies_to": "Project Developer"
+                "applies_to": "Project Developer",
+                "tag": "Placeholder"
             },
             "data": {
                 "completed": {
@@ -31,7 +38,8 @@
                 "id": 1,
                 "description": "Node 1",
                 "node_type": "ACTION",
-                "applies_to": "Project Developer"
+                "applies_to": "Project Developer",
+                "tag": "Placeholder"
             },
             "depends_on": {
                 "alias": "a#0000",

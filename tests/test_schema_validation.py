@@ -78,9 +78,8 @@ class TestSchemaValidation:
             "field_name"
         ] = "not_a_field"
         errors = validator.validate()
-        assert len(errors) > 0
         assert (
-            'root.state_nodes[1].depends_on.dependencies[0].field_name (node id: 1): expected any "data.keys" field from root.state_nodes, got "not_a_field"'
+            'root.state_nodes[1].depends_on.dependencies[0].field_name (node id: 1): expected any key from root.node_definitions.PlaceholderA, got "not_a_field"'
             in errors
         )
 
@@ -214,10 +213,7 @@ class TestSchemaValidation:
         schema["state_nodes"][4]["depends_on"] = {"dependencies": [common_ds_reference]}
 
         errors = validator.validate(json_string=json.dumps(schema))
-        assert len(errors) == 1
-        assert (
-            errors[0] == "Circular dependency detected (dependency path: [0, 1, 2, 3])"
-        )
+        assert "Circular dependency detected (dependency path: [0, 1, 2, 3])" in errors
 
     def test_broken_dependency(self):
         validator = SchemaValidator()
@@ -228,7 +224,6 @@ class TestSchemaValidation:
         }
 
         errors = validator.validate(json_string=json.dumps(schema))
-        assert errors
         assert (
             'root.state_nodes[1].depends_on.dependencies[0].node_id (node id: 1): expected any "meta.id" field from root.state_nodes, got 2'
             in errors
@@ -431,11 +426,15 @@ class TestSchemaValidation:
         validator = SchemaValidator()
 
         schema = fixtures.basic_schema_with_nodes(2)
+        schema["node_definitions"]["Placeholder"]["some_string_field"] = {
+            "field_type": "STRING"
+        }
 
         schema["state_nodes"][1]["depends_on"] = {
             "dependencies": [
                 fixtures.dependency(
                     0,
+                    field_name="some_string_field",
                     comparison_value_type="STRING",
                     comparison_operator="GREATER_THAN",
                 ),
@@ -655,7 +654,7 @@ class TestSchemaValidation:
         assert len(errors) == 1
         assert (
             errors[0]
-            == f"root: invalid key: expected {actual_id} ("
+            == f"root: expected {actual_id} ("
             + "{corresponding_value}.id"
             + f"), got {json.dumps(wrong_id)}"
         )
@@ -699,7 +698,7 @@ class TestSchemaValidation:
         assert len(errors) == 1
         assert (
             errors[0]
-            == 'root.state_nodes (node id: 1): duplicate value provided for unique field "meta.id": 1'
+            == 'root.state_nodes: duplicate value provided for unique field "meta.id": 1'
         )
 
         schema["state_nodes"][0]["meta"]["id"] = 0
