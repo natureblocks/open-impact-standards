@@ -845,6 +845,8 @@ class SchemaValidator:
             )
 
     def _evaluate_query_condition_group_recursive(self, condition, item, parent_obj):
+        raise NotImplementedError("Recursive query condition group functionality is untested")
+
         if condition["gate_type"] == "AND":
             early_return_trigger = False
             early_return_value = False

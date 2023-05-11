@@ -92,9 +92,6 @@
                 "node_type": "ACTION",
                 "applies_to": "Project Developer",
                 "tag": "Placeholder"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
             }
         },
         {
@@ -104,9 +101,6 @@
                 "node_type": "ACTION",
                 "applies_to": "Project Developer",
                 "tag": "Placeholder"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
             },
             "depends_on": {
                 "dependencies": [
@@ -128,9 +122,6 @@
                 "applies_to": "Land Representative",
                 "tag": "NodeWithNumericAnswer"
             },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
-            },
             "depends_on": {
                 "dependencies": [
                     {
@@ -150,9 +141,6 @@
                 "node_type": "QUESTION",
                 "applies_to": "Land Representative",
                 "tag": "Placeholder"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
             },
             "depends_on": {
                 "dependencies": [
@@ -174,9 +162,6 @@
                 "applies_to": "Land Representative",
                 "tag": "Placeholder"
             },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
-            },
             "depends_on": {
                 "dependencies": [
                     {
@@ -196,9 +181,6 @@
                 "node_type": "QUESTION",
                 "applies_to": "Land Representative",
                 "tag": "NodeWithSomeList"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
             },
             "depends_on": {
                 "dependencies": [
@@ -220,9 +202,6 @@
                 "applies_to": "Land Representative",
                 "tag": "NodeWithStringAnswer"
             },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
-            },
             "depends_on": {
                 "dependencies": [
                     {
@@ -242,11 +221,6 @@
                 "node_type": "ACTION",
                 "applies_to": "Project Developer",
                 "tag": "Placeholder"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"},
-                "answer": {"field_type": "STRING"},
-                "something": {"field_type": "STRING"}
             },
             "depends_on": {
                 "alias": "Preliminary Questions Answered#0000",
@@ -302,9 +276,6 @@
                 "applies_to": "Project Developer",
                 "tag": "Placeholder"
             },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
-            },
             "depends_on": {
                 "dependencies": [
                     {
@@ -324,9 +295,6 @@
                 "node_type": "ACTION",
                 "applies_to": "Land Representative",
                 "tag": "Placeholder"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
             }
         },
         {
@@ -336,9 +304,6 @@
                 "node_type": "ACTION",
                 "applies_to": "Project Developer",
                 "tag": "Placeholder"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
             }
         },
         {
@@ -348,9 +313,6 @@
                 "node_type": "ACTION",
                 "applies_to": "Land Representative",
                 "tag": "Placeholder"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
             },
             "depends_on": {
                 "alias": "Agreement and Guidance#0000",
@@ -380,9 +342,6 @@
                 "node_type": "STATE",
                 "applies_to": "Land Representative",
                 "tag": "Placeholder"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
             },
             "depends_on": {
                 "dependencies": [
@@ -453,9 +412,6 @@
                 "applies_to": "Project",
                 "tag": "Placeholder"
             },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
-            },
             "depends_on": {
                 "dependencies": [
                     {
@@ -472,9 +428,6 @@
                 "applies_to": "Project",
                 "tag": "Placeholder"
             },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
-            },
             "depends_on": {
                 "dependencies": [
                     {
@@ -490,9 +443,6 @@
                 "node_type": "STATE",
                 "applies_to": "Project",
                 "tag": "Placeholder"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
             },
             "depends_on": {
                 "alias": "Land Rights and Local Laws#0000",
@@ -523,9 +473,6 @@
                 "applies_to": "Project Developer",
                 "tag": "Placeholder"
             },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
-            },
             "depends_on": {
                 "dependencies": [
                     {
@@ -545,9 +492,6 @@
                 "node_type": "ACTION",
                 "applies_to": "Project Developer",
                 "tag": "Placeholder"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
             },
             "depends_on": {
                 "dependencies": [
@@ -569,9 +513,6 @@
                 "applies_to": "Land Representative",
                 "tag": "Placeholder"
             },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
-            },
             "depends_on": {
                 "dependencies": [
                     {
@@ -591,9 +532,6 @@
                 "node_type": "ACTION",
                 "applies_to": "Land Representative",
                 "tag": "Placeholder"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
             },
             "depends_on": {
                 "dependencies": [
@@ -615,9 +553,6 @@
                 "applies_to": "Land Representative",
                 "tag": "Placeholder"
             },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
-            },
             "depends_on": {
                 "dependencies": [
                     {
@@ -638,9 +573,6 @@
                 "applies_to": "Land Representative",
                 "tag": "Placeholder"
             },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
-            },
             "depends_on": {
                 "dependencies": [
                     {
@@ -660,9 +592,6 @@
                 "node_type": "ACTION",
                 "applies_to": "Land Representative",
                 "tag": "Placeholder"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
             }
         },
         {
@@ -672,9 +601,6 @@
                 "node_type": "STATE",
                 "applies_to": "Land Representative",
                 "tag": "Placeholder"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
             },
             "depends_on": {
                 "dependencies": [
@@ -782,9 +708,6 @@
                 "applies_to": "Project Developer",
                 "tag": "Placeholder"
             },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
-            },
             "depends_on": {
                 "dependencies": [
                     {
@@ -804,9 +727,6 @@
                 "node_type": "ACTION",
                 "applies_to": "Carbon Auditor",
                 "tag": "Placeholder"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
             },
             "depends_on": {
                 "dependencies": [
@@ -828,9 +748,6 @@
                 "applies_to": "Government Representatives",
                 "tag": "Placeholder"
             },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
-            },
             "depends_on": {
                 "dependencies": [
                     {
@@ -850,9 +767,6 @@
                 "node_type": "ACTION",
                 "applies_to": "Government Representatives",
                 "tag": "Placeholder"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
             },
             "depends_on": {
                 "dependencies": [
@@ -874,9 +788,6 @@
                 "applies_to": "Government Representatives",
                 "tag": "Placeholder"
             },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
-            },
             "depends_on": {
                 "dependencies": [
                     {
@@ -896,9 +807,6 @@
                 "node_type": "STATE",
                 "applies_to": "Project",
                 "tag": "Placeholder"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
             },
             "depends_on": {
                 "dependencies": [
@@ -960,9 +868,6 @@
                 "applies_to": "Land Representative",
                 "tag": "Placeholder"
             },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
-            },
             "depends_on": {
                 "dependencies": [
                     {
@@ -978,9 +883,6 @@
                 "node_type": "STATE",
                 "applies_to": "Land Representative",
                 "tag": "Placeholder"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
             },
             "depends_on": {
                 "dependencies": [
@@ -998,9 +900,6 @@
                 "applies_to": "Land Representative",
                 "tag": "Placeholder"
             },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
-            },
             "depends_on": {
                 "dependencies": [
                     {
@@ -1017,9 +916,6 @@
                 "applies_to": "Land Representative",
                 "tag": "Placeholder"
             },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
-            },
             "depends_on": {
                 "dependencies": [
                     {
@@ -1035,9 +931,6 @@
                 "node_type": "STATE",
                 "applies_to": "Project",
                 "tag": "Placeholder"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
             },
             "depends_on": {
                 "alias": "Pivots, Drippers, Sprinklers, Other#0000",
@@ -1081,9 +974,6 @@
                 "node_type": "STATE",
                 "applies_to": "Project",
                 "tag": "Placeholder"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
             }
         },
         {
@@ -1093,9 +983,6 @@
                 "node_type": "STATE",
                 "applies_to": "Project",
                 "tag": "Placeholder"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
             },
             "depends_on": {
                 "alias": "Rain, Rivers, and Water Rights#0000",
@@ -1133,9 +1020,6 @@
                 "applies_to": "Land Representative",
                 "tag": "Placeholder"
             },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
-            },
             "depends_on": {
                 "alias": "Preliminary Criteria#0000",
                 "gate_type": "AND",
@@ -1161,9 +1045,6 @@
                 "applies_to": "Land Representative",
                 "tag": "Placeholder"
             },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
-            },
             "depends_on": {
                 "dependencies": [
                     {
@@ -1183,9 +1064,6 @@
                 "node_type": "ACTION",
                 "applies_to": "Project Developer",
                 "tag": "Placeholder"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
             },
             "depends_on": {
                 "dependencies": [
@@ -1207,9 +1085,6 @@
                 "applies_to": "Project Developer",
                 "tag": "Placeholder"
             },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
-            },
             "depends_on": {
                 "dependencies": [
                     {
@@ -1230,9 +1105,6 @@
                 "applies_to": "Project Developer",
                 "tag": "Placeholder"
             },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
-            },
             "depends_on": {
                 "dependencies": [
                     {
@@ -1252,9 +1124,6 @@
                 "node_type": "STATE",
                 "applies_to": "Project Developer",
                 "tag": "Placeholder"
-            },
-            "data": {
-                "completed": {"field_type": "BOOLEAN"}
             },
             "depends_on": {
                 "dependencies": [

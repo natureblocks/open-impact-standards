@@ -59,7 +59,9 @@ node_definition = {
                     "EDGE_COLLECTION",
                 ],
             },
+            "description": {"type": "string"},
         },
+        "optional": ["description"],
         "if": [
             {
                 "property": "field_type",
@@ -325,35 +327,12 @@ state_node = {
                 },
             },
         },
-        "data": {
-            "type": "object",
-            "keys": {
-                "type": "string",
-            },
-            "values": {
-                "type": "object",
-                "properties": {
-                    "field_type": {
-                        "type": "enum",
-                        "values": [
-                            "STRING",
-                            "NUMERIC",
-                            "BOOLEAN",
-                            "STRING_LIST",
-                            "NUMERIC_LIST",
-                        ],
-                    },
-                    "description": {"type": "string"},
-                },
-                "optional": ["description"],
-            },
-        },
         "depends_on": {
             "type": "object",
             "template": "dependency_set",
         },
     },
-    "optional": ["data", "depends_on"],
+    "optional": ["depends_on"],
 }
 
 party = {"type": "object", "properties": {"name": {"type": "string"}}}

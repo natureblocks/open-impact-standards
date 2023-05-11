@@ -10,7 +10,10 @@
     ],
     "node_definitions": {
         "Placeholder": {
-            "completed": {"field_type": "BOOLEAN"}
+            "completed": {
+                "field_type": "BOOLEAN",
+                "description": "Placeholder node definition"
+            }
         }
     },
     "referenced_dependency_sets": [
@@ -138,7 +141,8 @@
                 "id": 13,
                 "description": "Tenant of land",
                 "node_type": "STATE",
-                "applies_to": "Land Representative"
+                "applies_to": "Land Representative",
+                "tag": "Placeholder"
             },
             "depends_on": {
                 "alias": "Written Agreement, Laws and Contracts#0000",
@@ -166,7 +170,8 @@
                 "id": 14,
                 "description": "Is the owner of land",
                 "node_type": "STATE",
-                "applies_to": "Land Representative"
+                "applies_to": "Land Representative",
+                "tag": "Placeholder"
             },
             "depends_on": {
                 "dependencies": [
@@ -217,7 +222,8 @@
                 "id": 17,
                 "description": "Usable land available",
                 "node_type": "STATE",
-                "applies_to": "Project"
+                "applies_to": "Project",
+                "tag": "Placeholder"
             },
             "depends_on": {
                 "alias": "Land Rights and Local Laws#0000",

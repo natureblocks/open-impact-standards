@@ -67,26 +67,6 @@ class TestSchemaValidation:
             "\nNode ids in schema:\n" + "\n".join([str(id) for id in node_ids])
         )
 
-    def test_node_data(self):
-        validator = SchemaValidator()
-
-        errors = validator.validate(json_file_path="schemas/test/node_data.json")
-        assert not errors
-
-        # Introduce an error
-        validator.schema["state_nodes"][1]["depends_on"]["dependencies"][0][
-            "field_name"
-        ] = "not_a_field"
-        errors = validator.validate()
-        assert (
-            'root.state_nodes[1].depends_on.dependencies[0].field_name (node id: 1): expected any key from root.node_definitions.PlaceholderA, got "not_a_field"'
-            in errors
-        )
-
-        validator.schema["state_nodes"][1]["depends_on"]["dependencies"][0][
-            "field_name"
-        ] = "is_forest"
-
     def test_duplicate_node_dependency_sets(self):
         validator = SchemaValidator()
 
