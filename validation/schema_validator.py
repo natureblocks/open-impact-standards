@@ -564,7 +564,11 @@ class SchemaValidator:
             for condition in modified_template["if"]:
                 if self._template_condition_is_true(condition, field):
                     for key in condition["then"]:
-                        modified_template[key] = condition["then"][key]
+                        if key == "property_modifiers":
+                            for prop, prop_modifier in condition["then"][key].items():
+                                modified_template["properties"][prop] = prop_modifier
+                        else:
+                            modified_template[key] = condition["then"][key]
                 elif "else" in condition:
                     raise NotImplementedError(
                         "else conditionals not yet supported for templates"
@@ -589,38 +593,45 @@ class SchemaValidator:
         return modified_template
 
     def _template_condition_is_true(self, condition, field):
+        required_props = ["property", "operator", "value"]
+        if not all(prop in condition for prop in required_props):
+            raise Exception(f"Invalid template condition: {condition}")
+
         prop = self._get_field(condition["property"], field)
 
         if "attribute" in condition:
             if condition["attribute"] == "length":
                 prop = len(prop)
 
-        if "equals" in condition:
-            return prop == condition["equals"]
+        operator = condition["operator"]
+        value = condition["value"]
 
-        if "greater_than" in condition:
-            return prop > condition["greater_than"]
+        if operator == "EQUALS":
+            return prop == value
 
-        if "less_than" in condition:
-            return prop < condition["less_than"]
+        if operator == "GREATER_THAN":
+            return prop > value
 
-        if "greater_than_or_equal_to" in condition:
-            return prop >= condition["greater_than_or_equal_to"]
+        if operator == "LESS_THAN":
+            return prop < value
 
-        if "less_than_or_equal_to" in condition:
-            return prop <= condition["less_than_or_equal_to"]
+        if operator == "GREATER_THAN_OR_EQUAL_TO":
+            return prop >= value
 
-        if "contains" in condition:
-            return condition["contains"] in prop
+        if operator == "LESS_THAN_OR_EQUAL_TO":
+            return prop <= value
 
-        if "does_not_contain" in condition:
-            return condition["does_not_contain"] not in prop
+        if operator == "CONTAINS":
+            return value in prop
 
-        if "one_of" in condition:
-            return prop in condition["one_of"]
+        if operator == "DOES_NOT_CONTAIN":
+            return value not in prop
+
+        if operator == "ONE_OF":
+            return prop in value
 
         raise NotImplementedError(
-            "template condition not yet supported: " + str(condition)
+            "template operator not yet supported: " + str(operator)
         )
 
     def _collect_node_dependency_set(self, path, node):
@@ -845,7 +856,9 @@ class SchemaValidator:
             )
 
     def _evaluate_query_condition_group_recursive(self, condition, item, parent_obj):
-        raise NotImplementedError("Recursive query condition group functionality is untested")
+        raise NotImplementedError(
+            "Recursive query condition group functionality is untested"
+        )
 
         if condition["gate_type"] == "AND":
             early_return_trigger = False

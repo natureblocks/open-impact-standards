@@ -265,6 +265,44 @@ class TestSchemaValidation:
         errors = validator.validate(json_string=json.dumps(fixtures.basic_schema()))
         assert not errors
 
+    def test_edge_definition(self):
+        validator = SchemaValidator()
+
+        schema = fixtures.basic_schema()
+
+        field_types = ["EDGE", "EDGE_COLLECTION"]
+        field_names = ["some_edge", "some_edge_collection"]
+
+        for i in range(len(field_types)):
+            schema["node_definitions"]["Placeholder"][field_names[i]] = {
+                "field_type": field_types[i]
+            }
+
+            errors = validator.validate(json_string=json.dumps(schema))
+            assert (
+                f"root.node_definitions.Placeholder.{field_names[i]}: missing required property: tag"
+                in errors
+            )
+
+            schema["node_definitions"]["Placeholder"][field_names[i]] = {
+                "field_type": field_types[i],
+                "tag": "NotATag",
+            }
+
+            errors = validator.validate(json_string=json.dumps(schema))
+            assert (
+                f'root.node_definitions.Placeholder.{field_names[i]}.tag: expected any key from root.node_definitions, got "NotATag"'
+                in errors
+            )
+
+            schema["node_definitions"]["Placeholder"][field_names[i]] = {
+                "field_type": field_types[i],
+                "tag": "Placeholder",
+            }
+
+            errors = validator.validate(json_string=json.dumps(schema))
+            assert not errors
+
     def test_required_properties(self):
         validator = SchemaValidator()
 

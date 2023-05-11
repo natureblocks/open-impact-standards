@@ -65,18 +65,21 @@ node_definition = {
         "if": [
             {
                 "property": "field_type",
-                "one_of": ["EDGE", "EDGE_COLLECTION"],
+                "operator": "ONE_OF",
+                "value": ["EDGE", "EDGE_COLLECTION"],
                 "then": {
-                    "tag": {
-                        "type": "reference",
-                        "references_any": {
-                            "from": "root.node_definitions",
-                            "property": "keys",
+                    "property_modifiers": {
+                        "tag": {
+                            "type": "reference",
+                            "references_any": {
+                                "from": "root.node_definitions",
+                                "property": "keys",
+                            },
                         },
                     },
                 },
             },
-        ]
+        ],
     },
 }
 
@@ -108,7 +111,7 @@ dependency = {
             "references_any": {
                 "from": "root.node_definitions.{$tag}",
                 "property": "keys",
-            }
+            },
         },
         "comparison_operator": {
             "type": "enum",
@@ -151,10 +154,7 @@ dependency = {
             "where": {
                 "property": "meta.id",
                 "operator": "EQUALS",
-                "value": {
-                    "from": "{this}",
-                    "extract": "node_id"
-                }
+                "value": {"from": "{this}", "extract": "node_id"},
             },
             "extract": "meta.tag",
         },
@@ -302,7 +302,8 @@ dependency_set = {
         {
             "property": "dependencies",
             "attribute": "length",
-            "less_than_or_equal_to": 1,
+            "operator": "LESS_THAN_OR_EQUAL_TO",
+            "value": 1,
             "then": {"optional": ["alias", "gate_type"]},
         }
     ],
