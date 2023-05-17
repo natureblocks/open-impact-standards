@@ -6,7 +6,7 @@ The below psuedocode blocks describe the structure of valid json objects within 
 
 __Notes for psuedocode interpretation:__
 - Capitalized value types indicate object types or enumeration types that are defined by this specification (e.g. `parties: [Party]` indicates that the `parties` array can only contain objects of type `Party`).
-- Some field types indicate a specific field from another object that must exist within the schema (e.g. `node_id: StateNode.meta.id` indicates that the `node_id` field must reference the `id` field of an existing `StateNode.meta` object).
+- Some field types indicate a specific field from another object that must exist within the schema (e.g. `node_id: StateNode.id` indicates that the `node_id` field must reference the `id` field of an existing `StateNode` object).
 - `?` indicates an optional field.
 - `?*` indicates that a field is optional only under certain conditions.
 - `|` can be read as "or", and is used to indicate that a field, array, or json object can contain a more than one type of object or value.
@@ -15,7 +15,7 @@ __Notes for psuedocode interpretation:__
 __Top-level json object:__
 - `standard` is the name of the open standard.
 - `parties` is the list of parties relevant to the open standard.
-- The keys of the `node_definitions` object (denoted as `<node_tag>` below) define the node tags that the schema requires. `StateNode.meta.tag` must reference a defined node tag.
+- The keys of the `node_definitions` object (denoted as `<node_tag>` below) define the node tags that the schema requires. `StateNode.tag` must reference a defined node tag.
 - `state_nodes` is a list containing the `StateNode` objects that comprise the standard's dependency chart.
 - If two or more `StateNode` objects specify an identical `DependencySet` object (`StateNode.depends_on`), the `DependencySet` is added to the `referenced_dependency_sets` array and referenced by those nodes. `DependencySet` objects can be referenced in `StateNode.depends_on` using a `DependencySetReference` object.
 ````
@@ -41,16 +41,14 @@ type NodeDefinition {
 }
 ````
 __StateNode object type:__
-- `meta.tag` must be a key of the top-level (root) object's `node_definitions` object. A `StateNode`'s `tag` affects some aspects of `Dependency` validation within the `StateNode.depends_on` `DependencySet` (see the `Dependency` object type for more details).
+- `tag` must be a key of the top-level (root) object's `node_definitions` object. A `StateNode`'s `tag` affects some aspects of `Dependency` validation within the `StateNode.depends_on` `DependencySet` (see the `Dependency` object type for more details).
 ````
 type StateNode {
-    meta: {
-        id: integer
-        description: string,
-        node_type: StateNodeType,
-        applies_to: Party.name,
-        tag: root.node_definitions.key
-    },
+    id: integer
+    description: string,
+    node_type: StateNodeType,
+    applies_to: Party.name,
+    tag: root.node_definitions.key,
     depends_on: DependencySet?
 }
 ````
@@ -76,12 +74,13 @@ __DependencySet object type:__
 - `alias` should be a human-readable name followed by a 4-digit hashtag to ensure uniqueness. E.g. "humanReadableName#0000"
 - The `dependencies` array can include `Dependency` objects and/or `DependencySetReference` objects.
 - `alias` and `gate_type` are not required when there are one or zero dependencies in the set.
+- `description` can be used to provide more detail about the `DependencySet`.
 ````
 type DependencySet {
     alias: string,
     gate_type: GateType,
-
-    dependencies: [Dependency | DependencySetReference]
+    dependencies: [Dependency | DependencySetReference],
+    description: string?
 }
 ````
 __GateType enumeration:__
@@ -106,13 +105,14 @@ type DependencySetReference {
 __Dependency object type:__
 - Represents a dependency of the parent `StateNode` object.
 - `Dependency.node_id` references a `StateNode` object from the top-level object's `state_nodes` array.
-- `field_name` references a key of the `NodeDefinition` that's indicated by the referenced `StateNode`'s `meta.tag`.
+- `field_name` references a key of the `NodeDefinition` that's indicated by the referenced `StateNode`'s `tag`.
 - `comparison_value_type` must match the `field_type` of the referenced `field_name`.
 - A dependency is satisfied when applying the `comparison_operator` to the applicable comparison value field and the specified field on the referenced `StateNode` evaluates to `true`.
 - `comparison_value_type` indicates the applicable comparison value field for the dependency. Only the indicated comparison value field is required. Values of non-applicable comparison value fields are ignored during dependency evaluation.
+- `description` can be used to provide more detail about the `Dependency`.
 ````
 type Dependency {
-    node_id: StateNode.meta.id,
+    node_id: StateNode.id,
     field_name: NodeDefinition.key,
     comparison_operator: ComparisonOperator,
     comparison_value_type: FieldType,
@@ -122,7 +122,9 @@ type Dependency {
     numeric_comparison_value: number,
     boolean_comparison_value: boolean,
     string_list_comparison_value: [string],
-    numeric_list_comparison_value: [number]
+    numeric_list_comparison_value: [number],
+
+    description: string?
 }
 ````
 __ComparisonOperator enumeration:__

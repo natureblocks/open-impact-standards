@@ -20,13 +20,11 @@ def basic_schema():
 
 def node(node_id=None):
     return {
-        "meta": {
-            "id": node_id if node_id is not None else 0,
-            "description": "test node",
-            "node_type": "STATE",
-            "applies_to": "Project",
-            "tag": "Placeholder",
-        },
+        "id": node_id if node_id is not None else 0,
+        "description": "test node",
+        "node_type": "STATE",
+        "applies_to": "Project",
+        "tag": "Placeholder",
         "data": {"completed": {"field_type": "BOOLEAN"}},
     }
 

@@ -45,7 +45,7 @@ class SchemaValidator:
 
         next_id = 0
         if "state_nodes" in self.schema:
-            node_ids = [node["meta"]["id"] for node in self.schema["state_nodes"]]
+            node_ids = [node["id"] for node in self.schema["state_nodes"]]
             next_id = max(node_ids) + 1
 
         return next_id
@@ -56,7 +56,7 @@ class SchemaValidator:
             self.print_errors()
             raise Exception(f"Invalid schema")
 
-        return [node["meta"]["id"] for node in self.schema["state_nodes"]]
+        return [node["id"] for node in self.schema["state_nodes"]]
 
     def _validate_field(
         self, path, field, template, parent_object_template=None, parent_object=None
@@ -582,8 +582,8 @@ class SchemaValidator:
                 ):
                     for key in case["then"]:
                         if key == "property_modifiers":
-                            for prop, prop_modifiers in case["then"][key].items():
-                                modified_template["properties"][prop] = prop_modifiers
+                            for prop, prop_modifier in case["then"][key].items():
+                                modified_template["properties"][prop] = prop_modifier
                         else:
                             modified_template[key] = case["then"][key]
 
@@ -635,7 +635,7 @@ class SchemaValidator:
         )
 
     def _collect_node_dependency_set(self, path, node):
-        if "depends_on" not in node or "meta" not in node or "id" not in node["meta"]:
+        if "depends_on" not in node or "id" not in node:
             return
 
         dependency_set_is_invalid = len(
@@ -644,7 +644,7 @@ class SchemaValidator:
         if dependency_set_is_invalid:
             return
 
-        self._node_dependency_sets[node["meta"]["id"]] = node["depends_on"]
+        self._node_dependency_sets[node["id"]] = node["depends_on"]
 
     def _validate_node_dependency_sets(self):
         return (
@@ -777,10 +777,10 @@ class SchemaValidator:
 
         node = self._get_field(path[: idx + 1])
 
-        if "meta" not in node or "id" not in node["meta"]:
+        if "id" not in node:
             raise ex
 
-        return node["meta"]["id"]
+        return node["id"]
 
     def _resolve_query(self, obj, query):
         """Query components:

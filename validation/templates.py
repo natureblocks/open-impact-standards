@@ -1,4 +1,4 @@
-from enums import gate_types, state_node_types
+from enums import gate_types, state_node_types, field_types
 
 RESERVED_KEYWORDS = ["root", "keys", "values", "ERROR"]
 
@@ -23,7 +23,7 @@ root_object = {
                 "type": "object",
                 "template": "state_node",
             },
-            "unique": ["meta.id"],
+            "unique": ["id"],
         },
         "referenced_dependency_sets": {
             "type": "array",
@@ -49,15 +49,7 @@ node_definition = {
         "properties": {
             "field_type": {
                 "type": "enum",
-                "values": [
-                    "STRING",
-                    "NUMERIC",
-                    "BOOLEAN",
-                    "STRING_LIST",
-                    "NUMERIC_LIST",
-                    "EDGE",
-                    "EDGE_COLLECTION",
-                ],
+                "values": list(field_types) + ["EDGE", "EDGE_COLLECTION"]
             },
             "description": {"type": "string"},
         },
@@ -103,7 +95,7 @@ dependency = {
             "type": "reference",
             "references_any": {
                 "from": "root.state_nodes",
-                "property": "meta.id",
+                "property": "id",
             },
         },
         "field_name": {
@@ -147,16 +139,18 @@ dependency = {
             "type": "array",
             "values": {"type": "decimal"},
         },
+        "description": {"type": "string"},
     },
+    "optional": ["description"],
     "resolvers": {
         "$tag": {
             "from": "root.state_nodes",
             "where": {
-                "property": "meta.id",
+                "property": "id",
                 "operator": "EQUALS",
                 "value": {"from": "{this}", "extract": "node_id"},
             },
-            "extract": "meta.tag",
+            "extract": "tag",
         },
     },
     "switch": {
@@ -170,6 +164,7 @@ dependency = {
                         "boolean_comparison_value",
                         "string_list_comparison_value",
                         "numeric_list_comparison_value",
+                        "description",
                     ],
                     "property_modifiers": {
                         "comparison_operator": {
@@ -195,6 +190,7 @@ dependency = {
                         "boolean_comparison_value",
                         "string_list_comparison_value",
                         "numeric_list_comparison_value",
+                        "description",
                     ],
                     "property_modifiers": {
                         "comparison_operator": {
@@ -220,6 +216,7 @@ dependency = {
                         "numeric_comparison_value",
                         "string_list_comparison_value",
                         "numeric_list_comparison_value",
+                        "description",
                     ],
                     "property_modifiers": {
                         "comparison_operator": {
@@ -238,6 +235,7 @@ dependency = {
                         "numeric_comparison_value",
                         "boolean_comparison_value",
                         "numeric_list_comparison_value",
+                        "description",
                     ],
                     "property_modifiers": {
                         "comparison_operator": {
@@ -263,6 +261,7 @@ dependency = {
                         "numeric_comparison_value",
                         "boolean_comparison_value",
                         "string_list_comparison_value",
+                        "description",
                     ],
                     "property_modifiers": {
                         "comparison_operator": {
@@ -288,6 +287,7 @@ dependency_set = {
     "type": "object",
     "properties": {
         "alias": {"type": "string"},
+        "description": {"type": "string"},
         "gate_type": {"type": "enum", "values": gate_types},
         "dependencies": {
             "type": "array",
@@ -298,13 +298,14 @@ dependency_set = {
             "min_length": 1,
         },
     },
+    "optional": ["description"],
     "if": [
         {
             "property": "dependencies",
             "attribute": "length",
             "operator": "LESS_THAN_OR_EQUAL_TO",
             "value": 1,
-            "then": {"optional": ["alias", "gate_type"]},
+            "then": {"optional": ["alias", "gate_type", "description"]},
         }
     ],
 }
@@ -312,20 +313,15 @@ dependency_set = {
 state_node = {
     "type": "object",
     "properties": {
-        "meta": {
-            "type": "object",
-            "properties": {
-                "id": {"type": "integer"},
-                "tag": {"type": "string"},
-                "description": {"type": "string"},
-                "node_type": {"type": "enum", "values": state_node_types},
-                "applies_to": {
-                    "type": "reference",
-                    "references_any": {
-                        "from": "root.parties",
-                        "property": "name",
-                    },
-                },
+        "id": {"type": "integer"},
+        "tag": {"type": "string"},
+        "description": {"type": "string"},
+        "node_type": {"type": "enum", "values": state_node_types},
+        "applies_to": {
+            "type": "reference",
+            "references_any": {
+                "from": "root.parties",
+                "property": "name",
             },
         },
         "depends_on": {

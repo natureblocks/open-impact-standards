@@ -2,10 +2,10 @@
     "referenced_dependency_sets": [],
     "state_nodes": [
         {
-            "meta": {"id": 0}
+            "id": 0
         },
         {
-            "meta": {"id": 1},
+            "id": 1,
             "depends_on": {
                 "dependencies": [
                     {"node_id": 0}
@@ -13,7 +13,7 @@
             }
         },
         {
-            "meta": {"id": 2},
+            "id": 2,
             "depends_on": {
                 "dependencies": [
                     {"node_id": 0}
@@ -21,7 +21,7 @@
             }
         },
         {
-            "meta": {"id": 3},
+            "id": 3,
             "depends_on": {
                 "alias": "a#0000",
                 "gate_type": "AND",

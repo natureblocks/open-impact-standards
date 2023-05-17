@@ -205,7 +205,7 @@ class TestSchemaValidation:
 
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.state_nodes[1].depends_on.dependencies[0].node_id (node id: 1): expected any "meta.id" field from root.state_nodes, got 2'
+            'root.state_nodes[1].depends_on.dependencies[0].node_id (node id: 1): expected any "id" field from root.state_nodes, got 2'
             in errors
         )
 
@@ -215,7 +215,7 @@ class TestSchemaValidation:
         schema = fixtures.basic_schema_with_nodes(5)
 
         def set_node_id(idx, node_id):
-            schema["state_nodes"][idx]["meta"]["id"] = node_id
+            schema["state_nodes"][idx]["id"] = node_id
 
         node_ids = {
             0: 5,
@@ -230,16 +230,16 @@ class TestSchemaValidation:
 
         # introduce an error to check if the correct node id is displayed in the context
         node_idx = 0
-        schema["state_nodes"][node_idx]["meta"]["applies_to"] = "Vandelay Industries"
+        schema["state_nodes"][node_idx]["applies_to"] = "Vandelay Industries"
         errors = validator.validate(json_string=json.dumps(schema))
         assert len(errors) == 1
         assert (
-            f'root.state_nodes[0].meta.applies_to (node id: {node_ids[node_idx]}): expected any "name" field from root.parties, got "Vandelay Industries"'
+            f'root.state_nodes[0].applies_to (node id: {node_ids[node_idx]}): expected any "name" field from root.parties, got "Vandelay Industries"'
             in errors
         )
 
         # fix the error
-        schema["state_nodes"][node_idx]["meta"]["applies_to"] = "Project"
+        schema["state_nodes"][node_idx]["applies_to"] = "Project"
 
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
@@ -341,12 +341,10 @@ class TestSchemaValidation:
         schema["parties"].append({"name": "Project"})
         schema["state_nodes"].append(
             {
-                "meta": {
-                    "id": 1,
-                    "description": "test node",
-                    "node_type": "STATE",
-                    "applies_to": "Project",
-                },
+                "id": 1,
+                "description": "test node",
+                "node_type": "STATE",
+                "applies_to": "Project",
                 "depends_on": {
                     "dependencies": [
                         {
@@ -634,15 +632,15 @@ class TestSchemaValidation:
         assert len(schema["state_nodes"]) == 1
 
         schema["parties"] = [{"name": "Project"}]
-        schema["state_nodes"][0]["meta"]["applies_to"] = "something else"
+        schema["state_nodes"][0]["applies_to"] = "something else"
         errors = validator.validate(json_string=json.dumps(schema))
         assert len(errors) == 1
         assert (
             errors[0]
-            == 'root.state_nodes[0].meta.applies_to (node id: 0): expected any "name" field from root.parties, got "something else"'
+            == 'root.state_nodes[0].applies_to (node id: 0): expected any "name" field from root.parties, got "something else"'
         )
 
-        schema["state_nodes"][0]["meta"]["applies_to"] = "Project"
+        schema["state_nodes"][0]["applies_to"] = "Project"
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
@@ -706,20 +704,20 @@ class TestSchemaValidation:
         validator = SchemaValidator()
 
         schema = fixtures.basic_schema_with_nodes(2)
-        schema["state_nodes"][0]["meta"]["id"] = 1
+        schema["state_nodes"][0]["id"] = 1
         assert (
-            schema["state_nodes"][0]["meta"]["id"]
-            == schema["state_nodes"][1]["meta"]["id"]
+            schema["state_nodes"][0]["id"]
+            == schema["state_nodes"][1]["id"]
         )
 
         errors = validator.validate(json_string=json.dumps(schema))
         assert len(errors) == 1
         assert (
             errors[0]
-            == 'root.state_nodes: duplicate value provided for unique field "meta.id": 1'
+            == 'root.state_nodes: duplicate value provided for unique field "id": 1'
         )
 
-        schema["state_nodes"][0]["meta"]["id"] = 0
+        schema["state_nodes"][0]["id"] = 0
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 

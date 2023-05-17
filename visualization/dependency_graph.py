@@ -50,7 +50,7 @@ class DependencyGraph:
     def _json_schema_to_graph(self):
         self.graph = nx.DiGraph()
 
-        self.nodes = {n["meta"]["id"]: n for n in self.schema["state_nodes"]}
+        self.nodes = {n["id"]: n for n in self.schema["state_nodes"]}
         self.dependency_sets = self.schema["referenced_dependency_sets"]
 
         self.edge_tuples = []
@@ -131,11 +131,10 @@ class DependencyGraph:
         shape_dict = {}
 
         for node_id, node in self.nodes.items():
-            node_meta = node["meta"]
             shape_dict[node_id] = mb.create_shape(
-                shape_type=shape_types[node_meta["node_type"]],
-                content=node_meta["description"],
-                fill_color=node_colors[node_meta["applies_to"]],
+                shape_type=shape_types[node["node_type"]],
+                content=node["description"],
+                fill_color=node_colors[node["applies_to"]],
                 x=self.node_coordinates[node_id][0] * self.x_coord_factor,
                 y=self.node_coordinates[node_id][1] * self.y_coord_factor,
             )

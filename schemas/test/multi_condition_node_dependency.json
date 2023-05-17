@@ -17,22 +17,18 @@
     },
     "state_nodes": [
         {
-            "meta": {
-                "id": 0,
-                "description": "Node 0",
-                "node_type": "ACTION",
-                "applies_to": "Project Developer",
-                "tag": "Placeholder"
-            }
+            "id": 0,
+            "description": "Node 0",
+            "node_type": "ACTION",
+            "applies_to": "Project Developer",
+            "tag": "Placeholder"
         },
         {
-            "meta": {
-                "id": 1,
-                "description": "Node 1",
-                "node_type": "ACTION",
-                "applies_to": "Project Developer",
-                "tag": "Placeholder"
-            },
+            "id": 1,
+            "description": "Node 1",
+            "node_type": "ACTION",
+            "applies_to": "Project Developer",
+            "tag": "Placeholder",
             "depends_on": {
                 "alias": "a#0000",
                 "gate_type": "AND",
