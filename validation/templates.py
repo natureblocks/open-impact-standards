@@ -1,4 +1,4 @@
-from enums import gate_types, state_node_types, field_types
+from enums import gate_types, state_node_types, field_types, milestones
 
 RESERVED_KEYWORDS = ["root", "keys", "values", "ERROR"]
 
@@ -23,7 +23,7 @@ root_object = {
                 "type": "object",
                 "template": "state_node",
             },
-            "unique": ["id"],
+            "unique": ["id", "milestones"],
         },
         "referenced_dependency_sets": {
             "type": "array",
@@ -328,8 +328,15 @@ state_node = {
             "type": "object",
             "template": "dependency_set",
         },
+        "milestones": {
+            "type": "array",
+            "values": {
+                "type": "enum",
+                "values": milestones
+            }
+        }
     },
-    "optional": ["depends_on"],
+    "optional": ["depends_on", "milestones"],
 }
 
 party = {"type": "object", "properties": {"name": {"type": "string"}}}

@@ -42,6 +42,7 @@ type NodeDefinition {
 ````
 __StateNode object type:__
 - `tag` must be a key of the top-level (root) object's `node_definitions` object. A `StateNode`'s `tag` affects some aspects of `Dependency` validation within the `StateNode.depends_on` `DependencySet` (see the `Dependency` object type for more details).
+- A `StateNode` may specify 0 or more `Milestone` values, but a given `Milestone` value may not appear on `StateNode` objects more than once per schema.
 ````
 type StateNode {
     id: integer
@@ -49,7 +50,8 @@ type StateNode {
     node_type: StateNodeType,
     applies_to: Party.name,
     tag: root.node_definitions.key,
-    depends_on: DependencySet?
+    depends_on: DependencySet?,
+    milestones: [Milestone]?
 }
 ````
 __StateNodeType enumeration:__
@@ -68,6 +70,16 @@ enum FieldType {
     "BOOLEAN",
     "STRING_LIST",
     "NUMERIC_LIST"
+}
+````
+__Milestone enumeration:__
+````
+enum Milestone {
+    "REAL",
+    "CLEAR_OWNERSHIP",
+    "PERMANENT",
+    "ADDITIONAL",
+    "VERIFIABLE"
 }
 ````
 __DependencySet object type:__

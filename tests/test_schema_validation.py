@@ -4,6 +4,7 @@ import logging
 from tests import fixtures
 from validation import templates
 from validation.schema_validator import SchemaValidator
+from enums import milestones
 
 logger = logging.getLogger("schema_validation")
 
@@ -66,6 +67,42 @@ class TestSchemaValidation:
         logger.debug(
             "\nNode ids in schema:\n" + "\n".join([str(id) for id in node_ids])
         )
+
+    def test_milestones(self):
+        validator = SchemaValidator()
+
+        schema = fixtures.basic_schema_with_nodes(2)
+
+        schema["state_nodes"][0]["milestones"] = ["FAKE"]
+
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert len(errors) == 1
+        assert f'root.state_nodes[0].milestones (node id: 0): invalid enum value: expected one of {json.dumps(milestones)}, got "FAKE"'
+
+        # A single StateNode should not list the same milestone twice
+        schema["state_nodes"][0]["milestones"] = ["REAL", "REAL"]
+
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert len(errors) == 1
+        assert (
+            'root.state_nodes: duplicate value provided for unique field "milestones": "REAL"'
+            in errors
+        )
+
+        # Two StateNodes should not list the same milestone
+        schema["state_nodes"][0]["milestones"] = ["REAL", "ADDITIONAL"]
+        schema["state_nodes"][1]["milestones"] = ["REAL"]
+
+        assert len(errors) == 1
+        assert (
+            'root.state_nodes: duplicate value provided for unique field "milestones": "REAL"'
+            in errors
+        )
+
+        schema["state_nodes"][1]["milestones"] = ["PERMANENT"]
+
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
 
     def test_duplicate_node_dependency_sets(self):
         validator = SchemaValidator()
@@ -705,10 +742,7 @@ class TestSchemaValidation:
 
         schema = fixtures.basic_schema_with_nodes(2)
         schema["state_nodes"][0]["id"] = 1
-        assert (
-            schema["state_nodes"][0]["id"]
-            == schema["state_nodes"][1]["id"]
-        )
+        assert schema["state_nodes"][0]["id"] == schema["state_nodes"][1]["id"]
 
         errors = validator.validate(json_string=json.dumps(schema))
         assert len(errors) == 1

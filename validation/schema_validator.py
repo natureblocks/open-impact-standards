@@ -315,9 +315,15 @@ class SchemaValidator:
             unique_values = {}
             for item in field if isinstance(field, list) else field.values():
                 if field_name in item:
-                    unique_values[item[field_name]] = (
-                        item[field_name] not in unique_values
-                    )
+                    if isinstance(item[field_name], list):
+                        # Note that if a field of type "array" is specified as unique,
+                        # a value cannot be repeated within the array or across arrays.
+                        for sub_item in item[field_name]:
+                            unique_values[sub_item] = sub_item not in unique_values
+                    else:
+                        unique_values[item[field_name]] = (
+                            item[field_name] not in unique_values
+                        )
                 elif "." in field_name:
                     val = self._get_field(field_name, obj=item)
                     unique_values[val] = val not in unique_values
