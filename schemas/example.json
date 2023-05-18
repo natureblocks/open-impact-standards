@@ -1,0 +1,189 @@
+{
+    "standard": "Example Standard",
+    "parties": [
+        {"name": "Party 1"},
+        {"name": "Party 2"}
+    ],
+    "node_definitions": {
+        "MyNodeTag": {
+            "a_boolean_field": {
+                "field_type": "BOOLEAN",
+                "description": "A true of false field"
+            },
+            "a_string_field": {
+                "field_type": "STRING",
+                "description": "A string of characters"
+            },
+            "a_numeric_field": {
+                "field_type": "NUMERIC",
+                "description": "An integer or decimal field"
+            },
+            "a_string_list_field": {
+                "field_type": "STRING_LIST",
+                "description": "A list of strings"
+            },
+            "a_numeric_list_field": {
+                "field_type": "NUMERIC_LIST",
+                "description": "A list of numbers"
+            }
+        },
+        "MyOtherNodeTag": {
+            "an_edge": {
+                "field_type": "EDGE",
+                "tag": "MyNodeTag",
+                "description": "A reference to a 'MyNodeTag' node"
+            }
+        },
+        "AThirdNodeTag": {
+            "an_edge_collection": {
+                "field_type": "EDGE_COLLECTION",
+                "tag": "MyOtherNodeTag",
+                "description": "A collection of references to 'MyOtherNodeTag' nodes"
+            }
+        }
+    },
+    "referenced_dependency_sets": [
+        {
+            "alias": "A referenced dependency set#0000",
+            "gate_type": "OR",
+            "dependencies": [
+                {
+                    "node_id": 0,
+                    "field_name": "a_boolean_field",
+                    "comparison_value_type": "BOOLEAN",
+                    "comparison_operator": "EQUALS",
+                    "boolean_comparison_value": true
+                    
+                },
+                {
+                    "node_id": 1,
+                    "field_name": "a_string_field",
+                    "comparison_value_type": "STRING",
+                    "comparison_operator": "DOES_NOT_EQUAL",
+                    "string_comparison_value": "foo"
+                }
+            ]
+        }
+    ],
+    "state_nodes": [
+        {
+            "id": 0,
+            "description": "An entry node (no dependencies)",
+            "node_type": "STATE",
+            "applies_to": "Party 1",
+            "tag": "MyNodeTag"
+        },
+        {
+            "id": 1,
+            "description": "Another entry node",
+            "node_type": "STATE",
+            "applies_to": "Party 2",
+            "tag": "MyNodeTag"
+        },
+        {
+            "id": 2,
+            "description": "A node with a dependency",
+            "node_type": "ACTION",
+            "applies_to": "Party 1",
+            "tag": "MyNodeTag",
+            "depends_on": {
+                "dependencies": [
+                    {
+                        "description": "An example of a dependency",
+                        "node_id": 0,
+                        "field_name": "a_boolean_field",
+                        "comparison_value_type": "BOOLEAN",
+                        "comparison_operator": "EQUALS",
+                        "boolean_comparison_value": true
+                    }
+                ]
+            }
+        },
+        {
+            "id": 3,
+            "description": "A node with multiple dependencies",
+            "node_type": "STATE",
+            "applies_to": "Party 1",
+            "tag": "MyNodeTag",
+            "depends_on": {
+                "alias": "A dependency set#0000",
+                "gate_type": "AND",
+                "dependencies": [
+                    {
+                        "node_id": 0,
+                        "field_name": "a_numeric_field",
+                        "comparison_value_type": "NUMERIC",
+                        "comparison_operator": "GREATER_THAN",
+                        "numeric_comparison_value": 9000
+                    },
+                    {
+                        "node_id": 1,
+                        "field_name": "a_string_list_field",
+                        "comparison_value_type": "STRING_LIST",
+                        "comparison_operator": "CONTAINS",
+                        "string_list_comparison_value": "bar"
+                    }
+                ]
+            }
+        },
+        {
+            "id": 4,
+            "description": "A node with a dependency set reference",
+            "node_type": "ACTION",
+            "applies_to": "Party 1",
+            "tag": "MyNodeTag",
+            "depends_on": {
+                "dependencies": [
+                    {
+                        "alias": "A referenced dependency set#0000",
+                        "description": "A DependencySetReference example. The referenced 'alias' is from the 'referenced_dependency_sets' array"
+                    }
+                ]
+            }
+        },
+        {
+            "id": 5,
+            "description": "Another node with a dependency set reference",
+            "node_type": "ACTION",
+            "applies_to": "Party 2",
+            "tag": "MyNodeTag",
+            "depends_on": {
+                "alias": "A mixed DependencySet#0000",
+                "description": "The referenced DependencySet AND a new Dependency",
+                "gate_type": "AND",
+                "dependencies": [
+                    {
+                        "alias": "A referenced dependency set#0000",
+                        "description": "This DependencySetReference refers to the same 'alias' as the previous StateNode's dependencies"
+                    },
+                    {
+                        "node_id": 3,
+                        "field_name": "a_numeric_list_field",
+                        "comparison_value_type": "NUMERIC_LIST",
+                        "comparison_operator": "DOES_NOT_CONTAIN",
+                        "numeric_list_comparison_value": 13
+                    }
+                ]
+            }
+        },
+        {
+            "id": 6,
+            "description": "A node that is marked by a Milestone. When its dependencies are met, the Milestone is reached.",
+            "milestones": ["CLEAR_OWNERSHIP"],
+            "node_type": "STATE",
+            "applies_to": "Party 1",
+            "tag": "MyNodeTag",
+            "depends_on": {
+                "dependencies": [
+                    {
+                        "node_id": 5,
+                        "field_name": "a_boolean_field",
+                        "comparison_value_type": "BOOLEAN",
+                        "comparison_operator": "EQUALS",
+                        "boolean_comparison_value": true
+                    }
+                ]
+            }
+        }
+    ]
+}
