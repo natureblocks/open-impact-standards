@@ -153,6 +153,9 @@ class SchemaValidator:
                     path=f"{path}.{key}", field=field[key], template=template["values"]
                 )
 
+        if "unique" in template:
+            errors += self._validate_unique(path, field, template)
+
         return errors
 
     def _validate_multi_template_object(self, path, field, template):
@@ -318,7 +321,15 @@ class SchemaValidator:
         for field_name in template["unique"]:
             unique_values = {}
             for item in field if isinstance(field, list) else field.values():
-                if field_name in item:
+                if isinstance(item, list):
+                    for sub_item in item:
+                        key = (
+                            sub_item
+                            if not isinstance(sub_item, dict)
+                            else json.dumps(utils.recursive_sort(sub_item))
+                        )
+                        unique_values[key] = key not in unique_values
+                elif field_name in item:
                     if isinstance(item[field_name], list):
                         # Note that if a field of type "array" is specified as unique,
                         # a value cannot be repeated within the array or across arrays.

@@ -358,6 +358,7 @@ dependency_set = {
         },
     },
     "optional": ["description"],
+    "unique": ["dependencies"],
     "if": [
         {
             "property": "dependencies",

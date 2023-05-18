@@ -14,7 +14,12 @@ def basic_schema():
         "parties": [],
         "state_nodes": [],
         "referenced_dependency_sets": [],
-        "node_definitions": {"Placeholder": {"completed": {"field_type": "BOOLEAN"}}},
+        "node_definitions": {
+            "Placeholder": {
+                "completed": {"field_type": "BOOLEAN"},
+                "name": {"field_type": "STRING"},
+            }
+        },
     }
 
 

@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 
@@ -231,6 +232,37 @@ class TestSchemaValidation:
 
         errors = validator.validate(json_string=json.dumps(schema))
         assert "Circular dependency detected (dependency path: [0, 1, 2, 3])" in errors
+
+    def test_duplicate_dependencies(self):
+        validator = SchemaValidator()
+
+        schema = fixtures.basic_schema_with_nodes(2)
+        duplicate_dependency = fixtures.dependency(0)
+        duplicate_dependency["field_name"] = "name"
+        duplicate_dependency["comparison_value_type"] = "STRING"
+        duplicate_dependency["string_comparison_value"] = "Bob"
+        schema["state_nodes"][1]["depends_on"] = {
+            "alias": "ds#0000",
+            "gate_type": "AND",
+            "dependencies": [
+                duplicate_dependency,
+                copy.deepcopy(duplicate_dependency),
+            ],
+        }
+
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert len(errors) == 1
+        assert (
+            f'root.state_nodes[1].depends_on (node id: 1): duplicate value provided for unique field "dependencies":'
+            in errors[0]
+        )
+
+        schema["state_nodes"][1]["depends_on"]["dependencies"][0][
+            "string_comparison_value"
+        ] = "Rob"
+
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
 
     def test_broken_dependency(self):
         validator = SchemaValidator()
