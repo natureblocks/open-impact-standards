@@ -82,14 +82,18 @@ class SchemaValidator:
 
     def _validate_multi_type_field(self, path, field, allowed_types):
         for allowed_type in allowed_types:
-            type_validator = getattr(self, "_validate_" + allowed_type, None)
+            if isinstance(allowed_type, dict):
+                errors = self._validate_field(path, field, allowed_type)
+            else:
+                type_validator = getattr(self, "_validate_" + allowed_type, None)
 
-            if type_validator is None:
-                raise NotImplementedError(
-                    "no validation method exists for type: " + allowed_type
-                )
+                if type_validator is None:
+                    raise NotImplementedError(
+                        "no validation method exists for type: " + allowed_type
+                    )
 
-            errors = type_validator(path, field, {"type": allowed_type})
+                errors = type_validator(path, field, {"type": allowed_type})
+
             if len(errors) == 0:
                 return []
 
@@ -340,7 +344,7 @@ class SchemaValidator:
 
         return errors
 
-    def _get_field(self, path, obj=None):
+    def _get_field(self, path, obj=None, throw_on_invalid_path=False):
         if not path:
             return obj
 
@@ -366,6 +370,9 @@ class SchemaValidator:
                     continue
 
             # If a continue statement was not reached, the path leads nowhere
+            if throw_on_invalid_path:
+                raise Exception(f"Invalid path: {path}")
+
             return None
 
         return obj
@@ -569,15 +576,12 @@ class SchemaValidator:
         if "if" in template:
             for condition in modified_template["if"]:
                 if self._template_condition_is_true(condition, field):
-                    for key in condition["then"]:
-                        if key == "property_modifiers":
-                            for prop, prop_modifier in condition["then"][key].items():
-                                modified_template["properties"][prop] = prop_modifier
-                        else:
-                            modified_template[key] = condition["then"][key]
+                    modified_template = self._apply_template_conditionals(
+                        condition["then"], modified_template
+                    )
                 elif "else" in condition:
-                    raise NotImplementedError(
-                        "else conditionals not yet supported for templates"
+                    modified_template = self._apply_template_conditionals(
+                        condition["else"], modified_template
                     )
 
         if "switch" in template:
@@ -586,15 +590,30 @@ class SchemaValidator:
                     template["switch"]["property"] in field
                     and case["equals"] == field[template["switch"]["property"]]
                 ):
-                    for key in case["then"]:
-                        if key == "property_modifiers":
-                            for prop, prop_modifier in case["then"][key].items():
-                                modified_template["properties"][prop] = prop_modifier
-                        else:
-                            modified_template[key] = case["then"][key]
+                    modified_template = self._apply_template_conditionals(
+                        case["then"], modified_template
+                    )
 
                     if case["break"]:
                         break
+
+        if "add_conditionals" in modified_template:
+            if "if" in modified_template["add_conditionals"]:
+                modified_template["if"] = modified_template["add_conditionals"]["if"]
+            else:
+                del modified_template["if"]
+
+            if "switch" in modified_template["add_conditionals"]:
+                modified_template["switch"] = modified_template["add_conditionals"][
+                    "switch"
+                ]
+            else:
+                del modified_template["switch"]
+
+            del modified_template["add_conditionals"]
+
+            # Recursively evaluate any conditionals added by the current conditionals
+            return self._evaluate_template_conditionals(field, modified_template)
 
         return modified_template
 
@@ -603,11 +622,13 @@ class SchemaValidator:
         if not all(prop in condition for prop in required_props):
             raise Exception(f"Invalid template condition: {condition}")
 
-        prop = self._get_field(condition["property"], field)
+        prop = self._get_field(condition["property"], field, throw_on_invalid_path=True)
 
         if "attribute" in condition:
             if condition["attribute"] == "length":
                 prop = len(prop)
+            elif condition["attribute"] == "type":
+                prop = utils.field_type_from_python_type_name(type(prop).__name__)
 
         operator = condition["operator"]
         value = condition["value"]
@@ -639,6 +660,16 @@ class SchemaValidator:
         raise NotImplementedError(
             "template operator not yet supported: " + str(operator)
         )
+
+    def _apply_template_conditionals(self, conditional_modifiers, to_template):
+        for key in conditional_modifiers:
+            if key == "property_modifiers":
+                for prop, prop_modifier in conditional_modifiers[key].items():
+                    to_template["properties"][prop] = prop_modifier
+            else:
+                to_template[key] = conditional_modifiers[key]
+
+        return to_template
 
     def _collect_node_dependency_set(self, path, node):
         if "depends_on" not in node or "id" not in node:

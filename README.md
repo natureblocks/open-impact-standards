@@ -150,12 +150,13 @@ enum ComparisonOperator {
     "LESS_THAN_OR_EQUAL_TO",
     "MATCHES_REGEX",
     "DOES_NOT_MATCH_REGEX",
+    "ONE_OF",
+    "NONE_OF",
     "CONTAINS",
     "DOES_NOT_CONTAIN",
-    "ANY_OF",
-    "NONE_OF",
-    "ONE_OF",
-    "ALL_OF"
+    "CONTAINS_ANY_OF",
+    "CONTAINS_ALL_OF",
+    "CONTAINS_NONE_OF"
 }
 ````
 __Party object:__

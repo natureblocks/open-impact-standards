@@ -116,12 +116,13 @@ dependency = {
                 "LESS_THAN_OR_EQUAL_TO",
                 "MATCHES_REGEX",
                 "DOES_NOT_MATCH_REGEX",
+                "ONE_OF",
+                "NONE_OF",
                 "CONTAINS",
                 "DOES_NOT_CONTAIN",
-                "ANY_OF",
-                "NONE_OF",
-                "ONE_OF",
-                "ALL_OF",
+                "CONTAINS_ANY_OF",
+                "CONTAINS_ALL_OF",
+                "CONTAINS_NONE_OF",
             ],
         },
         "comparison_value_type": {
@@ -132,12 +133,22 @@ dependency = {
         "numeric_comparison_value": {"type": "decimal"},
         "boolean_comparison_value": {"type": "boolean"},
         "string_list_comparison_value": {
-            "type": "array",
-            "values": {"type": "string"},
+            "types": [
+                {
+                    "type": "array",
+                    "values": {"type": "string"},
+                },
+                {"type": "string"}
+            ]
         },
         "numeric_list_comparison_value": {
-            "type": "array",
-            "values": {"type": "decimal"},
+            "types": [
+                {
+                    "type": "array",
+                    "values": {"type": "decimal"},
+                },
+                {"type": "decimal"}
+            ],
         },
         "description": {"type": "string"},
     },
@@ -176,6 +187,8 @@ dependency = {
                                 "DOES_NOT_MATCH_REGEX",
                                 "CONTAINS",
                                 "DOES_NOT_CONTAIN",
+                                "ONE_OF",
+                                "NONE_OF",
                             ],
                         },
                     },
@@ -202,6 +215,8 @@ dependency = {
                                 "LESS_THAN",
                                 "GREATER_THAN_OR_EQUAL_TO",
                                 "LESS_THAN_OR_EQUAL_TO",
+                                "ONE_OF",
+                                "NONE_OF",
                             ],
                         },
                     },
@@ -237,19 +252,41 @@ dependency = {
                         "numeric_list_comparison_value",
                         "description",
                     ],
-                    "property_modifiers": {
-                        "comparison_operator": {
-                            "type": "enum",
-                            "values": [
-                                "EQUALS",
-                                "DOES_NOT_EQUAL",
-                                "ANY_OF",
-                                "NONE_OF",
-                                "ONE_OF",
-                                "ALL_OF",
-                            ],
-                        },
-                    },
+                    "add_conditionals": {
+                        "if": [
+                            {
+                                "property": "string_list_comparison_value",
+                                "attribute": "type",
+                                "operator": "EQUALS",
+                                "value": "STRING",
+                                "then": {
+                                    "property_modifiers": {
+                                        "comparison_operator": {
+                                            "type": "enum",
+                                            "values": [
+                                                "CONTAINS",
+                                                "DOES_NOT_CONTAIN",
+                                            ],
+                                        },
+                                    },
+                                },
+                                "else": {
+                                    "property_modifiers": {
+                                        "comparison_operator": {
+                                            "type": "enum",
+                                            "values": [
+                                                "EQUALS",
+                                                "DOES_NOT_EQUAL",
+                                                "CONTAINS_ANY_OF",
+                                                "CONTAINS_ALL_OF",
+                                                "CONTAINS_NONE_OF",
+                                            ],
+                                        },
+                                    },
+                                }
+                            }
+                        ]
+                    }
                 },
                 "break": True,
             },
@@ -263,19 +300,41 @@ dependency = {
                         "string_list_comparison_value",
                         "description",
                     ],
-                    "property_modifiers": {
-                        "comparison_operator": {
-                            "type": "enum",
-                            "values": [
-                                "EQUALS",
-                                "DOES_NOT_EQUAL",
-                                "ANY_OF",
-                                "NONE_OF",
-                                "ONE_OF",
-                                "ALL_OF",
-                            ],
-                        },
-                    },
+                    "add_conditionals": {
+                        "if": [
+                            {
+                                "property": "numeric_list_comparison_value",
+                                "attribute": "type",
+                                "operator": "EQUALS",
+                                "value": "NUMERIC",
+                                "then": {
+                                    "property_modifiers": {
+                                        "comparison_operator": {
+                                            "type": "enum",
+                                            "values": [
+                                                "CONTAINS",
+                                                "DOES_NOT_CONTAIN",
+                                            ],
+                                        },
+                                    },
+                                },
+                                "else": {
+                                    "property_modifiers": {
+                                        "comparison_operator": {
+                                            "type": "enum",
+                                            "values": [
+                                                "EQUALS",
+                                                "DOES_NOT_EQUAL",
+                                                "CONTAINS_ANY_OF",
+                                                "CONTAINS_ALL_OF",
+                                                "CONTAINS_NONE_OF",
+                                            ],
+                                        },
+                                    },
+                                }
+                            }
+                        ]
+                    }
                 },
                 "break": True,
             },

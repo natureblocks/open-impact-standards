@@ -236,7 +236,7 @@
                     {
                         "node_id": 5,
                         "field_name": "some_list",
-                        "comparison_operator": "ONE_OF",
+                        "comparison_operator": "CONTAINS_ANY_OF",
                         "comparison_value_type": "STRING_LIST",
                         "string_list_comparison_value": [
                             "a",

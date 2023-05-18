@@ -9,6 +9,20 @@ def get_template(template_name):
 
     raise Exception(f"Template not found: {template_name}")
 
+def field_type_from_python_type_name(python_type_name):
+    type_map = {
+        "str": "STRING",
+        "int": "NUMERIC",
+        "float": "NUMERIC",
+        "bool": "BOOLEAN",
+        "list": "LIST",
+        "dict": "OBJECT",
+    }
+
+    if python_type_name in type_map:
+        return type_map[python_type_name]
+
+    raise NotImplementedError(f"Field type not found for python type: {python_type_name}")
 
 def recursive_sort(obj):
     if isinstance(obj, dict):

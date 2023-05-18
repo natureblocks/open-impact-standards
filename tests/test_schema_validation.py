@@ -500,6 +500,8 @@ class TestSchemaValidation:
             "DOES_NOT_MATCH_REGEX",
             "CONTAINS",
             "DOES_NOT_CONTAIN",
+            "ONE_OF",
+            "NONE_OF",
         ]
 
         errors = validator.validate(json_string=json.dumps(schema))
