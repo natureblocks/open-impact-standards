@@ -241,6 +241,7 @@ class TestSchemaValidation:
         duplicate_dependency["field_name"] = "name"
         duplicate_dependency["comparison_value_type"] = "STRING"
         duplicate_dependency["string_comparison_value"] = "Bob"
+        del duplicate_dependency["boolean_comparison_value"]
         schema["state_nodes"][1]["depends_on"] = {
             "alias": "ds#0000",
             "gate_type": "AND",
@@ -401,6 +402,41 @@ class TestSchemaValidation:
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
+    def test_forbidden_properties(self):
+        validator = SchemaValidator()
+
+        schema = fixtures.basic_schema_with_nodes(2)
+        schema["state_nodes"][1]["depends_on"] = {
+            "dependencies": [fixtures.dependency(0)]
+        }
+
+        assert (
+            schema["node_definitions"]["Placeholder"]["completed"]["field_type"]
+            == "BOOLEAN"
+        )
+        assert (
+            schema["state_nodes"][1]["depends_on"]["dependencies"][0]["field_name"]
+            == "completed"
+        )
+
+        # Include a forbidden property
+        schema["state_nodes"][1]["depends_on"]["dependencies"][0][
+            "string_comparison_value"
+        ] = "some string"
+
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            f"root.state_nodes[1].depends_on.dependencies[0] (node id: 1): forbidden property specified: string_comparison_value; reason: comparison_value_type is BOOLEAN"
+            in errors
+        )
+
+        del schema["state_nodes"][1]["depends_on"]["dependencies"][0][
+            "string_comparison_value"
+        ]
+
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
     def test_mutually_exclusive_properties(self):
         return  # The schema spec does not currently include mutually exclusive properties
 
@@ -552,6 +588,9 @@ class TestSchemaValidation:
         schema["state_nodes"][1]["depends_on"]["dependencies"][0][
             "string_comparison_value"
         ] = "some string"
+        del schema["state_nodes"][1]["depends_on"]["dependencies"][0][
+            "boolean_comparison_value"
+        ]
 
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors

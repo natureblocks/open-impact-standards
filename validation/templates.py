@@ -170,13 +170,15 @@ dependency = {
             {
                 "equals": "STRING",
                 "then": {
-                    "optional": [
-                        "numeric_comparison_value",
-                        "boolean_comparison_value",
-                        "string_list_comparison_value",
-                        "numeric_list_comparison_value",
-                        "description",
-                    ],
+                    "forbidden": {
+                        "properties": [
+                            "numeric_comparison_value",
+                            "boolean_comparison_value",
+                            "string_list_comparison_value",
+                            "numeric_list_comparison_value",
+                        ],
+                        "reason": "comparison_value_type is STRING"
+                    },
                     "property_modifiers": {
                         "comparison_operator": {
                             "type": "enum",
@@ -198,13 +200,15 @@ dependency = {
             {
                 "equals": "NUMERIC",
                 "then": {
-                    "optional": [
-                        "string_comparison_value",
-                        "boolean_comparison_value",
-                        "string_list_comparison_value",
-                        "numeric_list_comparison_value",
-                        "description",
-                    ],
+                    "forbidden": {
+                        "properties": [
+                            "string_comparison_value",
+                            "boolean_comparison_value",
+                            "string_list_comparison_value",
+                            "numeric_list_comparison_value",
+                        ],
+                        "reason": "comparison_value_type is NUMERIC"
+                    },
                     "property_modifiers": {
                         "comparison_operator": {
                             "type": "enum",
@@ -226,13 +230,15 @@ dependency = {
             {
                 "equals": "BOOLEAN",
                 "then": {
-                    "optional": [
-                        "string_comparison_value",
-                        "numeric_comparison_value",
-                        "string_list_comparison_value",
-                        "numeric_list_comparison_value",
-                        "description",
-                    ],
+                    "forbidden": {
+                        "properties": [
+                            "string_comparison_value",
+                            "numeric_comparison_value",
+                            "string_list_comparison_value",
+                            "numeric_list_comparison_value",
+                        ],
+                        "reason": "comparison_value_type is BOOLEAN"
+                    },
                     "property_modifiers": {
                         "comparison_operator": {
                             "type": "enum",
@@ -245,13 +251,15 @@ dependency = {
             {
                 "equals": "STRING_LIST",
                 "then": {
-                    "optional": [
-                        "string_comparison_value",
-                        "numeric_comparison_value",
-                        "boolean_comparison_value",
-                        "numeric_list_comparison_value",
-                        "description",
-                    ],
+                    "forbidden": {
+                        "properties": [
+                            "string_comparison_value",
+                            "numeric_comparison_value",
+                            "boolean_comparison_value",
+                            "numeric_list_comparison_value",
+                        ],
+                        "reason": "comparison_value_type is STRING_LIST"
+                    },
                     "add_conditionals": {
                         "if": [
                             {
@@ -293,13 +301,15 @@ dependency = {
             {
                 "equals": "NUMERIC_LIST",
                 "then": {
-                    "optional": [
-                        "string_comparison_value",
-                        "numeric_comparison_value",
-                        "boolean_comparison_value",
-                        "string_list_comparison_value",
-                        "description",
-                    ],
+                    "forbidden": {
+                        "properties": [
+                            "string_comparison_value",
+                            "numeric_comparison_value",
+                            "boolean_comparison_value",
+                            "string_list_comparison_value",
+                        ],
+                        "reason": "comparison_value_type is NUMERIC_LIST",
+                    },
                     "add_conditionals": {
                         "if": [
                             {

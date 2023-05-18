@@ -112,16 +112,24 @@ class SchemaValidator:
 
         errors = []
         if "properties" in template:
-            (meta__property_errors, template) = self._evaluate_meta_properties(
+            (meta_property_errors, template) = self._evaluate_meta_properties(
                 path, field, template
             )
-            errors += meta__property_errors
+            errors += meta_property_errors
 
+            # Check that all required properties are present
             for key in template["properties"]:
                 if key not in field and self._field_is_required(key, template):
                     errors += [
                         f"{self._context(path)}: missing required property: {key}"
                     ]
+
+            if "forbidden" in template:
+                for key in template["forbidden"]["properties"]:
+                    if key in field:
+                        errors += [
+                            f"{self._context(path)}: forbidden property specified: {key}; reason: {template['forbidden']['reason']}"
+                        ]
 
             for key in field:
                 if key in template["properties"]:
@@ -305,11 +313,16 @@ class SchemaValidator:
 
         return [f"{self._context(path)}: expected boolean, got {str(type(field))}"]
 
-    def _field_is_required(self, key, template=None):
-        if "optional" in template and key in template["optional"]:
+    def _field_is_required(self, key, template):
+        if ("optional" in template and key in template["optional"]) or (
+            "forbidden" in template and key in template["forbidden"]["properties"]
+        ):
             return False
 
         return True
+
+    def _field_is_forbidden(self, key, template):
+        return "forbidden" in template and key in template["forbidden"]
 
     def _validate_min_length(self, path, field, template):
         if "min_length" in template and len(field) < template["min_length"]:
@@ -500,9 +513,10 @@ class SchemaValidator:
             if prop in field:
                 included_props.append(prop)
 
-        template["optional"] = [
+        modified_template = copy.deepcopy(template)
+        modified_template["optional"] = [
             prop
-            for prop in template["mutually_exclusive"]
+            for prop in modified_template["mutually_exclusive"]
             if prop not in included_props
         ]
 
@@ -511,10 +525,10 @@ class SchemaValidator:
                 [
                     f"{self._context(path)}: more than one mutually exclusive property specified: {included_props}"
                 ],
-                template,
+                modified_template,
             )
 
-        return ([], template)
+        return ([], modified_template)
 
     def _resolve_template(self, path, field, template):
         if "template" in template:
