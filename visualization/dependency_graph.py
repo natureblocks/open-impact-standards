@@ -45,6 +45,13 @@ class DependencyGraph:
         self.layout_iterations = 200
         self.layout_seed = 13434  # Seed random number generators for reproducibility
 
+        self.party_colors = {}
+        if "parties" in self.schema:
+            for party in self.schema["parties"]:
+                self.party_colors[party["name"]] = (
+                    party["hex_code"] if "hex_code" in party else "#ffffff"
+                )
+
         self._json_schema_to_graph()
 
     def _json_schema_to_graph(self):
@@ -134,7 +141,7 @@ class DependencyGraph:
             shape_dict[node_id] = mb.create_shape(
                 shape_type=shape_types[node["node_type"]],
                 content=node["description"],
-                fill_color=node_colors[node["applies_to"]],
+                fill_color=self.party_colors[node["applies_to"]],
                 x=self.node_coordinates[node_id][0] * self.x_coord_factor,
                 y=self.node_coordinates[node_id][1] * self.y_coord_factor,
             )
@@ -219,14 +226,6 @@ shape_types = {
     "ACTION": "round_rectangle",
     "QUESTION": "triangle",
     "GATE": "circle",
-}
-node_colors = {
-    "Land Representative": "#fdeeb7",
-    "Project": "#dfb7e6",
-    "Project Developer": "#c0e1fa",
-    "Financiers / Bankers / Investors": "#b7f0f2",
-    "Government Representatives": "#c6c9e8",
-    "Carbon Auditor": "#fffcc7",
 }
 gate_colors = {
     "AND": "#E88E8E",

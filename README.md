@@ -160,10 +160,13 @@ enum ComparisonOperator {
 }
 ````
 __Party object:__
-- Defines a relevant party for the open standard. E.g. "Project Developer", "Carbon Auditor", "Government Representatives"
+- Defines a relevant party for the open standard.
+- Example party `name`s: "Project Developer", "Carbon Auditor", "Government Representatives"
+- `hex_code` sets the color of the applicable Miro shapes in state map visualizations (see the Schema Visualization) section below. If `hex_code` is not specified, the default `#ffffff` is used.
 ````
 type Party {
-    name: string
+    name: string,
+    hex_code: string?
     // Additional properties TBD...
 }
 ````

@@ -1,12 +1,30 @@
 {
     "standard": "Project Development Test",
     "parties": [
-        {"name": "Land Representative"},
-        {"name": "Project"},
-        {"name": "Project Developer"},
-        {"name": "Financiers / Bankers / Investors"},
-        {"name": "Government Representatives"},
-        {"name": "Carbon Auditor"}
+        {
+            "name": "Land Representative",
+            "hex_code": "#fdeeb7"
+        },
+        {
+            "name": "Project",
+            "hex_code": "#dfb7e6"
+        },
+        {
+            "name": "Project Developer",
+            "hex_code": "#c0e1fa"
+        },
+        {
+            "name": "Financiers / Bankers / Investors",
+            "hex_code": "#b7f0f2"
+        },
+        {
+            "name": "Government Representatives",
+            "hex_code": "#c6c9e8"
+        },
+        {
+            "name": "Carbon Auditor",
+            "hex_code": "#fffcc7"
+        }
     ],
     "node_definitions": {
         "Placeholder": {

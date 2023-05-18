@@ -399,4 +399,15 @@ state_node = {
     "optional": ["depends_on", "milestones"],
 }
 
-party = {"type": "object", "properties": {"name": {"type": "string"}}}
+party = {
+    "type": "object",
+    "properties": {
+        "name": {"type": "string"},
+        "hex_code": {
+            "type": "string",
+            "pattern": "^#(?:[0-9a-fA-F]{3}){1,2}$",
+            "pattern_description": "hex color code",
+        },
+    },
+    "optional": ["hex_code"],
+}

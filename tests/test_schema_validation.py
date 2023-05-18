@@ -977,6 +977,26 @@ class TestSchemaValidation:
             errors = validator._validate_integer("none", valid_integer)
             assert not errors
 
+    def test_string_pattern(self):
+        validator = SchemaValidator()
+
+        schema = fixtures.basic_schema()
+        schema["parties"].append({"name": "Party 1", "hex_code": "#000000"})
+
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        invalid_hex_codes = ["#00000", "000000", "#00000g", "#00000G", "#00000_"]
+
+        for invalid_hex_code in invalid_hex_codes:
+            schema["parties"][0]["hex_code"] = invalid_hex_code
+            errors = validator.validate(json_string=json.dumps(schema))
+            assert len(errors) == 1
+            assert (
+                errors[0]
+                == f'root.parties[0].hex_code: string does not match {templates.party["properties"]["hex_code"]["pattern_description"]} pattern: {templates.party["properties"]["hex_code"]["pattern"]}'
+            )
+
     def test_string(self):
         validator = SchemaValidator()
         schema = fixtures.basic_schema()

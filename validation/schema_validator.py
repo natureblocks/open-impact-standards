@@ -272,10 +272,20 @@ class SchemaValidator:
         return [f"{self._context(path)}: expected integer, got {str(type(field))}"]
 
     def _validate_string(self, path, field, template=None):
-        if isinstance(field, str):
-            return []
+        if not isinstance(field, str):
+            return [f"{self._context(path)}: expected string, got {str(type(field))}"]
 
-        return [f"{self._context(path)}: expected string, got {str(type(field))}"]
+        if "pattern" in template and not re.match(template["pattern"], field):
+            pattern_description = (
+                f'{template["pattern_description"]} '
+                if "pattern_description" in template
+                else ""
+            )
+            return [
+                f"{self._context(path)}: string does not match {pattern_description}pattern: {template['pattern']}"
+            ]
+
+        return []
 
     def _validate_integer_string(self, path, field, template=None):
         # Allow string representations of negative integers, e.g. "-1"
