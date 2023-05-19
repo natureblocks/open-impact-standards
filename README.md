@@ -172,22 +172,50 @@ type Party {
 ````
 - Basic example of a schema that conforms to the specification: [schemas/demo_schema.json](https://github.com/natureblocks/open-impact-standards/blob/main/schemas/demo_schema.json)
 
+## Schema Validation
+Running Tests:
+- Validation tests can be found in [tests/test_schema_validation.py](https://github.com/natureblocks/open-impact-standards/blob/main/tests/test_schema_validation.py).
+- The `test_validate_schema` test runs validation on the schema at the specified `json_file_path`. Simply run the test and check stdout for validation errors (refer to the test's docstring for more details).
+- The `test_get_next_node_id` and `test_get_all_node_ids` tests are validation utilities. Check the docstring on each test for usage instructions.
+
+General Usage:
+````python
+from validation.schema_validator import SchemaValidator
+
+# Specify which JSON file to validate.
+json_file_path = "path/to/my_schema_file.json"
+
+validator = SchemaValidator()
+errors = validator.validate(json_file_path=json_file_path)
+
+if errors:
+    validator.print_errors()
+````
+
 ## Schema Visualization
-Usage:
+Prerequisites:
+- Must create a Miro app and generate an OAuth token (select `boards:read` and `boards:write` permissions, then click "Install app and get OAuth token").
+- Must include the OAuth token in a file called `tokens.json` in the root folder of the repository, like so:
+````
+{
+    "access_token": "4U7H021Z3_M3"
+}
+````
+
+Running Tests:
+- Visualization tests can be found in [tests/test_dependency_graph.py](https://github.com/natureblocks/open-impact-standards/blob/main/tests/test_dependency_graph.py).
+- The `test_generate_miro_board` test attempts to generate a Miro board representation of the schema at the specified `json_schema_file_path`. See the test's docstring for usage details.
+
+General Usage:
 ````python
 from visualization.dependency_graph import DependencyGraph
 
+# Specify which JSON file to visualize.
+json_schema_file_path = "schemas/demo_schema.json"
+
 # Convert json schema to graph and calculate node coordinates
-graph = DependencyGraph(json_schema_file_path="schemas/demo_schema.json")
-````
-Generate a new Miro Board:
-````python
-graph.generate_miro_board(board_id="New Board Name")
-````
-Or add to an existing Miro Board:
-````python
-existing_board_id = "" # grab this from the end of the board's url on miro.com
-graph.generate_miro_board(board_id=existing_board_id)
+graph = DependencyGraph(json_schema_file_path=json_schema_file_path)
+graph.generate_miro_board(board_name="New Board Name")
 ````
 
 __Important Note:__ The `dependency_chart` layout algorithm has not been adequately tested for dependency charts that have more than one exit node, and such schemas may yield unexpected results. Multiple entry nodes (nodes with 0 dependencies) are supported.

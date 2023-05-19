@@ -20,7 +20,9 @@ class TestSchemaValidation:
 
         The schema specification is formally defined in validation/templates.py.
 
-        Any validation errors are printed.
+        Any validation errors are printed as standard output (if using VS Code,
+        open the Output tab and select "Python Test Log" from the dropdown).
+
         The test passes if there are no validation errors.
         """
 
