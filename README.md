@@ -4,6 +4,9 @@
 # Schema Specification
 The below psuedocode blocks describe the structure of valid json objects within an open standard schema. Open standard json schemas must conform to these specifications.
 
+- An example json file illustrating the different object types can be found here: [example.json](https://github.com/natureblocks/open-impact-standards/blob/main/schemas/example.json)
+- A demo schema that conforms to the specification can be found here: [schemas/demo_schema.json](https://github.com/natureblocks/open-impact-standards/blob/main/schemas/demo_schema.json)
+
 __Notes for psuedocode interpretation:__
 - Capitalized value types indicate object types or enumeration types that are defined by this specification (e.g. `parties: [Party]` indicates that the `parties` array can only contain objects of type `Party`).
 - Some field types indicate a specific field from another object that must exist within the schema (e.g. `node_id: StateNode.id` indicates that the `node_id` field must reference the `id` field of an existing `StateNode` object).
@@ -170,7 +173,6 @@ type Party {
     // Additional properties TBD...
 }
 ````
-- Basic example of a schema that conforms to the specification: [schemas/demo_schema.json](https://github.com/natureblocks/open-impact-standards/blob/main/schemas/demo_schema.json)
 
 ## Schema Validation
 Running Tests:
@@ -213,8 +215,10 @@ from visualization.dependency_graph import DependencyGraph
 # Specify which JSON file to visualize.
 json_schema_file_path = "schemas/demo_schema.json"
 
-# Convert json schema to graph and calculate node coordinates
+# Convert json schema to graph and calculate node coordinates.
 graph = DependencyGraph(json_schema_file_path=json_schema_file_path)
+
+# Generate a new Miro board on the connected Miro app.
 graph.generate_miro_board(board_name="New Board Name")
 ````
 
