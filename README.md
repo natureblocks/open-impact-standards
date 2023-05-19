@@ -4,7 +4,7 @@
 # Schema Specification
 The below psuedocode blocks describe the structure of valid json objects within an open standard schema. Open standard json schemas must conform to these specifications.
 
-- An example json file illustrating the different object types can be found here: [example.json](https://github.com/natureblocks/open-impact-standards/blob/main/schemas/example.json)
+- An example json file illustrating the different object types can be found here: [schemas/example.json](https://github.com/natureblocks/open-impact-standards/blob/main/schemas/example.json)
 - A demo schema that conforms to the specification can be found here: [schemas/demo_schema.json](https://github.com/natureblocks/open-impact-standards/blob/main/schemas/demo_schema.json)
 
 __Notes for psuedocode interpretation:__

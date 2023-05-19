@@ -40,69 +40,6 @@
             "some_list": {"field_type": "STRING_LIST"}
         }
     },
-    "referenced_dependency_sets": [
-        {
-            "alias": "Land owner or Tenant#0000",
-            "description": "This is a DependencySet description! These are optional.",
-            "gate_type": "OR",
-            "dependencies": [
-                {
-                    "node_id": 13,
-                    "field_name": "completed",
-                    "comparison_operator": "EQUALS",
-                    "comparison_value_type": "BOOLEAN",
-                    "boolean_comparison_value": true
-                },
-                {
-                    "node_id": 14,
-                    "field_name": "completed",
-                    "comparison_operator": "EQUALS",
-                    "comparison_value_type": "BOOLEAN",
-                    "boolean_comparison_value": true
-                }
-            ]
-        },
-        {
-            "alias": "Borehole and Scheme#0000",
-            "gate_type": "OR",
-            "dependencies": [
-                {
-                    "node_id": 34,
-                    "field_name": "completed",
-                    "comparison_operator": "EQUALS",
-                    "comparison_value_type": "BOOLEAN",
-                    "boolean_comparison_value": true
-                },
-                {
-                    "node_id": 35,
-                    "field_name": "completed",
-                    "comparison_operator": "EQUALS",
-                    "comparison_value_type": "BOOLEAN",
-                    "boolean_comparison_value": true
-                }
-            ]
-        },
-        {
-            "alias": "Plant Area or BMP#0000",
-            "gate_type": "OR",
-            "dependencies": [
-                {
-                    "node_id": 26,
-                    "field_name": "completed",
-                    "comparison_operator": "EQUALS",
-                    "comparison_value_type": "BOOLEAN",
-                    "boolean_comparison_value": true
-                },
-                {
-                    "node_id": 27,
-                    "field_name": "completed",
-                    "comparison_operator": "EQUALS",
-                    "comparison_value_type": "BOOLEAN",
-                    "boolean_comparison_value": true
-                }
-            ]
-        }
-    ],
     "state_nodes": [
         {
             "id": 0,
@@ -1092,6 +1029,69 @@
                     }
                 ]
             }
+        }
+    ],
+    "referenced_dependency_sets": [
+        {
+            "alias": "Land owner or Tenant#0000",
+            "description": "This is a DependencySet description! These are optional.",
+            "gate_type": "OR",
+            "dependencies": [
+                {
+                    "node_id": 13,
+                    "field_name": "completed",
+                    "comparison_operator": "EQUALS",
+                    "comparison_value_type": "BOOLEAN",
+                    "boolean_comparison_value": true
+                },
+                {
+                    "node_id": 14,
+                    "field_name": "completed",
+                    "comparison_operator": "EQUALS",
+                    "comparison_value_type": "BOOLEAN",
+                    "boolean_comparison_value": true
+                }
+            ]
+        },
+        {
+            "alias": "Borehole and Scheme#0000",
+            "gate_type": "OR",
+            "dependencies": [
+                {
+                    "node_id": 34,
+                    "field_name": "completed",
+                    "comparison_operator": "EQUALS",
+                    "comparison_value_type": "BOOLEAN",
+                    "boolean_comparison_value": true
+                },
+                {
+                    "node_id": 35,
+                    "field_name": "completed",
+                    "comparison_operator": "EQUALS",
+                    "comparison_value_type": "BOOLEAN",
+                    "boolean_comparison_value": true
+                }
+            ]
+        },
+        {
+            "alias": "Plant Area or BMP#0000",
+            "gate_type": "OR",
+            "dependencies": [
+                {
+                    "node_id": 26,
+                    "field_name": "completed",
+                    "comparison_operator": "EQUALS",
+                    "comparison_value_type": "BOOLEAN",
+                    "boolean_comparison_value": true
+                },
+                {
+                    "node_id": 27,
+                    "field_name": "completed",
+                    "comparison_operator": "EQUALS",
+                    "comparison_value_type": "BOOLEAN",
+                    "boolean_comparison_value": true
+                }
+            ]
         }
     ]
 }

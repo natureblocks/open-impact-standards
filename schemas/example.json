@@ -47,29 +47,6 @@
             }
         }
     },
-    "referenced_dependency_sets": [
-        {
-            "alias": "A referenced dependency set#0000",
-            "gate_type": "OR",
-            "dependencies": [
-                {
-                    "node_id": 0,
-                    "field_name": "a_boolean_field",
-                    "comparison_value_type": "BOOLEAN",
-                    "comparison_operator": "EQUALS",
-                    "boolean_comparison_value": true
-                    
-                },
-                {
-                    "node_id": 1,
-                    "field_name": "a_string_field",
-                    "comparison_value_type": "STRING",
-                    "comparison_operator": "DOES_NOT_EQUAL",
-                    "string_comparison_value": "foo"
-                }
-            ]
-        }
-    ],
     "state_nodes": [
         {
             "id": 0,
@@ -189,6 +166,29 @@
                     }
                 ]
             }
+        }
+    ],
+    "referenced_dependency_sets": [
+        {
+            "alias": "A referenced dependency set#0000",
+            "gate_type": "OR",
+            "dependencies": [
+                {
+                    "node_id": 0,
+                    "field_name": "a_boolean_field",
+                    "comparison_value_type": "BOOLEAN",
+                    "comparison_operator": "EQUALS",
+                    "boolean_comparison_value": true
+                    
+                },
+                {
+                    "node_id": 1,
+                    "field_name": "a_string_field",
+                    "comparison_value_type": "STRING",
+                    "comparison_operator": "DOES_NOT_EQUAL",
+                    "string_comparison_value": "foo"
+                }
+            ]
         }
     ]
 }
