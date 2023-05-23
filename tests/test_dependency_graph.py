@@ -58,7 +58,7 @@ class TestDependencyGraph:
         graph = DependencyGraph(
             json_schema_file_path="schemas/test/multi_condition_node_dependency.json"
         )
-        #graph.generate_miro_board(board_name="Test Result (multi_condition_node_dependency)")
+        # graph.generate_miro_board(board_name="Test Result (multi_condition_node_dependency)")
 
         # If a node lists more than one dependency for the same node id, a gate should be created
         assert len(graph.gates) == 1
@@ -67,3 +67,50 @@ class TestDependencyGraph:
             "a#0000": [0, 0],
         }
         assert graph.edge_dict == expected_edge_dict
+
+    def test_multi_entrance_node_layouts(self):
+        expected_node_depths = {
+            "schemas/test/multi_entrance_node_layout_1.json": {
+                0: -2,
+                1: -2,
+                "a#0000": -1,
+                2: 0,
+            },
+            "schemas/test/multi_entrance_node_layout_2.json": {
+                0: -3,
+                1: -2,
+                2: -2,
+                "a#0000": -1,
+                3: 0,
+            },
+            "schemas/test/multi_entrance_node_layout_3.json": {
+                10: 0,
+                "d#0000": -1,
+                9: -2,
+                8: -2,
+                "c#0000": -3,
+                "b#0000": -3,
+                7: -4,
+                6: -4,
+                5: -4,
+                4: -4,
+                "a#0000": -5,
+                3: -5,
+                2: -6,
+                1: -6,
+                0: -7,
+            },
+        }
+
+        i = 1
+        for path, expected_depths in expected_node_depths.items():
+            graph = DependencyGraph(
+                json_schema_file_path=path,
+                validate_schema=False,
+            )
+            # graph.generate_miro_board(board_name=f"Test Result (test_multi_entrance_node_layouts, case {i})")
+            i += 1
+
+            assert {
+                node_id: coords[0] for node_id, coords in graph.node_coordinates.items()
+            } == expected_depths

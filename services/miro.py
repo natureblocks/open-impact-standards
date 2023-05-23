@@ -41,7 +41,7 @@ class MiroBoard:
 
         url = f"https://api.miro.com/v2/boards/{self.board_id}/shapes"
 
-        content_length = len(content)
+        content_length = len(str(content))
         payload = {
             "data": {"shape": shape_type, "content": content},
             "style": {
