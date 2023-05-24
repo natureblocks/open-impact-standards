@@ -46,3 +46,27 @@ transaction(
     }}
 }}
 '''
+
+whitelist_schema_proposal = f'''
+import Graph from {emulator_address}
+
+transaction(
+    contractAddress: Address,
+    contractName: String,
+    proposalID: UInt64
+) {{
+    let adminRef: &Graph.Administrator
+
+    prepare(signer: AuthAccount) {{
+        self.adminRef = signer.borrow<&Graph.Administrator>(from: /storage/graphAdministrator)
+            ?? panic("Could not borrow reference to Administrator resource")
+    }}
+
+    execute {{
+        self.adminRef.whitelistSchemaProposal(
+            contractID: contractAddress.toString().concat(contractName),
+            proposalID: proposalID
+        )
+    }}
+}}
+'''

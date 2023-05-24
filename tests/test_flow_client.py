@@ -34,16 +34,14 @@ class TestFlowClient:
             proposal_id = int(proposal_ids[-1])
 
             # Retrieve the schema proposal
-            proposed_schema = cadence_utils.from_cadence_recursive(
-                await client.execute_script(
-                    script=Script(
-                        code=scripts.get_schema_proposal,
-                        arguments=[cadence.UInt64(proposal_id)],
-                    )
-                )
-            )
+            proposed_schema = await scripts.get_schema_proposal(proposal_id)
 
             # Compare the retrieved schema with the submitted schema
             assert utils.objects_are_identical(
                 utils.parse_schema(json_file_path), proposed_schema["schema"]["tags"]
             )
+
+            await flow.whitelist_schema_proposal(proposal_id)
+
+            # Whitelisted proposal should have been cleared
+            assert await scripts.get_schema_proposal(proposal_id) is None
