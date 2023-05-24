@@ -189,3 +189,31 @@ class TestDependencyGraph:
             # the last node should be offset from the other two
             assert y_coords[0] == y_coords[1]
             assert y_coords[1] != y_coords[2]
+
+    def test_gate_combinations(self):
+        graph = DependencyGraph(
+            json_schema_file_path="schemas/test/gate_combinations.json",
+            validate_schema=False,
+        )
+        # graph.generate_miro_board(board_name="Test Result (test_gate_combinations)")
+
+        expected_node_depths = {
+            7: 0,
+            "e#0000": -1,
+            "d#0000": -2,
+            "c#0000": -2,
+            6: -3,
+            5: -3,
+            "b#0000": -3,
+            "a#0000": -3,
+            8: -3,
+            9: -3,
+            4: -4,
+            3: -4,
+            2: -4,
+            1: -4,
+            0: -4,
+        }
+        assert {
+            node_id: coords[0] for node_id, coords in graph.node_coordinates.items()
+        } == expected_node_depths
