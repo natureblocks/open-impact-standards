@@ -70,3 +70,23 @@ transaction(
     }}
 }}
 '''
+
+claim_subgraph_distributor = f'''
+import Natureblocks from {emulator_address}
+import Graph from {emulator_address}
+
+transaction(proposalID: UInt64) {{
+    prepare(signer: AuthAccount) {{
+        let adminRef = signer.borrow<&Natureblocks.Administrator>(from: /storage/natureblocksAdministrator)
+            ?? panic("Could not borrow reference to the admin")
+
+        let subgraphDistributor <- adminRef.claimSubgraphDistributor(proposalID)
+        let storagePath = StoragePath(identifier: "subgraphDistributor".concat(subgraphDistributor.schemaID.toString()))!
+
+        signer.save(<- subgraphDistributor, to: storagePath)
+
+        assert(signer.borrow<&Graph.SubgraphDistributor>(from: storagePath) != nil,
+            message: "Failed to save SubgraphDistributor")
+    }}
+}}
+'''
