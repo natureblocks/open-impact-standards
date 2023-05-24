@@ -1,0 +1,64 @@
+{
+    "referenced_dependency_sets": [],
+    "state_nodes": [
+        {
+            "id": 0
+        },
+        {
+            "id": 1,
+            "depends_on": {
+                "dependencies": [
+                    {"node_id": 0}
+                ]
+            }
+        },
+        {
+            "id": 2,
+            "depends_on": {
+                "dependencies": [
+                    {"node_id": 1}
+                ]
+            }
+        },
+        {
+            "id": 3,
+            "depends_on": {
+                "dependencies": [
+                    {"node_id": 2}
+                ]
+            }
+        },
+        {
+            "id": 4,
+            "depends_on": {
+                "dependencies": [
+                    {"node_id": 3}
+                ]
+            }
+        },
+        {
+            "id": 5,
+            "depends_on": {
+                "dependencies": [
+                    {"node_id": 4}
+                ]
+            }
+        },
+        {
+            "id": 6,
+            "depends_on": {
+                "dependencies": [
+                    {"node_id": 1}
+                ]
+            }
+        },
+        {
+            "id": 7,
+            "depends_on": {
+                "dependencies": [
+                    {"node_id": 4}
+                ]
+            }
+        }
+    ]
+}

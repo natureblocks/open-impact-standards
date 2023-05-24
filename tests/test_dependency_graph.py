@@ -114,3 +114,78 @@ class TestDependencyGraph:
             assert {
                 node_id: coords[0] for node_id, coords in graph.node_coordinates.items()
             } == expected_depths
+
+    def test_multi_exit_node_layouts(self):
+        expected_node_depths = {
+            "schemas/test/multi_exit_node_layout_1.json": {
+                0: -1,
+                1: 0,
+                2: 0,
+            },
+            "schemas/test/multi_exit_node_layout_2.json": {
+                3: 0,
+                2: 0,
+                1: -1,
+                0: -2,
+            },
+            "schemas/test/multi_exit_node_layout_3.json": {
+                3: 0,
+                2: 0,
+                1: -1,
+                0: -2,
+            },
+            "schemas/test/multi_exit_node_layout_4.json": {
+                6: 0,
+                13: 0,
+                10: 0,
+                9: 0,
+                5: -1,
+                12: -1,
+                "a#0000": -2,
+                11: -2,
+                7: -3,
+                4: -3,
+                8: -3,
+                3: -4,
+                2: -5,
+                1: -6,
+                0: -7,
+            },
+        }
+
+        i = 1
+        for path, expected_depths in expected_node_depths.items():
+            graph = DependencyGraph(
+                json_schema_file_path=path,
+                validate_schema=False,
+            )
+            # graph.generate_miro_board(board_name=f"Test Result (test_multi_exit_node_layouts, case {i})")
+            i += 1
+
+            assert {
+                node_id: coords[0] for node_id, coords in graph.node_coordinates.items()
+            } == expected_depths
+
+    def test_edge_overlap_prevention(self):
+        possible_overlaps = {
+            "schemas/test/edge_overlap_simple.json": {(1, 2, 5)},
+            "schemas/test/edge_overlap_double_span.json": {(1, 2, 7)},
+        }
+
+        i = 1
+        for path, tup in possible_overlaps.items():
+            graph = DependencyGraph(
+                json_schema_file_path=path,
+                validate_schema=False,
+            )
+            # graph.generate_miro_board(board_name=f"Test Result (test_edge_overlap_prevention, {i})")
+            i += 1
+
+            y_coords = []
+            for node_ids in tup:
+                for node_id in node_ids:
+                    y_coords.append(graph.node_coordinates[node_id][1])
+
+            # the last node should be offset from the other two
+            assert y_coords[0] == y_coords[1]
+            assert y_coords[1] != y_coords[2]

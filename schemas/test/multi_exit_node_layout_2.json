@@ -1,0 +1,32 @@
+{
+    "referenced_dependency_sets": [],
+    "state_nodes": [
+        {
+            "id": 0
+        },
+        {
+            "id": 1,
+            "depends_on": {
+                "dependencies": [
+                    {"node_id": 0}
+                ]
+            }
+        },
+        {
+            "id": 2,
+            "depends_on": {
+                "dependencies": [
+                    {"node_id": 0}
+                ]
+            }
+        },
+        {
+            "id": 3,
+            "depends_on": {
+                "dependencies": [
+                    {"node_id": 1}
+                ]
+            }
+        }
+    ]
+}
