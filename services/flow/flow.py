@@ -32,7 +32,7 @@ async def execute_transaction(client, code, arguments=[]):
         )
     )
 
-    tx.gas_limit = 500
+    tx.gas_limit = 9999
 
     await client.send_transaction(transaction=tx.to_signed_grpc())
 

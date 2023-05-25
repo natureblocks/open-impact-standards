@@ -90,3 +90,31 @@ transaction(proposalID: UInt64) {{
     }}
 }}
 '''
+
+clear_schema_proposals = f'''
+import Natureblocks from {emulator_address}
+import Graph from {emulator_address}
+
+transaction {{
+    let adminRef: &Natureblocks.Administrator
+    let contractID: String
+
+    prepare(signer: AuthAccount) {{
+        self.adminRef = signer.borrow<&Natureblocks.Administrator>(from: /storage/natureblocksAdministrator)
+            ?? panic("Could not borrow reference to admin resource")
+
+        self.contractID = "{emulator_address}Natureblocks";
+    }}
+
+    execute {{
+        for proposalID in Graph.getSchemaProposalIDs(self.contractID) {{
+            self.adminRef.retractSchemaProposal(proposalID)
+        }}
+    }}
+
+    post {{
+        Graph.getSchemaProposalIDs(self.contractID).length == 0:
+            "Failed to clear schema proposals"
+    }}
+}}
+'''

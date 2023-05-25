@@ -20,7 +20,19 @@ class TestFlowClient:
 
             await flow.execute_transaction(
                 client=client,
-                code=transactions.whitelist_schema_proposal,
+                code=transactions.clear_schema_proposals
+            )
+
+            contract_identifier = cadence_utils.emulator_address + "Natureblocks"
+            script_result = await flow.execute_script(
+                client=client,
+                code=scripts.get_schema_proposals,
+            )
+            assert contract_identifier not in script_result["schemaProposals"]
+
+            await flow.execute_transaction(
+                client=client,
+                code=transactions.propose_schema,
                 arguments=cadence_utils.schema_to_cadence(json_file_path),
             )
 
@@ -30,7 +42,6 @@ class TestFlowClient:
                 code=scripts.get_schema_proposals,
             )
 
-            contract_identifier = cadence_utils.emulator_address + "Natureblocks"
             assert contract_identifier in script_result["schemaProposals"]
             proposal_ids = script_result["schemaProposals"][contract_identifier]
             assert len(proposal_ids) >= 1
