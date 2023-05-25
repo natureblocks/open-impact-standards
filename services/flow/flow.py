@@ -65,6 +65,26 @@ async def register_schema(client, json_file_path):
     return schema_id
 
 
+async def add_state_map_schema_version(client, schema_id, version):
+    await flow.execute_transaction(
+        client=client,
+        code=transactions.add_state_map_schema_version,
+        arguments=[
+            cadence.UInt64(schema_id),
+            cadence.String(version),
+        ],
+    )
+
+    registered_version = await flow.execute_script(
+        client=client,
+        code=scripts.get_state_map_schema_version,
+        arguments=[cadence.UInt64(schema_id)],
+    )
+
+    if registered_version != version:
+        raise Exception("State map schema version was not registered")
+
+
 async def issue_subgraph(client, schema_id):
     await flow.execute_transaction(
         client=client,

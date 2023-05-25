@@ -103,7 +103,7 @@ transaction {{
         self.adminRef = signer.borrow<&Natureblocks.Administrator>(from: /storage/natureblocksAdministrator)
             ?? panic("Could not borrow reference to admin resource")
 
-        self.contractID = "{emulator_address}Natureblocks";
+        self.contractID = "{emulator_address}Natureblocks"
     }}
 
     execute {{
@@ -232,6 +232,32 @@ transaction(
 
         self.depositRef.getIDs().contains(self.nextSubgraphID):
             "Failed to deposit Subgraph into recipient's collection"
+    }}
+}}
+'''
+
+add_state_map_schema_version = f'''
+import Graph from {emulator_address}
+import Natureblocks from {emulator_address}
+
+transaction(
+    schemaID: UInt64,
+    version: String
+) {{
+    let adminRef: &Natureblocks.Administrator
+
+    prepare(signer: AuthAccount) {{
+        self.adminRef = signer.borrow<&Natureblocks.Administrator>(from: /storage/natureblocksAdministrator)
+            ?? panic("Could not borrow reference to admin resource")
+    }}
+
+    execute {{
+        self.adminRef.addStateMapSchemaVersion(schemaID, version)
+    }}
+
+    post {{
+        Natureblocks.getStateMapSchemaVersion(schemaID: schemaID) == version:
+            "Failed to add state map schema version"
     }}
 }}
 '''

@@ -37,3 +37,19 @@ pub fun main(schemaID: UInt64): [UInt64] {{
     return Natureblocks.getValidSubgraphIDs(schemaID: schemaID)
 }}
 """
+
+get_state_map_schema_versions = f"""
+import Natureblocks from {cadence_utils.emulator_address}
+
+pub fun main(): {{UInt64: String}} {{
+    return Natureblocks.getStateMapSchemaVersions()
+}}
+"""
+
+get_state_map_schema_version = f"""
+import Natureblocks from {cadence_utils.emulator_address}
+
+pub fun main(schemaID: UInt64): String? {{
+    return Natureblocks.getStateMapSchemaVersion(schemaID: schemaID)
+}}
+"""

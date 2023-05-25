@@ -13,11 +13,11 @@ ctx = Config("flow.json")
 
 class TestFlowClient:
     @pytest.mark.asyncio
-    async def test_statemap_schema(self):
+    async def test_state_map_schema(self):
         async with flow_client(
             host=ctx.access_node_host, port=ctx.access_node_port
         ) as client:
-            json_file_path = "schemas/statemap_schema.json"
+            json_file_path = "schemas/state_map_schema.json"
 
             validator = SchemaValidator()
             assert not validator.validate(json_file_path=json_file_path)
@@ -25,6 +25,18 @@ class TestFlowClient:
             schema_id = await flow.register_schema(client, json_file_path)
             subgraph_id = await flow.issue_subgraph(client, schema_id)
             assert subgraph_id is not None
+
+            registered_versions = await flow.execute_script(
+                client=client,
+                code=scripts.get_state_map_schema_versions,
+            )
+            next_version = str(
+                max([int(v) for v in registered_versions.values()]) + 1
+                if registered_versions
+                else 0
+            )
+
+            await flow.add_state_map_schema_version(client, schema_id, next_version)
 
     @pytest.mark.asyncio
     async def test_schema_proposal(self):
