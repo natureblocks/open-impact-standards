@@ -1,0 +1,63 @@
+{
+    "standard": "State Map",
+    "parties": [],
+    "state_nodes": [],
+    "referenced_dependency_sets": [],
+
+    "node_definitions": {
+        "StateNode": {
+            "id": {"field_type": "NUMERIC"},
+            "nodeTag": {"field_type": "STRING"},
+            "description": {"field_type": "STRING"}
+        },
+        "Dependency": {
+            "stateNodeId": {"field_type": "NUMERIC"},
+            "numericComparisonValue": {"field_type": "NUMERIC"},
+            "fieldName": {"field_type": "STRING"},
+            "comparisonOperator": {"field_type": "STRING"},
+            "comparisonValueType": {"field_type": "STRING"},
+            "stringComparisonValue": {"field_type": "STRING"},
+            "booleanComparisonValue": {"field_type": "BOOLEAN"},
+            "stringListComparisonValue": {"field_type": "STRING_LIST"},
+            "numericListComparisonValue": {"field_type": "NUMERIC_LIST"}
+        },
+        "DependencySetReference": {
+            "alias": {"field_type": "STRING"}
+        },
+        "DependencySet": {
+            "alias": {"field_type": "STRING"},
+            "gate_type": {"field_type": "STRING"},
+            "dependencies": {
+                "field_type": "EDGE_COLLECTION",
+                "tag": "Dependency"
+            },
+            "dependencySetReferences": {
+                "field_type": "EDGE_COLLECTION",
+                "tag": "DependencySetReference"
+            }
+        },
+        "Party": {
+            "id": {"field_type": "NUMERIC"},
+            "name": {"field_type": "STRING"},
+            "flowAddress": {"field_type": "STRING"},
+            "subgraphId": {"field_type": "NUMERIC"}
+        },
+        "StateMap": {
+            "standard": {"field_type": "STRING"},
+            "version": {"field_type": "STRING"},
+            "schemaId": {"field_type": "NUMERIC"},
+            "stateNodes": {
+                "field_type": "EDGE_COLLECTION",
+                "tag": "StateNode"
+            },
+            "referencedDependencySets": {
+                "field_type": "EDGE_COLLECTION",
+                "tag": "DependencySet"
+            },
+            "parties": {
+                "field_type": "EDGE_COLLECTION",
+                "tag": "Party"
+            }
+        }
+    }
+}

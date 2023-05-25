@@ -29,3 +29,11 @@ pub fun main(
     return Graph.getSchema(schemaID)
 }}
 """
+
+get_valid_subgraph_ids = f"""
+import Natureblocks from {cadence_utils.emulator_address}
+
+pub fun main(schemaID: UInt64): [UInt64] {{
+    return Natureblocks.getValidSubgraphIDs(schemaID: schemaID)
+}}
+"""

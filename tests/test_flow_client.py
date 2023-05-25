@@ -4,6 +4,7 @@ from flow_py_sdk import flow_client, cadence
 from services.flow import flow, transactions, scripts, cadence_utils
 from services.flow.config import Config
 from validation import utils
+from validation.schema_validator import SchemaValidator
 
 logger = logging.getLogger("flow_client")
 
@@ -12,6 +13,20 @@ ctx = Config("flow.json")
 
 class TestFlowClient:
     @pytest.mark.asyncio
+    async def test_statemap_schema(self):
+        async with flow_client(
+            host=ctx.access_node_host, port=ctx.access_node_port
+        ) as client:
+            json_file_path = "schemas/statemap_schema.json"
+
+            validator = SchemaValidator()
+            assert not validator.validate(json_file_path=json_file_path)
+
+            schema_id = await flow.register_schema(client, json_file_path)
+            subgraph_id = await flow.issue_subgraph(client, schema_id)
+            assert subgraph_id is not None
+
+    @pytest.mark.asyncio
     async def test_schema_proposal(self):
         async with flow_client(
             host=ctx.access_node_host, port=ctx.access_node_port
@@ -19,8 +34,7 @@ class TestFlowClient:
             json_file_path = "schemas/test/small_example_schema.json"
 
             await flow.execute_transaction(
-                client=client,
-                code=transactions.clear_schema_proposals
+                client=client, code=transactions.clear_schema_proposals
             )
 
             contract_identifier = cadence_utils.emulator_address + "Natureblocks"

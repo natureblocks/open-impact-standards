@@ -118,3 +118,120 @@ transaction {{
     }}
 }}
 '''
+
+add_subgraph_ledger = f'''
+import Natureblocks from {emulator_address}
+import Graph from {emulator_address}
+
+transaction(schemaID: UInt64) {{
+    let subgraphDistributor: &Graph.SubgraphDistributor
+
+    prepare(signer: AuthAccount) {{
+        let storagePath: StoragePath = StoragePath(identifier: "subgraphDistributor".concat(schemaID.toString()))!
+        self.subgraphDistributor = signer.borrow<&Graph.SubgraphDistributor>(
+            from: storagePath
+        )
+            ?? panic("Could not borrow a reference to the owner's SubgraphDistributor")
+    }}
+
+    pre {{
+        self.subgraphDistributor.schemaID == schemaID
+    }}
+
+    execute {{
+        Natureblocks.addSubgraphLedger(subgraphDistributor: self.subgraphDistributor)
+    }}
+
+    post {{
+        Natureblocks.getSubgraphLedgerRef(self.subgraphDistributor).schemaID == schemaID:
+            "Failed to add SubgraphLedger"
+    }}
+}}
+'''
+
+set_up_subgraph_collection = f'''
+import Graph from {emulator_address}
+import Natureblocks from {emulator_address}
+
+transaction {{
+    prepare(signer: AuthAccount) {{
+        if signer.borrow<&Graph.SubgraphCollection>(from: Natureblocks.SubgraphCollectionStoragePath) != nil {{
+            return
+        }}
+
+        signer.save(<- Graph.createSubgraphCollection(), to: Natureblocks.SubgraphCollectionStoragePath)
+        signer.link<&{{Graph.SubgraphCollectionPublic}}>(
+            Natureblocks.SubgraphCollectionPublicPath,
+            target: Natureblocks.SubgraphCollectionStoragePath
+        )
+    }}
+}}
+'''
+
+issue_subgraph = f'''
+import Graph from {emulator_address}
+import Natureblocks from {emulator_address}
+
+transaction(
+    recipient: Address,
+    schemaID: UInt64
+) {{
+    var subgraphDistributorRef: &{{Graph.SubgraphDistributorPrivate}}?
+    let depositRef: &{{Graph.SubgraphCollectionPublic}}
+    let nextSubgraphID: UInt64
+
+    prepare(signer: AuthAccount) {{
+        self.subgraphDistributorRef = signer.borrow<&{{Graph.SubgraphDistributorPrivate}}>(
+            from: StoragePath(identifier: "subgraphDistributor".concat(schemaID.toString()))!
+        )
+
+        if self.subgraphDistributorRef == nil {{
+            let subgraphDistributorPrivateCap = signer.borrow<&Capability<&{{Graph.SubgraphDistributorPrivate}}>>(
+                from: StoragePath(identifier: "subgraphDistributorPrivateCap".concat(schemaID.toString()))!
+            )
+
+            if subgraphDistributorPrivateCap?.check() ?? false {{
+                self.subgraphDistributorRef = subgraphDistributorPrivateCap!.borrow()
+                    ?? panic("Could not borrow reference to SubgraphDistributorPrivate")
+            }} else {{
+                let subgraphDistributorCap = signer.borrow<&Capability<&Graph.SubgraphDistributor>>(
+                    from: StoragePath(identifier: "subgraphDistributorCap".concat(schemaID.toString()))!
+                )
+
+                self.subgraphDistributorRef = subgraphDistributorCap?.borrow()
+                    ?? panic("Could not borrow reference to SubgraphDistributor")
+            }}
+        }}
+
+        assert(self.subgraphDistributorRef != nil,
+            message: "Could not borrow reference to SubgraphDistributor")
+
+        let collectionCap = getAccount(recipient)
+            .getCapability<&{{Graph.SubgraphCollectionPublic}}>(Natureblocks.SubgraphCollectionPublicPath)
+
+        assert(collectionCap.check(),
+            message: "Recipient does not have a public SubgraphCollection capability")
+
+        self.depositRef = collectionCap.borrow()
+            ?? panic("Could not borrow a reference to the recipient's SubgraphCollectionPublic")
+
+        self.nextSubgraphID = Graph.subgraphCount
+    }}
+
+    execute {{
+        let subgraph <- self.subgraphDistributorRef!.issueSubgraph(
+            ledger: Natureblocks.getSubgraphLedgerRef(self.subgraphDistributorRef!)
+        )
+
+        self.depositRef.deposit(<-subgraph)
+    }}
+
+    post {{
+        Natureblocks.getValidSubgraphIDs(schemaID: schemaID).contains(self.nextSubgraphID):
+            "Failed to add Subgraph to SubgraphLedger"
+
+        self.depositRef.getIDs().contains(self.nextSubgraphID):
+            "Failed to deposit Subgraph into recipient's collection"
+    }}
+}}
+'''

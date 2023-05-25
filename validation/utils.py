@@ -39,8 +39,8 @@ def parse_schema(json_file_path):
             if field_type == "EDGE" or field_type == "EDGE_COLLECTION":
                 obj = schema[tag][schema_field_type]
 
-            if obj:
-                obj[tag][schema_field_type] = field_attributes["tag"]
+            if obj is not None:
+                obj[field_name] = field_attributes["tag"]
             else:
                 schema[tag][schema_field_type].append(field_name)
 
