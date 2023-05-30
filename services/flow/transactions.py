@@ -261,3 +261,115 @@ transaction(
     }}
 }}
 '''
+
+create_state_map_template = f'''
+import Graph from {emulator_address}
+import Natureblocks from {emulator_address}
+
+transaction(
+    nodeDefinitionsSchemaID: UInt64,
+    tags: [String],
+    offChainIDs: [String],
+    booleanFields: [{{String: Bool}}],
+    numericFields: [{{String: Fix64?}}],
+    stringFields: [{{String: String?}}],
+    numericListFields: [{{String: [Fix64?]?}}],
+    stringListFields: [{{String: [String?]?}}],
+    edgeOffChainIDs: [{{String: String}}],
+    edgeCollectionOffChainIDs: [{{String: [String]}}]
+) {{
+    let stateMapSchemaID: UInt64
+    let subgraphDistributorRef: &{{Graph.SubgraphDistributorPrivate}}
+    let nextSubgraphID: UInt64
+    let adminRef: &Natureblocks.Administrator
+
+    prepare(signer: AuthAccount) {{
+        let stateMapSchemaversions = Natureblocks.getStateMapSchemaVersions()
+        var latestStateMapSchemaID: UInt64? = nil
+        for schemaID in stateMapSchemaversions.keys {{
+            if latestStateMapSchemaID == nil || schemaID > latestStateMapSchemaID! {{
+                latestStateMapSchemaID = schemaID
+            }}
+        }}
+        assert(latestStateMapSchemaID != nil, message: "Could not get latest state map schema version: no state map schemas exist")
+        self.stateMapSchemaID = latestStateMapSchemaID!
+
+        self.subgraphDistributorRef = signer.borrow<&{{Graph.SubgraphDistributorPrivate}}>(
+            from: StoragePath(identifier: "subgraphDistributor".concat(self.stateMapSchemaID.toString()))!
+        ) ?? panic("Could not borrow reference to SubgraphDistributor")
+
+        self.nextSubgraphID = Graph.subgraphCount
+
+        self.adminRef = signer.borrow<&Natureblocks.Administrator>(from: /storage/natureblocksAdministrator)
+            ?? panic("Could not borrow reference to Administrator resource")
+    }}
+
+    pre {{
+        Graph.schemaIsValid(nodeDefinitionsSchemaID):
+            "Invalid nodeDefinitionsSchemaID"
+
+        tags.length == offChainIDs.length:
+            "tags and offChainIDs must be the same length"
+
+        offChainIDs.length == booleanFields.length:
+            "offChainIDs and booleanFields must be the same length"
+
+        booleanFields.length == numericFields.length:
+            "booleanFields and numericFields must be the same length"
+
+        numericFields.length == stringFields.length:
+            "numericFields and stringFields must be the same length"
+
+        stringFields.length == numericListFields.length:
+            "stringFields and numericListFields must be the same length"
+
+        numericListFields.length == stringListFields.length:
+            "numericListFields and stringListFields must be the same length"
+
+        stringListFields.length == edgeOffChainIDs.length:
+            "stringListFields and edgeOffChainIDs must be the same length"
+
+        edgeOffChainIDs.length == edgeCollectionOffChainIDs.length:
+            "edgeOffChainIDs and edgeCollectionOffChainIDs must be the same length"
+    }}
+
+    execute {{
+        let subgraph <- self.subgraphDistributorRef!.issueSubgraph(
+            ledger: Natureblocks.getSubgraphLedgerRef(self.subgraphDistributorRef!)
+        )
+
+        let creations: [Graph.OffChainNodeStruct] = []
+        var idx = 0;
+        while idx < tags.length {{
+            creations.append(Graph.OffChainNodeStruct(
+                offChainID: offChainIDs[idx]!,
+                offChainEdges: edgeOffChainIDs[idx]!,
+                offChainEdgeCollections: edgeCollectionOffChainIDs[idx]!,
+                tag: tags[idx]!,
+                data: Graph.NodeDataStruct(
+                    booleanFields: booleanFields[idx]!,
+                    numericFields: numericFields[idx]!,
+                    stringFields: stringFields[idx]!,
+                    numericListFields: numericListFields[idx]!,
+                    stringListFields: stringListFields[idx]!,
+                    edges: {{}},
+                    edgeCollections: {{}}
+                )
+            ))
+
+            idx = idx + 1
+        }}
+
+        self.adminRef.createStateMapTemplate(
+            subgraph: <- subgraph,
+            creations: creations,
+            nodeDefinitionsSchemaID: nodeDefinitionsSchemaID
+        )
+    }}
+
+    post {{
+        Natureblocks.getValidSubgraphIDs(schemaID: self.stateMapSchemaID).contains(self.nextSubgraphID):
+            "Failed to add Subgraph to SubgraphLedger"
+    }}
+}}
+'''

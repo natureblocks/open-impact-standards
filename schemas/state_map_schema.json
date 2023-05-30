@@ -8,10 +8,21 @@
         "StateNode": {
             "id": {"field_type": "NUMERIC"},
             "nodeTag": {"field_type": "STRING"},
-            "description": {"field_type": "STRING"}
+            "description": {"field_type": "STRING"},
+            "party": {
+                "field_type": "EDGE",
+                "tag": "Party"
+            },
+            "dependsOn": {
+                "field_type": "EDGE",
+                "tag": "DependencySet"
+            }
         },
         "Dependency": {
-            "stateNodeId": {"field_type": "NUMERIC"},
+            "stateNode": {
+                "field_type": "EDGE",
+                "tag": "StateNode"
+            },
             "numericComparisonValue": {"field_type": "NUMERIC"},
             "fieldName": {"field_type": "STRING"},
             "comparisonOperator": {"field_type": "STRING"},
@@ -26,7 +37,8 @@
         },
         "DependencySet": {
             "alias": {"field_type": "STRING"},
-            "gate_type": {"field_type": "STRING"},
+            "gateType": {"field_type": "STRING"},
+            "description": {"field_type": "STRING"},
             "dependencies": {
                 "field_type": "EDGE_COLLECTION",
                 "tag": "Dependency"
@@ -37,7 +49,6 @@
             }
         },
         "Party": {
-            "id": {"field_type": "NUMERIC"},
             "name": {"field_type": "STRING"},
             "flowAddress": {"field_type": "STRING"},
             "subgraphId": {"field_type": "NUMERIC"}
@@ -45,7 +56,6 @@
         "StateMap": {
             "standard": {"field_type": "STRING"},
             "version": {"field_type": "STRING"},
-            "schemaId": {"field_type": "NUMERIC"},
             "stateNodes": {
                 "field_type": "EDGE_COLLECTION",
                 "tag": "StateNode"

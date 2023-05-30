@@ -1,17 +1,34 @@
 from flow_py_sdk import ProposalKey, Tx, Script, cadence
 from services.flow.config import Config
 from services.flow import flow, cadence_utils, scripts, transactions
+from services.flow.template_converter import TemplateConverter
 from validation import utils
 
 
 ctx = Config("flow.json")
 
 
+async def create_state_map_template(
+    client, node_definitions_schema_id, template_file_path
+):
+    template_arguments = TemplateConverter().template_to_cadence(
+        template_file_path,
+        template_id=0,
+        template_version="0.0.1",
+    )
+
+    await flow.execute_transaction(
+        client=client,
+        code=transactions.create_state_map_template,
+        arguments=[cadence.UInt64(node_definitions_schema_id)] + template_arguments,
+    )
+
+
 async def register_schema(client, json_file_path):
     await flow.execute_transaction(
         client=client,
         code=transactions.propose_schema,
-        arguments=cadence_utils.schema_to_cadence(json_file_path),
+        arguments=TemplateConverter().schema_to_cadence(json_file_path),
     )
 
     schema_proposals = await flow.execute_script(
@@ -60,6 +77,12 @@ async def register_schema(client, json_file_path):
         client=client,
         code=transactions.claim_subgraph_distributor,
         arguments=[cadence.UInt64(proposal_id)],
+    )
+
+    await flow.execute_transaction(
+        client=client,
+        code=transactions.add_subgraph_ledger,
+        arguments=[cadence.UInt64(schema_id)],
     )
 
     return schema_id

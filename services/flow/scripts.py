@@ -53,3 +53,10 @@ pub fun main(schemaID: UInt64): String? {{
     return Natureblocks.getStateMapSchemaVersion(schemaID: schemaID)
 }}
 """
+
+get_next_available_template_id = f"""
+import Natureblocks from {cadence_utils.emulator_address}
+
+pub fun main(): UInt64 {{
+    return Natureblocks.stateMapTemplateCounter
+}}"""

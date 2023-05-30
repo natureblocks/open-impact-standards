@@ -2,6 +2,7 @@ import logging
 import pytest
 from flow_py_sdk import flow_client, cadence
 from services.flow import flow, transactions, scripts, cadence_utils
+from services.flow.template_converter import TemplateConverter
 from services.flow.config import Config
 from validation import utils
 from validation.schema_validator import SchemaValidator
@@ -17,14 +18,14 @@ class TestFlowClient:
         async with flow_client(
             host=ctx.access_node_host, port=ctx.access_node_port
         ) as client:
-            json_file_path = "schemas/state_map_schema.json"
+            state_map_schema_file_path = "schemas/state_map_schema.json"
 
             validator = SchemaValidator()
-            assert not validator.validate(json_file_path=json_file_path)
+            assert not validator.validate(json_file_path=state_map_schema_file_path)
 
-            schema_id = await flow.register_schema(client, json_file_path)
-            subgraph_id = await flow.issue_subgraph(client, schema_id)
-            assert subgraph_id is not None
+            state_map_schema_id = await flow.register_schema(
+                client, state_map_schema_file_path
+            )
 
             registered_versions = await flow.execute_script(
                 client=client,
@@ -35,8 +36,24 @@ class TestFlowClient:
                 if registered_versions
                 else 0
             )
+            await flow.add_state_map_schema_version(
+                client, state_map_schema_id, next_version
+            )
 
-            await flow.add_state_map_schema_version(client, schema_id, next_version)
+            # Register a schema for the node_definitions
+            template_file_path = "schemas/test/small_example_schema.json"
+            node_definitions_schema_id = await flow.register_schema(
+                client, template_file_path
+            )
+
+            template_id = await flow.execute_script(
+                client=client,
+                code=scripts.get_next_available_template_id,
+            )
+
+            await flow.create_state_map_template(
+                client, node_definitions_schema_id, template_file_path
+            )
 
     @pytest.mark.asyncio
     async def test_schema_proposal(self):
@@ -59,7 +76,7 @@ class TestFlowClient:
             await flow.execute_transaction(
                 client=client,
                 code=transactions.propose_schema,
-                arguments=cadence_utils.schema_to_cadence(json_file_path),
+                arguments=TemplateConverter().schema_to_cadence(json_file_path),
             )
 
             # Check that the schema proposal was submitted
