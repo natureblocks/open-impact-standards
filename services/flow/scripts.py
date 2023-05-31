@@ -60,3 +60,12 @@ import Natureblocks from {cadence_utils.emulator_address}
 pub fun main(): UInt64 {{
     return Natureblocks.stateMapTemplateCounter
 }}"""
+
+get_template_nodes = f"""
+import Natureblocks from {cadence_utils.emulator_address}
+import Graph from {cadence_utils.emulator_address}
+
+pub fun main(templateID: UInt64): [Graph.NodeStruct] {{
+    return Natureblocks.getStateMapTemplateNodeStructs(templateID: templateID)
+}}
+"""

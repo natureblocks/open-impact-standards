@@ -9,19 +9,24 @@ ctx = Config("flow.json")
 
 
 async def create_state_map_template(
-    client, node_definitions_schema_id, template_file_path
+    client, node_definitions_schema_id, template_file_path, state_map_schema_file_path
 ):
-    template_arguments = TemplateConverter().template_to_cadence(
-        template_file_path,
+    converter = TemplateConverter()
+    converter.template_to_nodes(
+        json_file_path=template_file_path,
         template_id=0,
         template_version="0.0.1",
+        state_map_schema_file_path=state_map_schema_file_path,
     )
+    template_arguments = converter.graph_nodes_to_cadence()
 
     await flow.execute_transaction(
         client=client,
         code=transactions.create_state_map_template,
         arguments=[cadence.UInt64(node_definitions_schema_id)] + template_arguments,
     )
+
+    return converter.graph_nodes
 
 
 async def register_schema(client, json_file_path):

@@ -2,7 +2,7 @@ import logging
 import pytest
 from flow_py_sdk import flow_client, cadence
 from services.flow import flow, transactions, scripts, cadence_utils
-from services.flow.template_converter import TemplateConverter
+from services.flow.template_converter import GraphNode, TemplateConverter
 from services.flow.config import Config
 from validation import utils
 from validation.schema_validator import SchemaValidator
@@ -51,9 +51,28 @@ class TestFlowClient:
                 code=scripts.get_next_available_template_id,
             )
 
-            await flow.create_state_map_template(
-                client, node_definitions_schema_id, template_file_path
+            expected_nodes = await flow.create_state_map_template(
+                client,
+                node_definitions_schema_id,
+                template_file_path,
+                state_map_schema_file_path,
             )
+
+            actual_nodes = [
+                GraphNode().from_node_dict(
+                    cadence_utils.from_cadence_recursive(cadence_node)
+                )
+                for cadence_node in await flow.execute_script(
+                    client=client,
+                    code=scripts.get_template_nodes,
+                    arguments=[cadence.UInt64(template_id)],
+                )
+            ]
+
+            differences = cadence_utils.compare_graph_nodes(
+                expected_nodes, actual_nodes, skip=["on_chain_id"]
+            )
+            assert not differences
 
     @pytest.mark.asyncio
     async def test_schema_proposal(self):

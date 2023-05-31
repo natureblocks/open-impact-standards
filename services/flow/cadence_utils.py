@@ -73,3 +73,25 @@ def from_cadence_recursive(value):
         return [from_cadence_recursive(value) for value in value]
 
     return value
+
+
+def compare_graph_nodes(expected_nodes, actual_nodes, skip=[]):
+    differences = []
+
+    if len(expected_nodes) != len(actual_nodes):
+        differences.append(
+            f"Expected {len(expected_nodes)} nodes, but found {len(actual_nodes)} nodes"
+        )
+
+    for i in range(len(expected_nodes)):
+        expected_node = expected_nodes[i]
+        actual_node = actual_nodes[i]
+
+        for key, value in expected_node.__dict__.items():
+            if key in skip:
+                continue
+
+            if value != actual_node.__dict__[key]:
+                differences.append(
+                    f"Expected {key} to be {value}, but found {actual_node.__dict__[key]}"
+                )

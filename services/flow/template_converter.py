@@ -5,60 +5,103 @@ from flow_py_sdk import cadence
 
 
 class TemplateConverter:
-    def template_to_cadence(self, json_file_path, template_id, template_version):
-        template = json.load(open(json_file_path))
+    def template_to_nodes(
+        self, json_file_path, template_id, template_version, state_map_schema_file_path
+    ):
+        self.template = {"StateMap": json.load(open(json_file_path))}
+        self.state_map_schema = json.load(open(state_map_schema_file_path))
 
-        # parallel arrays
-        self.tags = []
-        self.off_chain_ids = []
-        self.boolean_fields = []
-        self.numeric_fields = []
-        self.string_fields = []
-        self.numeric_list_fields = []
-        self.string_list_fields = []
-        self.edge_off_chain_ids = []
-        self.edge_collection_off_chain_ids = []
-
-        # Some objects need to be enumerated and collected
-        # before being added to the parallel arrays
         self.unnamed_dependency_set_counter = 0
         self.dependency_counter = 0
         self.dependency_set_reference_counter = 0
-        self.parsed_objects = {
-            "DependencySet": {},
-            "Dependency": {},
-            "DependencySetReference": {},
-        }
-        self.state_map_edge_collections = {
-            "parties": [],
-            "stateNodes": [],
-            "referencedDependencySets": [],
-        }
 
-        for party in template["parties"]:
-            self._party_to_cadence(party)
+        self.graph_nodes = []
 
-        for state_node in template["state_nodes"]:
-            self._state_node_to_cadence(state_node)
+        # Creating the StateMap GraphNode will recursively create
+        # all other GraphNodes and add them to self.graph_nodes
+        state_map = self._as_graph_node_recursive(self.template["StateMap"], "StateMap")
+        state_map.off_chain_id = "template_" + str(template_id)
+        state_map.string_fields["version"] = template_version
+        self.graph_nodes.append(state_map)
 
-        for dependency_set in template["referenced_dependency_sets"]:
-            self._dependency_set_to_cadence(dependency_set)
+    def graph_nodes_to_cadence(self):
+        # parallel arrays
+        tags = []
+        off_chain_ids = []
+        boolean_fields = []
+        numeric_fields = []
+        string_fields = []
+        numeric_list_fields = []
+        string_list_fields = []
+        edge_off_chain_ids = []
+        edge_collection_off_chain_ids = []
 
-        for tag, collection in self.parsed_objects.items():
-            self._parsed_object_to_cadence(tag, collection)
+        for graph_node in self.graph_nodes:
+            tags.append(cadence.String(graph_node.tag))
+            off_chain_ids.append(cadence.String(graph_node.off_chain_id))
 
-        self.state_map_to_cadence(template, template_id, template_version)
+            string_fields.append(
+                _wrap_nullable_fields(graph_node.string_fields, cadence.String)
+            )
+            numeric_fields.append(
+                _wrap_nullable_fields(graph_node.numeric_fields, cadence.Fix64)
+            )
+            boolean_fields.append(
+                to_cadence_dict(
+                    graph_node.boolean_fields,
+                    key_type=cadence.String,
+                    value_type=cadence.Bool,
+                )
+            )
+            string_list_fields.append(
+                to_cadence_dict(
+                    graph_node.string_list_fields,
+                    key_type=cadence.String,
+                    value_type=[
+                        cadence.String,
+                        cadence.Optional,
+                        cadence.Array,
+                        cadence.Optional,
+                    ],
+                )
+            )
+            numeric_list_fields.append(
+                to_cadence_dict(
+                    graph_node.numeric_list_fields,
+                    key_type=cadence.String,
+                    value_type=[
+                        cadence.Fix64,
+                        cadence.Optional,
+                        cadence.Array,
+                        cadence.Optional,
+                    ],
+                )
+            )
+            edge_off_chain_ids.append(
+                to_cadence_dict(
+                    graph_node.edge_off_chain_ids,
+                    key_type=cadence.String,
+                    value_type=cadence.String,
+                )
+            )
+            edge_collection_off_chain_ids.append(
+                to_cadence_dict(
+                    graph_node.edge_collection_off_chain_ids,
+                    key_type=cadence.String,
+                    value_type=[cadence.String, cadence.Array],
+                )
+            )
 
         return [
-            cadence.Array(self.tags),
-            cadence.Array(self.off_chain_ids),
-            cadence.Array(self.boolean_fields),
-            cadence.Array(self.numeric_fields),
-            cadence.Array(self.string_fields),
-            cadence.Array(self.numeric_list_fields),
-            cadence.Array(self.string_list_fields),
-            cadence.Array(self.edge_off_chain_ids),
-            cadence.Array(self.edge_collection_off_chain_ids),
+            cadence.Array(tags),
+            cadence.Array(off_chain_ids),
+            cadence.Array(boolean_fields),
+            cadence.Array(numeric_fields),
+            cadence.Array(string_fields),
+            cadence.Array(numeric_list_fields),
+            cadence.Array(string_list_fields),
+            cadence.Array(edge_off_chain_ids),
+            cadence.Array(edge_collection_off_chain_ids),
         ]
 
     def schema_to_cadence(self, json_file_path):
@@ -133,282 +176,159 @@ class TemplateConverter:
             notify_email_address,
         ]
 
-    def _party_to_cadence(self, party):
-        self.tags.append(cadence.String("Party"))
+    def _as_graph_node_recursive(self, obj, tag):
+        graph_node_map = self._get_graph_node_map()
 
-        self.off_chain_ids.append(cadence.String(party["name"]))
-        self.state_map_edge_collections["parties"].append(party["name"])
+        node = GraphNode(tag)
 
-        party_string_fields = {
-            "name": party["name"],
-            "flowAddress": None,
+        for field_type, fields in graph_node_map[tag].items():
+            if isinstance(fields, dict):
+                attr = getattr(node, field_type)
+
+                for field_name, template_field_key in fields.items():
+                    if isinstance(template_field_key, dict):
+                        if (
+                            template_field_key["if"](obj)
+                            and template_field_key["include"] in obj
+                        ):
+                            value_to_set = obj[template_field_key["include"]]
+                        else:
+                            continue
+                    elif callable(template_field_key):
+                        value_to_set = template_field_key(obj)
+                    elif template_field_key in obj:
+                        value_to_set = obj[template_field_key]
+                    else:
+                        continue
+
+                    # Instantiate any nested objects as GraphNodes
+                    if isinstance(value_to_set, dict):
+                        # Edge
+                        edge_tag = self.state_map_schema["node_definitions"][tag][
+                            field_name
+                        ]["tag"]
+                        edge_node = self._as_graph_node_recursive(
+                            value_to_set, edge_tag
+                        )
+                        self.graph_nodes.append(edge_node)
+                        value_to_set = edge_node.off_chain_id
+                    elif (
+                        isinstance(value_to_set, list)
+                        and len(value_to_set)
+                        and isinstance(value_to_set[0], dict)
+                    ):
+                        # Edge collection
+                        edge_tag = self.state_map_schema["node_definitions"][tag][
+                            field_name
+                        ]["tag"]
+                        edge_collection = []
+                        for edge in value_to_set:
+                            edge_node = self._as_graph_node_recursive(edge, edge_tag)
+                            edge_collection.append(edge_node.off_chain_id)
+                            self.graph_nodes.append(edge_node)
+
+                        value_to_set = edge_collection
+
+                    attr[field_name] = value_to_set
+            elif callable(fields):
+                value_to_set = fields(obj) if callable(fields) else obj[fields]
+                setattr(node, field_type, value_to_set)
+            elif fields in obj:
+                # Set single field (e.g. off_chain_id)
+                if field_type == "off_chain_id":
+                    setattr(node, field_type, str(obj[fields]))
+                else:
+                    setattr(node, field_type, obj[fields])
+
+        return node
+
+    def _get_graph_node_map(self):
+        return {
+            "StateMap": {
+                "off_chain_id": "id",
+                "string_fields": {"standard": "standard", "version": "version"},
+                "edge_collection_off_chain_ids": {
+                    "parties": "parties",
+                    "stateNodes": "state_nodes",
+                    "referencedDependencySets": "referenced_dependency_sets",
+                },
+            },
+            "Party": {
+                "off_chain_id": "name",
+                "string_fields": {"name": "name", "flowAddress": "flow_address"},
+                "numeric_fields": {"subgraphId": "subgraph_id"},
+            },
+            "StateNode": {
+                "off_chain_id": "id",
+                "string_fields": {"description": "description", "nodeTag": "tag"},
+                "edge_off_chain_ids": {
+                    "party": "applies_to",
+                    "dependsOn": "depends_on",
+                },
+            },
+            "DependencySet": {
+                "off_chain_id": lambda ds: self._get_dependency_set_id(ds),
+                "string_fields": {
+                    "gateType": "gate_type",
+                    "description": "description",
+                },
+                "edge_collection_off_chain_ids": {
+                    "dependencies": {
+                        "if": lambda dep: "node_id" in dep,
+                        "include": "dependencies",
+                    },
+                    "dependencySetReferences": {
+                        "if": lambda dep: "alias" in dep,
+                        "include": "dependencies",
+                    },
+                },
+            },
+            "DependencySetReference": {
+                "off_chain_id": lambda dsr: self._next_dependency_set_reference_id(dsr),
+                "string_fields": {"alias": "alias"},
+            },
+            "Dependency": {
+                "off_chain_id": lambda dep: self._next_dependency_id(dep),
+                "edge_off_chain_ids": {"stateNode": "node_id"},
+                "string_fields": {
+                    "fieldName": "field_name",
+                    "comparisonValueType": "comparison_value_type",
+                    "comparisonOperator": "comparison_operator",
+                    "stringComparisonValue": "string_comparison_value",
+                },
+                "numeric_fields": {
+                    "numericComparisonValue": "numeric_comparison_value"
+                },
+                "boolean_fields": {
+                    "booleanComparisonValue": "boolean_comparison_value"
+                },
+                "string_list_fields": {
+                    "stringListComparisonValue": "string_list_comparison_value"
+                },
+                "numeric_list_fields": {
+                    "numericListComparisonValue": "numeric_list_comparison_value"
+                },
+            },
         }
-        self.string_fields.append(
-            _wrap_nullable_fields(party_string_fields, cadence.String)
-        )
 
-        party_numeric_fields = {"subgraphId": None}
-        self.numeric_fields.append(
-            _wrap_nullable_fields(party_numeric_fields, cadence.Fix64)
-        )
-
-        # Parties has none of these
-        self.boolean_fields.append(cadence.Dictionary([]))
-        self.numeric_list_fields.append(cadence.Dictionary([]))
-        self.string_list_fields.append(cadence.Dictionary([]))
-        self.edge_off_chain_ids.append(cadence.Dictionary([]))
-        self.edge_collection_off_chain_ids.append(cadence.Dictionary([]))
-
-    def _state_node_to_cadence(self, state_node):
-        self.tags.append(cadence.String("StateNode"))
-
-        self.off_chain_ids.append(cadence.String(str(state_node["id"])))
-        self.state_map_edge_collections["stateNodes"].append(str(state_node["id"]))
-
-        state_node_string_fields = {
-            "description": state_node["description"],
-            "nodeTag": state_node["tag"],
-        }
-        self.string_fields.append(
-            _wrap_nullable_fields(state_node_string_fields, cadence.String)
-        )
-
-        state_node_numeric_fields = {
-            "id": state_node["id"],
-        }
-        self.numeric_fields.append(
-            _wrap_nullable_fields(state_node_numeric_fields, cadence.Fix64)
-        )
-
-        state_node_edges = {
-            "party": state_node["applies_to"],
-        }
-        if "depends_on" in state_node:
-            ds_alias = self._dependency_set_to_cadence(state_node["depends_on"])
-            state_node_edges["dependsOn"] = ds_alias
-
-        self.edge_off_chain_ids.append(
-            to_cadence_dict(
-                state_node_edges, key_type=cadence.String, value_type=cadence.String
-            )
-        )
-
-        # StateNode has none of these
-        self.boolean_fields.append(cadence.Dictionary([]))
-        self.string_list_fields.append(cadence.Dictionary([]))
-        self.numeric_list_fields.append(cadence.Dictionary([]))
-        self.edge_collection_off_chain_ids.append(cadence.Dictionary([]))
-
-    def _dependency_set_to_cadence(self, dependency_set):
+    def _get_dependency_set_id(self, dependency_set):
         if "alias" in dependency_set:
-            alias = dependency_set["alias"]
+            ds_id = dependency_set["alias"]
         else:
-            alias = f"uds_{str(self.unnamed_dependency_set_counter).zfill(4)}"
+            ds_id = f"uds_{str(self.unnamed_dependency_set_counter).zfill(4)}"
             self.unnamed_dependency_set_counter += 1
 
-        self.parsed_objects["DependencySet"][alias] = self._parse_dependency_set(
-            dependency_set
-        )
+        return ds_id
 
-        for dependency in dependency_set["dependencies"]:
-            # Is it a Dependency or a DependencySetReference?
-            if "alias" in dependency:
-                # DependencySetReference
-                dependency_set_reference_id = (
-                    f"dsr_{str(self.dependency_set_reference_counter).zfill(4)}"
-                )
-                self.dependency_set_reference_counter += 1
+    def _next_dependency_set_reference_id(self, _):
+        dsr_id = f"dsr_{str(self.dependency_set_reference_counter).zfill(4)}"
+        self.dependency_set_reference_counter += 1
+        return dsr_id
 
-                self.parsed_objects["DependencySet"][alias][
-                    "edge_collection_off_chain_ids"
-                ]["dependencySetReferences"].append(dependency_set_reference_id)
-
-                self.parsed_objects["DependencySetReference"][
-                    dependency_set_reference_id
-                ] = self._parse_dependency_set_reference(dependency)
-            else:
-                # Dependency
-                dependency_id = f"dep_{str(self.dependency_counter).zfill(4)}"
-                self.dependency_counter += 1
-
-                self.parsed_objects["DependencySet"][alias][
-                    "edge_collection_off_chain_ids"
-                ]["dependencies"].append(dependency_id)
-
-                self.parsed_objects["Dependency"][
-                    dependency_id
-                ] = self._parse_dependency(dependency)
-
-        return alias
-
-    def _parsed_object_to_cadence(self, tag, collection):
-        for node_id, node_data in collection.items():
-            self.tags.append(cadence.String(tag))
-            self.off_chain_ids.append(cadence.String(node_id))
-
-            self.string_fields.append(
-                _wrap_nullable_fields(node_data["string_fields"], cadence.String)
-            )
-            self.numeric_fields.append(
-                _wrap_nullable_fields(node_data["numeric_fields"], cadence.Fix64)
-            )
-            self.boolean_fields.append(
-                to_cadence_dict(
-                    node_data["boolean_fields"],
-                    key_type=cadence.String,
-                    value_type=cadence.Bool,
-                )
-            )
-            self.string_list_fields.append(
-                to_cadence_dict(
-                    node_data["string_list_fields"],
-                    key_type=cadence.String,
-                    value_type=[
-                        cadence.String,
-                        cadence.Optional,
-                        cadence.Array,
-                        cadence.Optional,
-                    ],
-                )
-            )
-            self.numeric_list_fields.append(
-                to_cadence_dict(
-                    node_data["numeric_list_fields"],
-                    key_type=cadence.String,
-                    value_type=[
-                        cadence.Fix64,
-                        cadence.Optional,
-                        cadence.Array,
-                        cadence.Optional,
-                    ],
-                )
-            )
-
-            self.edge_off_chain_ids.append(
-                to_cadence_dict(
-                    node_data["edge_off_chain_ids"]
-                    if "edge_off_chain_ids" in node_data
-                    else {},
-                    key_type=cadence.String,
-                    value_type=cadence.String,
-                )
-            )
-
-            self.edge_collection_off_chain_ids.append(
-                to_cadence_dict(
-                    node_data["edge_collection_off_chain_ids"]
-                    if "edge_collection_off_chain_ids" in node_data
-                    else {},
-                    key_type=cadence.String,
-                    value_type=[cadence.String, cadence.Array],
-                )
-            )
-
-    def state_map_to_cadence(self, template, template_id, template_version):
-        self.tags.append(cadence.String("StateMap"))
-        self.off_chain_ids.append(cadence.String(str(template_id)))
-
-        state_map_string_fields = {
-            "standard": template["standard"],
-            "version": template_version,
-        }
-        self.string_fields.append(
-            _wrap_nullable_fields(state_map_string_fields, cadence.String)
-        )
-
-        self.edge_collection_off_chain_ids.append(
-            to_cadence_dict(
-                self.state_map_edge_collections,
-                key_type=cadence.String,
-                value_type=[cadence.String, cadence.Array],
-            )
-        )
-
-        # StateMap has none of these
-        self.numeric_fields.append(cadence.Dictionary([]))
-        self.boolean_fields.append(cadence.Dictionary([]))
-        self.numeric_list_fields.append(cadence.Dictionary([]))
-        self.string_list_fields.append(cadence.Dictionary([]))
-        self.edge_off_chain_ids.append(cadence.Dictionary([]))
-
-    def _parse_dependency_set(self, dependency_set):
-        ds = {
-            "string_fields": {
-                "gateType": dependency_set["gate_type"]
-                if "gate_type" in dependency_set
-                else None,
-                "description": dependency_set["description"]
-                if "description" in dependency_set
-                else None,
-            },
-            "edge_collection_off_chain_ids": {
-                "dependencies": [],
-                "dependencySetReferences": [],
-            },
-        }
-
-        return _populate_empty_field_types(ds)
-
-    def _parse_dependency_set_reference(self, dependency):
-        dsr = {
-            "string_fields": {
-                "alias": dependency["alias"],
-            }
-        }
-
-        return _populate_empty_field_types(dsr)
-
-    def _parse_dependency(self, dependency):
-        dep = {
-            "edges_off_chain_ids": {
-                "stateNode": dependency["node_id"],
-            },
-            "string_fields": {
-                "fieldName": dependency["field_name"],
-                "comparisonValueType": dependency["comparison_value_type"]
-                if "comparison_value_type" in dependency
-                else None,
-                "comparisonOperator": dependency["comparison_operator"]
-                if "comparison_operator" in dependency
-                else None,
-                "stringComparisonValue": dependency["string_comparison_value"]
-                if "string_comparison_value" in dependency
-                else None,
-            },
-            "numeric_fields": {
-                "numericComparisonValue": dependency["numeric_comparison_value"]
-                if "numeric_comparison_value" in dependency
-                else None,
-            },
-            "boolean_fields": {
-                "booleanComparisonValue": dependency["boolean_comparison_value"]
-                if "boolean_comparison_value" in dependency
-                else None,
-            },
-            "string_list_fields": {
-                "stringListComparisonValue": dependency["string_list_comparison_value"]
-                if "string_list_comparison_value" in dependency
-                else None,
-            },
-            "numeric_list_fields": {
-                "numericListComparisonValue": dependency[
-                    "numeric_list_comparison_value"
-                ]
-                if "numeric_list_comparison_value" in dependency
-                else None,
-            },
-        }
-
-        return _populate_empty_field_types(dep)
-
-
-def _populate_empty_field_types(obj):
-    for field_type in field_types:
-        ft = field_type.lower() + "_fields"
-        if ft not in obj:
-            obj[ft] = {}
-
-    return obj
+    def _next_dependency_id(self, _):
+        dep_id = f"dep_{str(self.dependency_counter).zfill(4)}"
+        self.dependency_counter += 1
+        return dep_id
 
 
 def _wrap_nullable_fields(fields_dict, value_type):
@@ -417,3 +337,35 @@ def _wrap_nullable_fields(fields_dict, value_type):
         key_type=cadence.String,
         value_type=[value_type, cadence.Optional],
     )
+
+
+class GraphNode:
+    def __init__(self, tag=None):
+        self.tag = tag
+        self.off_chain_id = None
+        self.on_chain_id = None
+
+        self.string_fields = {}
+        self.numeric_fields = {}
+        self.boolean_fields = {}
+        self.string_list_fields = {}
+        self.numeric_list_fields = {}
+        self.edge_off_chain_ids = {}
+        self.edge_collection_off_chain_ids = {}
+        self.edge_on_chain_ids = {}
+        self.edge_collection_on_chain_ids = {}
+
+    def from_node_dict(self, node_dict):
+        self.tag = node_dict["meta"]["tag"]
+        self.on_chain_id = node_dict["meta"]["id"]
+        self.off_chain_id = node_dict["meta"]["offChainID"]
+
+        self.boolean_fields = node_dict["data"]["booleanFields"]
+        self.numeric_fields = node_dict["data"]["numericFields"]
+        self.string_fields = node_dict["data"]["stringFields"]
+        self.numeric_list_fields = node_dict["data"]["numericListFields"]
+        self.string_list_fields = node_dict["data"]["stringListFields"]
+        self.edges = node_dict["data"]["edges"]
+        self.edgeCollections = node_dict["data"]["edgeCollections"]
+
+        return self

@@ -6,7 +6,6 @@
 
     "node_definitions": {
         "StateNode": {
-            "id": {"field_type": "NUMERIC"},
             "nodeTag": {"field_type": "STRING"},
             "description": {"field_type": "STRING"},
             "party": {
