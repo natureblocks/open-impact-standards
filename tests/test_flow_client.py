@@ -51,12 +51,15 @@ class TestFlowClient:
                 code=scripts.get_next_available_template_id,
             )
 
-            expected_nodes = await flow.create_state_map_template(
-                client,
-                node_definitions_schema_id,
-                template_file_path,
-                state_map_schema_file_path,
-            )
+            expected_nodes = {
+                node.off_chain_id: node
+                for node in await flow.create_state_map_template(
+                    client,
+                    node_definitions_schema_id,
+                    template_file_path,
+                    state_map_schema_file_path,
+                )
+            }
 
             actual_nodes = [
                 GraphNode().from_node_dict(
@@ -69,8 +72,24 @@ class TestFlowClient:
                 )
             ]
 
+            # Set the on_chain_id for the expected nodes
+            edge_map = {}
+            for node in actual_nodes:
+                expected_nodes[node.off_chain_id].on_chain_id = node.on_chain_id
+                edge_map[node.off_chain_id] = node.on_chain_id
+
+            # Set on chain ids for edges and edge collections
+            for node in expected_nodes.values():
+                for k, v in node.edge_off_chain_ids.items():
+                    node.edges[k] = edge_map[v]
+
+                for k, v in node.edge_collection_off_chain_ids.items():
+                    node.edgeCollections[k] = [edge_map[i] for i in v]
+
             differences = cadence_utils.compare_graph_nodes(
-                expected_nodes, actual_nodes, skip=["on_chain_id"]
+                sorted(expected_nodes.values(), key=lambda n: n.on_chain_id),
+                sorted(actual_nodes, key=lambda n: n.on_chain_id),
+                keys_to_skip=["edge_off_chain_ids", "edge_collection_off_chain_ids"],
             )
             assert not differences
 

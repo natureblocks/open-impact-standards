@@ -352,8 +352,8 @@ class GraphNode:
         self.numeric_list_fields = {}
         self.edge_off_chain_ids = {}
         self.edge_collection_off_chain_ids = {}
-        self.edge_on_chain_ids = {}
-        self.edge_collection_on_chain_ids = {}
+        self.edges = {}
+        self.edgeCollections = {}
 
     def from_node_dict(self, node_dict):
         self.tag = node_dict["meta"]["tag"]

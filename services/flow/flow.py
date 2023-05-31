@@ -1,3 +1,4 @@
+import copy
 from flow_py_sdk import ProposalKey, Tx, Script, cadence
 from services.flow.config import Config
 from services.flow import flow, cadence_utils, scripts, transactions
@@ -18,6 +19,7 @@ async def create_state_map_template(
         template_version="0.0.1",
         state_map_schema_file_path=state_map_schema_file_path,
     )
+    graph_nodes = copy.deepcopy(converter.graph_nodes)
     template_arguments = converter.graph_nodes_to_cadence()
 
     await flow.execute_transaction(
@@ -26,7 +28,7 @@ async def create_state_map_template(
         arguments=[cadence.UInt64(node_definitions_schema_id)] + template_arguments,
     )
 
-    return converter.graph_nodes
+    return graph_nodes
 
 
 async def register_schema(client, json_file_path):
