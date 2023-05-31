@@ -1,7 +1,6 @@
-# open-impact-standards
+# Open Impact Standard
 
-
-# Schema Specification
+## Schema Specification
 The below psuedocode blocks describe the structure of valid json objects within an open standard schema. Open standard json schemas must conform to these specifications.
 
 - An example json file illustrating the different object types can be found here: [schemas/example.json](https://github.com/natureblocks/open-impact-standards/blob/main/schemas/example.json)
@@ -174,7 +173,7 @@ type Party {
 }
 ````
 
-## Schema Validation
+### Schema Validation
 Running Tests:
 - Validation tests can be found in [tests/test_schema_validation.py](https://github.com/natureblocks/open-impact-standards/blob/main/tests/test_schema_validation.py).
 - The `test_validate_schema` test runs validation on the schema at the specified `json_file_path`. Simply run the test and check stdout for validation errors (refer to the test's docstring for more details).
@@ -194,7 +193,7 @@ if errors:
     validator.print_errors()
 ````
 
-## Schema Visualization
+### Schema Visualization
 Prerequisites:
 - Must create a Miro app and generate an OAuth token (select `boards:read` and `boards:write` permissions, then click "Install app and get OAuth token").
 - Must include the OAuth token in a file called `tokens.json` in the root folder of the repository, like so:
