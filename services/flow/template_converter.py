@@ -17,6 +17,7 @@ class TemplateConverter:
 
         self.graph_nodes = {}
         self.dependencies_inverse = {}
+        self.entry_node_ids = []
 
         # Creating the StateMap GraphNode will recursively create
         # all other GraphNodes and add them to self.graph_nodes
@@ -26,6 +27,7 @@ class TemplateConverter:
         self.graph_nodes[state_map.off_chain_id] = state_map
 
         self._populate_dependencies_inverse()
+        self._find_entry_nodes()
 
     def graph_nodes_to_cadence(self):
         # parallel arrays
@@ -101,6 +103,10 @@ class TemplateConverter:
             value_type=[cadence.String, cadence.Array],
         )
 
+        entry_node_ids = cadence.Array(
+            [cadence.String(off_chain_id) for off_chain_id in self.entry_node_ids]
+        )
+
         return [
             cadence.Array(tags),
             cadence.Array(off_chain_ids),
@@ -112,6 +118,7 @@ class TemplateConverter:
             cadence.Array(edge_off_chain_ids),
             cadence.Array(edge_collection_off_chain_ids),
             cadence_dependencies_inverse,
+            entry_node_ids,
         ]
 
     def schema_to_cadence(self, json_file_path):
@@ -234,7 +241,9 @@ class TemplateConverter:
                             # Skip edges that don't match the specified tag
                             if (
                                 "tag" in template_field_key
-                                and self._determine_actual_tag(template_field_key["tag"], edge)
+                                and self._determine_actual_tag(
+                                    template_field_key["tag"], edge
+                                )
                                 != template_field_key["tag"]
                             ):
                                 continue
@@ -377,6 +386,11 @@ class TemplateConverter:
                     dependee_node_id,
                     self.graph_nodes[self.graph_nodes[dsr_id].string_fields["alias"]],
                 )
+
+    def _find_entry_nodes(self):
+        for off_chain_id, node in self.graph_nodes.items():
+            if node.tag == "StateNode" and "dependsOn" not in node.edge_off_chain_ids:
+                self.entry_node_ids.append(off_chain_id)
 
 
 def _wrap_nullable_fields(fields_dict, value_type):

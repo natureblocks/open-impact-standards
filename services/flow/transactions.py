@@ -277,7 +277,8 @@ transaction(
     stringListFields: [{{String: [String?]?}}],
     edgeOffChainIDs: [{{String: String}}],
     edgeCollectionOffChainIDs: [{{String: [String]}}],
-    offChainDependenciesInverse: {{String: [String]}}
+    offChainDependenciesInverse: {{String: [String]}},
+    entryNodeOffChainIDs: [String]
 ) {{
     let stateMapSchemaID: UInt64
     let subgraphDistributorRef: &{{Graph.SubgraphDistributorPrivate}}
@@ -332,6 +333,9 @@ transaction(
 
         edgeOffChainIDs.length == edgeCollectionOffChainIDs.length:
             "edgeOffChainIDs and edgeCollectionOffChainIDs must be the same length"
+
+        entryNodeOffChainIDs.length > 0:
+            "There must be at least one entry node"
     }}
 
     execute {{
@@ -365,7 +369,8 @@ transaction(
             subgraph: <- subgraph,
             creations: creations,
             nodeDefinitionsSchemaID: nodeDefinitionsSchemaID,
-            offChainDependenciesInverse: offChainDependenciesInverse
+            offChainDependenciesInverse: offChainDependenciesInverse,
+            entryNodeOffChainIDs: entryNodeOffChainIDs
         )
     }}
 
