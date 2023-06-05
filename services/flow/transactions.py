@@ -276,7 +276,8 @@ transaction(
     numericListFields: [{{String: [Fix64?]?}}],
     stringListFields: [{{String: [String?]?}}],
     edgeOffChainIDs: [{{String: String}}],
-    edgeCollectionOffChainIDs: [{{String: [String]}}]
+    edgeCollectionOffChainIDs: [{{String: [String]}}],
+    offChainDependenciesInverse: {{String: [String]}}
 ) {{
     let stateMapSchemaID: UInt64
     let subgraphDistributorRef: &{{Graph.SubgraphDistributorPrivate}}
@@ -363,7 +364,8 @@ transaction(
         self.adminRef.createStateMapTemplate(
             subgraph: <- subgraph,
             creations: creations,
-            nodeDefinitionsSchemaID: nodeDefinitionsSchemaID
+            nodeDefinitionsSchemaID: nodeDefinitionsSchemaID,
+            offChainDependenciesInverse: offChainDependenciesInverse
         )
     }}
 

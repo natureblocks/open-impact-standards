@@ -51,15 +51,12 @@ class TestFlowClient:
                 code=scripts.get_next_available_template_id,
             )
 
-            expected_nodes = {
-                node.off_chain_id: node
-                for node in await flow.create_state_map_template(
-                    client,
-                    node_definitions_schema_id,
-                    template_file_path,
-                    state_map_schema_file_path,
-                )
-            }
+            expected_nodes = await flow.create_state_map_template(
+                client,
+                node_definitions_schema_id,
+                template_file_path,
+                state_map_schema_file_path,
+            )
 
             actual_nodes = [
                 GraphNode().from_node_dict(
@@ -81,10 +78,10 @@ class TestFlowClient:
             # Set on chain ids for edges and edge collections
             for node in expected_nodes.values():
                 for k, v in node.edge_off_chain_ids.items():
-                    node.edges[k] = edge_map[v]
+                    node.edges[k] = edge_map[str(v)]
 
                 for k, v in node.edge_collection_off_chain_ids.items():
-                    node.edgeCollections[k] = [edge_map[i] for i in v]
+                    node.edgeCollections[k] = [edge_map[str(i)] for i in v]
 
             differences = cadence_utils.compare_graph_nodes(
                 sorted(expected_nodes.values(), key=lambda n: n.on_chain_id),

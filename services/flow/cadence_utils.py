@@ -29,7 +29,9 @@ def to_cadence_dict(dictionary, key_type=None, value_type=None):
                 else:
                     value = cadence_type(value)
         elif cadence_type_or_list:
-            return cadence_type_or_list(value)
+            return cadence_type_or_list(
+                value if cadence_type_or_list.__name__ != "String" else str(value)
+            )
 
         return value
 
@@ -89,8 +91,21 @@ def compare_graph_nodes(expected_nodes, actual_nodes, keys_to_skip=[]):
                 continue
 
             if value != actual_node.__dict__[key]:
-                differences.append(
-                    f"Expected {key} to be {value}, but found {actual_node.__dict__[key]}"
-                )
+                if isinstance(value, dict):
+                    for k, v in value.items():
+                        if not v:
+                            if k not in actual_node.__dict__[key]:
+                                continue
+                        elif (
+                            k not in actual_node.__dict__[key]
+                            or v != actual_node.__dict__[key][k]
+                        ):
+                            differences.append(
+                                f"Expected {key} to be {value}, but found {actual_node.__dict__[key]}"
+                            )
+                else:
+                    differences.append(
+                        f"Expected {key} to be {value}, but found {actual_node.__dict__[key]}"
+                    )
 
     return differences
