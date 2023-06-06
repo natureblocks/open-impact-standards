@@ -1,4 +1,5 @@
 import json
+import math
 import requests
 
 
@@ -42,6 +43,13 @@ class MiroBoard:
         url = f"https://api.miro.com/v2/boards/{self.board_id}/shapes"
 
         content_length = len(str(content))
+        width = 100
+        height = 100
+
+        if content_length > 36:
+            width = 100 + (25 * math.ceil(content_length / 36))
+            height = 100 + (25 * math.ceil(content_length / 36))
+
         payload = {
             "data": {"shape": shape_type, "content": content},
             "style": {
@@ -52,10 +60,7 @@ class MiroBoard:
                 "textAlignVertical": "middle",
             },
             "position": {"origin": "center", "x": x, "y": y},
-            "geometry": {
-                "width": 100 if content_length < 36 else 150,
-                "height": 100 if content_length < 36 else 120,
-            },
+            "geometry": {"width": width, "height": height},
         }
 
         return self._miro_api_request(url, payload)
