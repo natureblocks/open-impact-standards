@@ -33,6 +33,7 @@ class MiroBoard:
         self,
         shape_type="rectangle",
         content="",  # text to display
+        text_align="center",
         fill_color="#ffffff",
         x=0,  # x coordinate from centre of board
         y=0,  # y coordinate from centre of board
@@ -48,7 +49,7 @@ class MiroBoard:
                 "borderColor": "#000000",
                 "borderStyle": "normal",
                 "fillColor": fill_color,
-                "textAlign": "center",
+                "textAlign": text_align,
                 "textAlignVertical": "middle",
             },
             "position": {"origin": "center", "x": x, "y": y},
