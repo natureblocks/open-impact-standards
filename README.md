@@ -195,7 +195,7 @@ if errors:
 
 ### Schema Visualization
 Prerequisites:
-- Must create a Miro app and generate an OAuth token (select `boards:read` and `boards:write` permissions, then click "Install app and get OAuth token").
+- Must create a Miro app and generate an OAuth token. To do this from the Miro dashboard navigate to Team profile > Profile settings > Your apps > Create new app. Once the app has been created scroll down to All Plans, then select `boards:read` and `boards:write` permissions, then click "Install app and get OAuth token". 
 - Must include the OAuth token in a file called `tokens.json` in the root folder of the repository, like so:
 ````
 {
