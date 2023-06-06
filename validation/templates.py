@@ -404,9 +404,13 @@ state_node = {
                 "type": "enum",
                 "values": milestones
             }
+        },
+        "supporting_info": {
+            "type": "array",
+            "values": {"type": "string"}
         }
     },
-    "optional": ["depends_on", "milestones"],
+    "optional": ["depends_on", "milestones", "supporting_info"],
 }
 
 party = {

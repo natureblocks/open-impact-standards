@@ -32,6 +32,8 @@ class DependencyGraph:
         self.edge_dict = {}
 
         self.layout_algorithm = "dependency_chart"
+        self.node_height = 2
+        self.node_spacing = 1
         self.x_coord_factor = 400
         self.y_coord_factor = 100
         # When multiple dependencies point from a gate to the same node,
@@ -141,6 +143,9 @@ class DependencyGraph:
         shape_dict = {}
 
         for node_id, node in self.nodes.items():
+            x = self.node_coordinates[node_id][0] * self.x_coord_factor
+            y = self.node_coordinates[node_id][1] * self.y_coord_factor
+
             shape_dict[node_id] = mb.create_shape(
                 shape_type=shape_types[
                     node["node_type"] if "node_type" in node else "STATE"
@@ -149,9 +154,19 @@ class DependencyGraph:
                 fill_color=self.party_colors[node["applies_to"]]
                 if "applies_to" in node
                 else self._default_node_color,
-                x=self.node_coordinates[node_id][0] * self.x_coord_factor,
-                y=self.node_coordinates[node_id][1] * self.y_coord_factor,
+                x=x,
+                y=y,
             )
+
+            if "supporting_info" in node:
+                mb.create_shape(
+                    shape_type=shape_types["SUPPORTING_INFO"],
+                    content="- " + "<br/>- ".join(node["supporting_info"]),
+                    text_align="left",
+                    fill_color="#D0E78C",
+                    x=x + self.node_spacing * self.x_coord_factor / 5,
+                    y=y - self.node_height * self.y_coord_factor / 2,
+                )
 
         for alias, gate_type in self.gates.items():
             shape_dict[alias] = mb.create_shape(
@@ -211,7 +226,9 @@ class DependencyGraph:
         nodes = list(self.nodes.keys()) + list(self.gates.keys())
 
         if self.layout_algorithm == "dependency_chart":
-            layout = DependencyChartLayout()
+            layout = DependencyChartLayout(
+                node_height=self.node_height, node_spacing=self.node_spacing
+            )
             self.node_coordinates = layout.from_graph_data(
                 nodes, self.edge_dict, self.edge_tuples
             )
@@ -233,6 +250,7 @@ shape_types = {
     "ACTION": "round_rectangle",
     "QUESTION": "triangle",
     "GATE": "circle",
+    "SUPPORTING_INFO": "wedge_round_rectangle_callout",
 }
 gate_colors = {
     "AND": "#E88E8E",

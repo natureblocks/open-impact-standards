@@ -47,13 +47,14 @@ __StateNode object type:__
 - A `StateNode` may specify 0 or more `Milestone` values, but a given `Milestone` value may not appear on `StateNode` objects more than once per schema.
 ````
 type StateNode {
-    id: integer
+    id: integer,
     description: string,
     node_type: StateNodeType,
     applies_to: Party.name,
     tag: root.node_definitions.key,
     depends_on: DependencySet?,
-    milestones: [Milestone]?
+    milestones: [Milestone]?,
+    supporting_info: [string]?
 }
 ````
 __StateNodeType enumeration:__

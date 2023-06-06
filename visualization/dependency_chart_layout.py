@@ -1,5 +1,5 @@
 class DependencyChartLayout:
-    def __init__(self):
+    def __init__(self, node_height=2, node_spacing=1):
         self.node_depths = {}
 
         self._apply_depth_offsets = False
@@ -7,8 +7,8 @@ class DependencyChartLayout:
         self.depth_offset_directives = {}
         self.depth_offsets = {}
 
-        self.node_height = 2
-        self.node_spacing = 1
+        self.node_height = node_height
+        self.node_spacing = node_spacing
 
         self.node_coordinates = {}
 
