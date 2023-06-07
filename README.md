@@ -151,8 +151,6 @@ enum ComparisonOperator {
     "LESS_THAN",
     "GREATER_THAN_OR_EQUAL_TO",
     "LESS_THAN_OR_EQUAL_TO",
-    "MATCHES_REGEX",
-    "DOES_NOT_MATCH_REGEX",
     "ONE_OF",
     "NONE_OF",
     "CONTAINS",

@@ -570,8 +570,6 @@ class TestSchemaValidation:
         allowed_comparison_operators = [
             "EQUALS",
             "DOES_NOT_EQUAL",
-            "MATCHES_REGEX",
-            "DOES_NOT_MATCH_REGEX",
             "CONTAINS",
             "DOES_NOT_CONTAIN",
             "ONE_OF",

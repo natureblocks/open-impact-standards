@@ -115,8 +115,6 @@ dependency = {
                 "LESS_THAN",
                 "GREATER_THAN_OR_EQUAL_TO",
                 "LESS_THAN_OR_EQUAL_TO",
-                "MATCHES_REGEX",
-                "DOES_NOT_MATCH_REGEX",
                 "ONE_OF",
                 "NONE_OF",
                 "CONTAINS",
@@ -186,8 +184,6 @@ dependency = {
                             "values": [
                                 "EQUALS",
                                 "DOES_NOT_EQUAL",
-                                "MATCHES_REGEX",
-                                "DOES_NOT_MATCH_REGEX",
                                 "CONTAINS",
                                 "DOES_NOT_CONTAIN",
                                 "ONE_OF",
