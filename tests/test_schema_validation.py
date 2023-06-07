@@ -117,14 +117,16 @@ class TestSchemaValidation:
         schema["state_nodes"][3]["depends_on"] = dependency_set
 
         errors = validator.validate(json_string=json.dumps(schema))
-        assert len(errors) == 2
         assert (
-            errors[0]
-            == "Any recurring DependencySet objects (Node.depends_on) should be added to root.referenced_dependency_sets, and nodes should specify a DependencySetReference with the alias of the DependencySet object."
+            'root.state_nodes: duplicate value provided for unique field "depends_on.alias": "common_ds"'
+            in errors
         )
         assert (
-            errors[1]
-            == "The following node ids specify identical dependency sets: [2, 3]"
+            "Any recurring DependencySet objects (Node.depends_on) should be added to root.referenced_dependency_sets, and nodes should specify a DependencySetReference with the alias of the DependencySet object."
+            in errors
+        )
+        assert (
+            "The following node ids specify identical dependency sets: [2, 3]" in errors
         )
 
         schema["referenced_dependency_sets"].append(dependency_set)
@@ -156,14 +158,16 @@ class TestSchemaValidation:
         }
 
         errors = validator.validate(json_string=json.dumps(schema))
-        assert len(errors) == 2
         assert (
-            errors[0]
-            == "Any recurring DependencySet objects (Node.depends_on) should be added to root.referenced_dependency_sets, and nodes should specify a DependencySetReference with the alias of the DependencySet object."
+            'root.state_nodes: duplicate value provided for unique field "depends_on.alias": "common_ds#2"'
+            in errors
         )
         assert (
-            errors[1]
-            == "The following node ids specify identical dependency sets: [4, 5]"
+            "Any recurring DependencySet objects (Node.depends_on) should be added to root.referenced_dependency_sets, and nodes should specify a DependencySetReference with the alias of the DependencySet object."
+            in errors
+        )
+        assert (
+            "The following node ids specify identical dependency sets: [4, 5]" in errors
         )
 
         schema["referenced_dependency_sets"].append(
