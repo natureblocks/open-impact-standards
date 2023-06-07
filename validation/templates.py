@@ -24,6 +24,7 @@ root_object = {
                 "template": "state_node",
             },
             "unique": ["id", "milestones"],
+            "unique_if_not_null": ["depends_on.alias"]
         },
         "referenced_dependency_sets": {
             "type": "array",

@@ -161,7 +161,7 @@ class SchemaValidator:
                     path=f"{path}.{key}", field=field[key], template=template["values"]
                 )
 
-        if "unique" in template:
+        if "unique" in template or "unique_if_not_null" in template:
             errors += self._validate_unique(path, field, template)
 
         return errors
@@ -206,7 +206,7 @@ class SchemaValidator:
                     f"{self._context(path)}: contains duplicate item(s) (values must be distinct)"
                 ]
 
-        if "unique" in template:
+        if "unique" in template or "unique_if_not_null" in template:
             errors += self._validate_unique(path, field, template)
 
         return errors
@@ -338,10 +338,19 @@ class SchemaValidator:
                 "unique validation not implemented for type " + str(type(field))
             )
 
+        constraint_map = {
+            "unique": template["unique"] if "unique" in template else [],
+            "unique_if_not_null": template["unique_if_not_null"]
+            if "unique_if_not_null" in template
+            else [],
+        }
+
         # { unique_field_name: { field_value: is_unique } }
         unique = {}
 
-        for field_name in template["unique"]:
+        for field_name in (
+            constraint_map["unique"] + constraint_map["unique_if_not_null"]
+        ):
             unique_values = {}
             for item in field if isinstance(field, list) else field.values():
                 if isinstance(item, list):
@@ -371,6 +380,10 @@ class SchemaValidator:
         errors = []
         for field_name in unique:
             for value, is_unique in unique[field_name].items():
+                if field_name in constraint_map["unique_if_not_null"]:
+                    if value is None:
+                        continue
+
                 if not is_unique:
                     errors += [
                         f"{self._context(path)}: duplicate value provided for unique field {json.dumps(field_name)}: {json.dumps(value)}"

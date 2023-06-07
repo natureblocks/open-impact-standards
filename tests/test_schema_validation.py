@@ -802,13 +802,30 @@ class TestSchemaValidation:
         ]
 
         errors = validator.validate(json_string=json.dumps(schema))
-        assert len(errors) == 1
         assert (
-            errors[0]
-            == 'root.referenced_dependency_sets: duplicate value provided for unique field "alias": "some_alias"'
+            'root.referenced_dependency_sets: duplicate value provided for unique field "alias": "some_alias"'
+            in errors
         )
 
         schema["referenced_dependency_sets"].pop()
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        schema = fixtures.basic_schema_with_nodes(4)
+
+        dependency_set_a = fixtures.dependency_set("same_alias", "AND", 2)
+        dependency_set_b = fixtures.dependency_set("same_alias", "AND", 1)
+        schema["state_nodes"][2]["depends_on"] = dependency_set_a
+        schema["state_nodes"][3]["depends_on"] = dependency_set_b
+
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.state_nodes: duplicate value provided for unique field "depends_on.alias": "same_alias"'
+            in errors
+        )
+
+        schema["state_nodes"][3]["depends_on"]["alias"] = "different_alias"
+
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
