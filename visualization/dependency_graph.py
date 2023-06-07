@@ -258,5 +258,4 @@ gate_colors = {
     "XOR": "#50da8b",
     "NAND": "#FFBA91",
     "NOR": "#E8A5D8",
-    "XNOR": "#E8A5D8",
 }

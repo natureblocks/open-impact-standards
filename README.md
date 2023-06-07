@@ -100,14 +100,14 @@ type DependencySet {
 ````
 __GateType enumeration:__
 - Logic gate types through which groups of dependencies (`DependencySet` objects) can be evaluated.
+- `XNOR` has been intentionally omitted as it reduces state map clarity.
 ````
 enum GateType {
     "AND",
     "OR",
     "XOR",
     "NAND",
-    "NOR",
-    "XNOR"
+    "NOR"
 }
 ````
 __DependencySetReference object type:__

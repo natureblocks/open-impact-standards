@@ -1,4 +1,4 @@
-gate_types = ("AND", "OR", "XOR", "NAND", "NOR", "XNOR")
+gate_types = ("AND", "OR", "XOR", "NAND", "NOR")
 
 state_node_types = ("STATE", "ACTION", "QUESTION")
 
