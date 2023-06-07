@@ -263,8 +263,8 @@
     },
     {
       "id": 4,
-      "description": "Project can apply all silvicultural systems: Conservation forests (no use of timber), Forests with selective harvesting, and Rotation forestry.",
-      "node_type": "QUESTION",
+      "description": "Not a mangrove project",
+      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
@@ -281,14 +281,14 @@
     },
     {
       "id": 5,
-      "description": "All projects can include agriculture (agroforestry) or pasture (silvopasture) activites.",
-      "node_type": "QUESTION",
+      "description": "Project is not on a wetland.",
+      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 3,
+            "node_id": 4,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -299,14 +299,14 @@
     },
     {
       "id": 6,
-      "description": "Project areas shall not be on wetlands.",
-      "node_type": "QUESTION",
+      "description": "Project areas with organic soils will not be drained or irrigated (except for irrigation for planting).",
+      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 3,
+            "node_id": 4,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -317,14 +317,14 @@
     },
     {
       "id": 7,
-      "description": "Project areas with organic soils shall not be drained or irrigated (except for irrigation for planting).",
-      "node_type": "QUESTION",
+      "description": "Soil disturbance (through ploughing, digging of pits, stump removals, infrastructure, etc.) on organic soils will not exceed more than 10% of the area that is submitted to certification (not 10% of the entire project area).",
+      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 3,
+            "node_id": 4,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -335,14 +335,14 @@
     },
     {
       "id": 8,
-      "description": "Soil disturbance (through ploughing, digging of pits, stump removals, infrastructure, etc.) on organic soils shall be in less than 10% of the area that is submitted to certification (not 10% of the entire project area).",
-      "node_type": "QUESTION",
+      "description": "The most likely scenario without the project (baseline scenario) is defined for the project area and shows no  significant increase of the baseline biomass ('tree' and 'non-tree').",
+      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 3,
+            "node_id": 4,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -353,39 +353,18 @@
     },
     {
       "id": 9,
-      "description": "The most likely scenario without the project (baseline scenario) shall be defined for the project area. This scenario shall not show any significant increase of the baseline biomass ('tree' and 'non-tree').",
-      "node_type": "QUESTION",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "node_id": 3,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 10,
-      "description": "Project meets all requirements for this methodology to be applicable for the calculation of CO2 removal units from the project.",
+      "description": "Project has met all non-mangrove requirements.",
       "node_type": "STATE",
       "applies_to": "Land Representative",
       "tag": "BooleanNode",
+      "supporting_info": [
+        "Project can apply all silvicultural systems: Conservation forests (no use of timber), Forests with selective harvesting, and Rotation forestry.",
+        "All projects can include agriculture (agroforestry) or pasture (silvopasture) activites."
+      ],
       "depends_on": {
-        "alias": "Preliminary Requirements Met#0000",
+        "alias": "Non-mangrove requirements met#0000",
         "gate_type": "AND",
         "dependencies": [
-          {
-            "node_id": 4,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
           {
             "node_id": 5,
             "field_name": "completed",
@@ -413,9 +392,20 @@
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
-          },
+          }
+        ]
+      }
+    },
+    {
+      "id": 10,
+      "description": "Mangrove Project.",
+      "node_type": "STATE",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": {
+        "dependencies": [
           {
-            "node_id": 9,
+            "node_id": 4,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -426,32 +416,33 @@
     },
     {
       "id": 11,
-      "description": "Is this a Mangrove project?",
-      "node_type": "QUESTION",
+      "description": "90% or more of the planting area will be planted with mangrove species.",
+      "node_type": "STATE",
       "applies_to": "Project Developer",
-      "tag": "BooleanNode",
+      "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 3,
+            "node_id": 10,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           }
         ]
-      },
-      "supporting_info": [
-        "In case there are targeted managment / inputs leading to SOC improvement involved, applicable SOC Framework Methodology approaches may be allowed.",
-        "The project is allowed to be on wetlands (Node 6 does not apply)."
-      ]
+      }
     },
     {
       "id": 12,
-      "description": "90% of the planting area will be planted with mangrove species?",
-      "node_type": "QUESTION",
+      "description": "Project has met all the mangrove requirements.",
+      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
+      "supporting_info": [
+        "Due to the accumulation of soil organic carbon, an additional 1.8 tCO2/ha/year can be accounted for in the first 20 years after a Modelling Unit is planted, unless transparent and verifiable information can be provided to justify a different value. This value is based on the recommendation of 0.5 tC/ha/year by the A/R CDM methodoology  AR-AM0014  v.30. It has been converted to the unit tCO2/ha/year.",
+        "In case there are targeted managment / inputs leading to SOC improvement involved, applicable SOC Framework Methodology approaches may be allowed.",
+        "Support Info - SOC sequestration component will be excluded from the issuance of Planned Emission Reductions"
+      ],
       "depends_on": {
         "dependencies": [
           {
@@ -466,49 +457,13 @@
     },
     {
       "id": 13,
-      "description": "Due to the accumulation of soil organic carbon, has an additional 1.8 tCO2/ha/year been accounted for in the first 20 years (after a Modelling Unit is planted, unless transparent and verifiable information can be provided to justify a different value)? This value is based on the recommendation of 0.5 tC/ha/year by the A/R CDM methodoology <a href='https://cdm.unfccc.int/methodologies/DB/KMH6O8T6RL3P5XKNBQE2N359QG7KOE'> AR-AM0014 </a> v.30. It has been converted to the unit tCO2/ha/year.",
-      "node_type": "QUESTION",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "node_id": 11,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 15,
-      "description": "Have SOC sequestration components bn excluded from the issuance of Planned Emission Reductions?",
-      "node_type": "QUESTION",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "node_id": 11,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 17,
-      "description": "Special acknowledgements for A/R Mangrove projects.",
+      "description": "Project meets all requirements for this methodology to be applicable for the calculation of CO2 removal units from the project.",
       "node_type": "STATE",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
+      "applies_to": "Land Representative",
+      "tag": "BooleanNode",
       "depends_on": {
-        "alias": "Mangrove Project#0000",
-        "gate_type": "AND",
+        "alias": "Preliminary Requirements Met#0000",
+        "gate_type": "OR",
         "dependencies": [
           {
             "node_id": 12,
@@ -518,48 +473,7 @@
             "boolean_comparison_value": true
           },
           {
-            "node_id": 13,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "node_id": 11,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "node_id": 15,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 18,
-      "description": "Prefeasibility Complete",
-      "node_type": "STATE",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "alias": "Prefeasibility Complete#0000",
-        "gate_type": "AND",
-        "dependencies": [
-          {
-            "node_id": 10,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "node_id": 17,
+            "node_id": 9,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -577,7 +491,7 @@
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 18,
+            "node_id": 13,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1271,6 +1185,13 @@
           },
           {
             "node_id": 66,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          },
+          {
+            "node_id": 78,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
