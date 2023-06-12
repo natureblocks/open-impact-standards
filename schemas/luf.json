@@ -1,0 +1,142 @@
+{
+  "standard": "Land Use and Forestry",
+  "term_definitions": [
+    {
+      "name": "Agriculture (AGR)",
+      "description": "The Open Impact Standard defines agriculture in accordance with the FAO, as agricultural activities that contribute to the achievementof sustainable development goals: www.fao.org/climate-change/en",
+      "attributes": []
+    },
+    {
+      "name": "Crop",
+      "description": "A crop is a plant or fungus species that is purposefully cultivated and/or harvested to satisfy human and livestock needs.",
+      "attributes": []
+    },
+    {
+      "name": "Forest",
+      "description": "A forest is defined by the Designated National Authority (DNA) of the project's host country http://cdm.unfccc.int/DNA/index.html. In case no forest definition is yet given by the DNA, the Project Developer can refer to the forest definition of the FAO: http://www.fao.org/docrep/003/x6896e/x6896e0e.html or the national forest definition of the project's host country. ",
+      "attributes": []
+    },
+    {
+      "name": "Invasive Species",
+      "description": "An organism introduced by man into places out of its natural range of distribution, where it becomes established and disperses, generating a negative impact on the local ecosystems and species. An invasive species is likely to cause economic harm or harm to human health. Note that species which are already locally established and of economic importance are excluded under this definition. Source: Adapted from IUCN, available at https://www.iucn.org/theme/species/our-work/invasive-species",
+      "attributes": []
+    },
+    {
+      "name": "Livestock",
+      "description": "Livestock comprises all domestic animals. Non-domestic animals are not included unless they are kept or raised in captivity on agricultural holdings, including holdings without land. Source: FAO, available at http://www.fao.org/waicent/faoinfo/economic/faodef/fdef16e.htm",
+      "attributes": []
+    },
+    {
+      "name": "Modelling Unit (MU)",
+      "description": "Modelling Units are distinct parts of the eligible area where carbon stocks can be quantified based on an applicable Open Impact Standard Methodology. To meet the precision level for the carbon stocks estimation (see Annex A- Uncertainty of LUF Parameters). MU areas normally have homogeneous characteristics to quantify a certain SDG Impact (growth patterns, management treatment and start date).",
+      "attributes": []
+    },
+    {
+      "name": "New Area",
+      "description": "New areas are project areas that are added to a project after it achieves Project Certification",
+      "attributes": []
+    },
+    {
+      "name": "People Affected",
+      "description": "People affected are individuals or an entity that are, or are likely to be, subject to the project activities. 4 Examples of people affected are local: (a)Communities, indigenous peoples, neighbors, processors, and local businesses, AND (b)Organizations authorized or known to act on behalf of people affected (e.g., NGOs, labour organizations). Source: Adapted from FSC where the term is 'affected stakeholder'",
+      "attributes": []
+    },
+    {
+      "name": "Planting Area",
+      "description": "The planting area is the eligible area of A/R projects where tree planting activities take place. The planting area is the part of the project area which meets the applicability conditions of the applied Open Impact Standard Methodology. Non-eligible areas are those which do not meet the applicability conditions of the applied Open Impact Standard Methodology.",
+      "attributes": []
+    },
+    {
+      "name": "Project Area",
+      "description": "As per Open Impact Standard, definitions are as follows: 1. The project area is a spatial area or areas submitted for certification with clearly defined boundaries managed to a set of explicit long-term management objectives. Source: Adapted from FSC, where the relevant term is 'Management Unit'. The project area is the sum of all eligible and non-eligible areas. 2. Boundaries of the project area shall be clearly distinguishable in the field. 5 3. Under the Open Impact Standard the project area is divided in Modelling Units (MU) for an efficient calculation of the amount of Certified SDG Impact Statement or Product (for example GSVERs). The 'project area' as the area of certification shall be limited to eligible areas, any riparian or other buffer zones located within eligible areas, and areas set aside for conservation in accordance with Open Impact Standard LUF requirements. Project Types A grouped project encompasses several single area projects but applies the 'Land Use & Forests Requirements' in the same way as a single area project. Grouped projects are similar to a Programme of Activities (PoA) under the Clean Development Mechanism (CDM), allowing for an unlimited number of new project areas to be added without undergoing the complete Gold Standard certification process. The project developer can add new areas to a project (grouped projects) or expand an existing project area (single area projects) at any time after a project reaches Registered status. Figure 2: Grouped Project Figure 3: Single Area Project",
+      "attributes": []
+    },
+    {
+      "name": "Project Participant",
+      "description": "A project participant is an individual or entity that is contributing to the generation of the SDG certified impacts.",
+      "attributes": []
+    },
+    {
+      "name": "Project Region",
+      "description": "The project region is the spatial area where people and environment are influenced by the project activities. A project region can be expanded over time. All project areas are located within the project region. The 'project region' must be identified in the Project Design Document (PDD) and may indicate areas of future project growth through new area certifications.",
+      "attributes": []
+    },
+    {
+      "name": "Project Start",
+      "description": "i. A/R specific: The project start date shall be the earliest date when the first trees are planted. ii. AGR specific: The project start shall be the earliest date when implementation of the project activities that lead to the certification of Ecosystem Services and SDG Impacts starts. For example, for a project that involves shift in agricultural practice the start date is the date when the first project participant shifted to the improved agricultural practice.",
+      "attributes": []
+    },
+    {
+      "name": "SDG Impacts & Ecosystem Services",
+      "description": "Ecosystem services are benefits people obtain from ecosystems. Examples include SDG Impacts such as: i. Carbon sequestration and greenhouse gas reduction (SDG 13), AND ii. Water supply and purification (SDG 6), AND iii. Biodiversity conservation and enhancement (SDG 15)",
+      "attributes": []
+    },
+    {
+      "name": "Smallholder",
+      "description": "Smallholders are farmers that have more than 50% of farm work done by family members, cooperative members or neighbours.",
+      "attributes": []
+    },
+    {
+      "name": "Tree",
+      "description": "(a) A tree is a perennial woody plant with one or several dominant sprouts that increase its circumference due to secondary growth. (b) For a practical use of this document the definition of a tree also includes shrubs, palms and bamboo plants. (c) In any project, trees shall reach a minimum height of 2 meters. A/R specific: For forest inventories of different types of trees additional guidance is provided by the forest inventory guidelines of the BioCarbon Fund1.",
+      "attributes": []
+    },
+    {
+      "name": "Tree Planting AR Specific",
+      "description": "Tree planting refers to the activity of putting trees in the ground for growth; it also includes sowing or assisted natural regeneration.",
+      "attributes": []
+    },
+    {
+      "name": "Wetlands",
+      "description": "Wetlands are lands that are transitional between terrestrial and aquatic systems where the water table is usually at or near the surface or the land is covered by shallow water, and that have one or more of the following attributes: Source: Cowardin et al. 1979 - Classification of Wetlands and Deepwater Habitats of the United States (a) At least periodically, the land supports predominantly plants typically occurring in wetlands, AND (b) The substrate is predominantly undrained and water saturated soil, AND (c) The substrate is non-soil and is saturated with water or covered by shallow water at some time during the growing season of each year.",
+      "attributes": []
+    },
+    {
+      "name": "Workers",
+      "description": "Workers are all persons that are employed by a written or verbal agreement. This includes permanent, migrant, part-time and seasonal employees of all ranks and categories, including field workers, artisans, labourers, administrators, supervisors, executives, contractor employees as well as self-employed contractors and sub-contractors. AGR specific: Excepted from the definition above are: (a)Workers employed by a verbal agreement on smallholder farms for less than 3 months per year, AND (b)Smallholder farmers themselves, AND (c) Family members of the smallholder farmer",
+      "attributes": []
+    }
+  ],
+  "parties": [
+    {
+      "name": "Land Representative",
+      "hex_code": "#fdeeb7"
+    },
+    {
+      "name": "Project",
+      "hex_code": "#dfb7e6"
+    },
+    {
+      "name": "Project Developer",
+      "hex_code": "#c0e1fa"
+    },
+    {
+      "name": "Methodology",
+      "hex_code": "#00FFFF"
+    }
+  ],
+  "node_definitions": {
+    "MyNodeTag": {
+      "BooleanNode": {
+        "completed": { "field_type": "BOOLEAN" }
+      },
+      "DateNode": {
+        "completed": { "field_type": "BOOLEAN" },
+        "date": { "field_type": "STRING" }
+      },
+      "BooleanCommentNode": {
+        "completed": { "field_type": "BOOLEAN" },
+        "comment": { "field_type": "STRING" }
+      }
+    }
+  },
+  "state_nodes": [
+    {
+      "id": 0,
+      "description": "Project Conceptualized.",
+      "node_type": "STATE",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode"
+    }
+  ]
+}

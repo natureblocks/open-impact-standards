@@ -16,7 +16,7 @@
       "description": "Wetlands are lands that are transitional between terrestrial and aquatic systems where the water table is usually at or near the surface or the land is covered by shallow water, and that have one or more of these listed attributes.",
       "attributes": [
         "At least periodically, the land supports predominantly hydrophytes.",
-        "The substrate is predominantly undrained hydric soil",
+        "The substrate is predominantly undrained hydric soil.",
         "The substrate is non-soil and is saturated with water or covered by shallow water at some time during the growing season of each year."
       ]
     },
@@ -147,18 +147,6 @@
     {
       "name": "Project Developer",
       "hex_code": "#c0e1fa"
-    },
-    {
-      "name": "Financiers / Bankers / Investors",
-      "hex_code": "#b7f0f2"
-    },
-    {
-      "name": "Government Representatives",
-      "hex_code": "#c6c9e8"
-    },
-    {
-      "name": "Carbon Auditor",
-      "hex_code": "#fffcc7"
     },
     {
       "name": "Methodology",
