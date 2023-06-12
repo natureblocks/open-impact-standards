@@ -48,6 +48,10 @@ __Action object type:__
 type Action {
     id: integer,
     description: string,
+    steps: {
+        title: string,
+        description: string
+    },
     applies_to: Party.name,
     tag: root.nodes.key,
     depends_on: Checkpoint?,
