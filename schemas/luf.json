@@ -127,16 +127,226 @@
       "BooleanCommentNode": {
         "completed": { "field_type": "BOOLEAN" },
         "comment": { "field_type": "STRING" }
+      },
+      "EligibilityNode": {
+        "eligible": { "field_type": "BOOLEAN" },
+        "comment": { "field_type": "STRING" }
       }
     }
   },
   "state_nodes": [
     {
       "id": 0,
-      "description": "Project Conceptualized.",
+      "description": "The project in question is either an Afforestation & Reforestation (AR) or Agricultural (AGR) project as defined by the eligibility criteria defined in the respective methodology schema.",
       "node_type": "STATE",
       "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode"
+      "tag": "BooleanCommentNode",
+      "supporting_info": [
+        "In this document The 'Land Use & Forests Requirements' include sections or items within sections that apply only to A/R or to AGR projects. The sections/items marked as “A/R specific” apply only to A/R projects and “AGR specific” apply only to AGR projects. Sections/items without any specific labelling apply to both A/R and AGR projects.",
+        "This schema is part of the pathway to certification within the Open Impact Standard for Land Use and Forestry Activities. This pathway is applied in conjunction with the General Requirements schema as well as the specific methodology schema (LUF-AR or LUF-AGR)."
+      ]
+    },
+    {
+      "id": 1,
+      "description": "Has the eligible area met the definition of a forest within 10 years before project start date?",
+      "node_type": "QUESTION",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": ["Eligible#0000"]
+    },
+    {
+      "id": 2,
+      "description": "The eligibility of the project is being determined by the Open Impact Standard as part of the Preliminary Review process. The Project Developer has provided evidence that the deforestation activity has not taken place with an intention to implement project activities that generate Open Impact Standard credits.",
+      "node_type": "STATE",
+      "applies_to": "Project Developer",
+      "tag": "EligibilityNode",
+      "depends_on": ["Recent Forest#0000"]
+    },
+    {
+      "id": 3,
+      "description": "Is the project located in a country or state that has an operational mandatory national or pan-national cap-and-trade scheme to reduce greenhouse-gas (GHG) emissions, and accounts for its own land-based activities under its national or subnational accounting?",
+      "node_type": "QUESTION",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": ["No Recent Forest#0000"]
+    },
+    {
+      "id": 4,
+      "description": "Double counting requirements section of the Reduction and Sequestration Product Requirements applied.",
+      "node_type": "STATE",
+      "applies_to": "Project Developer",
+      "tag": "EligibilityNode",
+      "depends_on": ["Cap and Trade Country#0000"]
+    },
+    {
+      "id": 5,
+      "description": "For the duration of the crediting period has the Project Developer demonstrated with evidence that they a) own the CO2 user rights or carbon sequestration rights for the project area, b) hold an uncontested legal land title for the Project Area, c) own the rights for timber and non-timber forest products for the project area, d) hold all necessary permits to implement the project (planting permits, infrastructure permits, harvesting permits, etc.), e) is participating in the financing of the project?",
+      "node_type": "QUESTION",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "supporting_info": [
+        "CO2 user rights are rights that grant the titleholder any benefit that could be generated from the certification of the carbon sequestration or greenhouse gas reduction by the project.",
+        "For land use projects, the holder of the CO2 user rights is usually the owner of the land, where the project activity takes place - except when such rights have been expressly transmitted to another person or entity by the land owner, or when an authority act / decision / order / regulation assigns such rights to a different person than the land owner."
+      ],
+      "depends_on": ["Eligibility Confirmed#0000"]
+    },
+    {
+      "id": 6,
+      "description": "The persons or legal entities that do meet those respective requirements have endorsed the proposed project through an agreement with the Project Developer that aligns with the duration of the crediting period.Each agreement confirms: (a) The project participant holds the CO2 user rights3 that are associated with the project activities and has passed these on to the Project Developer, AND (b) The project participant holds all necessary rights to implement the project activities (e.g., rights to harvest), AND (c) The legal land title or similar entitlement4 for the land on which the project activities are implemented is uncontested. Each agreement includes: (a) Contact details of the project participants, AND (b) The legal registration number and documentation by the governing jurisdiction that proves that the entity is in good standing (in case of an organisation), AND (c) Contact details of the land owner (if differing), AND (d) Length of lease contract (if applicable), AND (e) The liabilities and benefits for the person or entity to implement the project activities (e.g., switch to another crop and get access to the seeds).",
+      "node_type": "STATE",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "supporting_info": [
+        "Similar Entitlement: It is considered that similar entitlement exists, when 1) A person or entity has been using the land of the project as its owner, for the period of time that the applicable law requires for persons or entity to acquire property by its use, AND 2) Neighbours or neighbouring community agrees that the land has been used for such time by the person or entity claiming it.",
+        "CO2 user rights are rights that grant the titleholder any benefit that could be generated from the certification of the carbon sequestration or greenhouse gas reduction by the project. For land use projects, the holder of the CO2 user rights is usually the owner of the land, where the project activity takes place – except when such rights have been expressly transmitted to another person or entity by the land owner, or when an authority act / decision / order / regulation assigns such rights to a different person than the land owner."
+      ],
+      "depends_on": ["Developer Does Not Own Rights#0000"]
+    },
+    {
+      "id": 7,
+      "description": "For all project participants, the following information has been provided: Name and contact details. Each entity's legal registration number and documentation by the governing jurisdiction that proves that the entity is in good standing",
+      "node_type": "STATE",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": ["Rights Or Endorsement#0000"]
+    },
+    {
+      "id": 8,
+      "description": "The Project Developer has informed the authorities of all project participants with respect of instructing the Open Impact Standard and agrees to be accountable for the requesting or communicating addition or edits of project participants as well as receiving all information from the Open Impact Standard Secretariat on matters related to the project.",
+      "node_type": "STATE",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": ["Contact Info Provided#0000"]
+    },
+    {
+      "id": 9,
+      "description": "Is this an AGR project?",
+      "node_type": "STATE",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": ["Contact Info Provided#0000"]
+    }
+
+  ],
+  "checkpoints": [
+    {
+      "alias": "Eligible#0000",
+      "dependencies": [
+        {
+          "node_id": 0,
+          "field_name": "completed",
+          "comparison_operator": "EQUALS",
+          "comparison_value_type": "BOOLEAN",
+          "boolean_comparison_value": true
+        }
+      ]
+    },
+    {
+      "alias": "Recent Forest#0000",
+      "dependencies": [
+        {
+          "node_id": 1,
+          "field_name": "completed",
+          "comparison_operator": "EQUALS",
+          "comparison_value_type": "BOOLEAN",
+          "boolean_comparison_value": true
+        }
+      ]
+    },
+    {
+      "alias": "No Recent Forest#0000",
+      "dependencies": [
+        {
+          "node_id": 1,
+          "field_name": "completed",
+          "comparison_operator": "EQUALS",
+          "comparison_value_type": "BOOLEAN",
+          "boolean_comparison_value": false
+        }
+      ]
+    },
+    {
+      "alias": "Cap and Trade Country#0000",
+      "dependencies": [
+        {
+          "node_id": 3,
+          "field_name": "completed",
+          "comparison_operator": "EQUALS",
+          "comparison_value_type": "BOOLEAN",
+          "boolean_comparison_value": true
+        }
+      ]
+    },
+    {
+      "alias": "Eligibility Confirmed#0000",
+      "gate_type": "OR",
+      "dependencies": [
+        {
+          "node_id": 2,
+          "field_name": "eligible",
+          "comparison_operator": "EQUALS",
+          "comparison_value_type": "BOOLEAN",
+          "boolean_comparison_value": true
+        },
+        {
+          "node_id": 3,
+          "field_name": "completed",
+          "comparison_operator": "EQUALS",
+          "comparison_value_type": "BOOLEAN",
+          "boolean_comparison_value": false
+        },
+        {
+          "node_id": 4,
+          "field_name": "eligible",
+          "comparison_operator": "EQUALS",
+          "comparison_value_type": "BOOLEAN",
+          "boolean_comparison_value": true
+        }
+      ]
+    },
+    {
+      "alias": "Rights Or Endorsement#0000",
+      "gate_type": "OR",
+      "dependencies": [
+        {
+          "node_id": 5,
+          "field_name": "completed",
+          "comparison_operator": "EQUALS",
+          "comparison_value_type": "BOOLEAN",
+          "boolean_comparison_value": true
+        },
+        {
+          "node_id": 7,
+          "field_name": "completed",
+          "comparison_operator": "EQUALS",
+          "comparison_value_type": "BOOLEAN",
+          "boolean_comparison_value": true
+        }
+      ]
+    },
+    {
+      "alias": "Developer Does Not Own Rights#0000",
+      "dependencies": [
+        {
+          "node_id": 5,
+          "field_name": "completed",
+          "comparison_operator": "EQUALS",
+          "comparison_value_type": "BOOLEAN",
+          "boolean_comparison_value": true
+        }
+      ]
+    },
+    {
+      "alias": "Contact Info Provided#0000",
+      "dependencies": [
+        {
+          "node_id": 7,
+          "field_name": "completed",
+          "comparison_operator": "EQUALS",
+          "comparison_value_type": "BOOLEAN",
+          "boolean_comparison_value": true
+        }
+      ]
     }
   ]
 }
