@@ -58,9 +58,7 @@ class TestDependencyGraph:
         graph = DependencyGraph(
             json_schema_file_path="schemas/test/multi_condition_node_dependency.json"
         )
-        graph.generate_miro_board(
-            board_name="Test Result (multi_condition_node_dependency)"
-        )
+        # graph.generate_miro_board(board_name="Test Result (multi_condition_node_dependency)")
 
         # If a node lists more than one dependency for the same node id, a gate should be created
         assert len(graph.gates) == 1

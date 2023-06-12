@@ -27,11 +27,14 @@ class DependencyGraph:
                 validator.print_errors()
                 raise Exception("Schema validation failed. See output for details.")
 
-        self.nodes = {}
+        self.actions = {}
         self.checkpoints = []
         self.gates = {}
         self.edge_tuples = []
         self.edge_dict = {}
+        self.dependency_hashes = (
+            {}
+        )  # used to prevent duplicate dependencies from being added to a gate
 
         self.layout_algorithm = "dependency_chart"
         self.node_height = 2
@@ -64,67 +67,67 @@ class DependencyGraph:
     def _json_schema_to_graph(self):
         self.graph = nx.DiGraph()
 
-        self.nodes = {n["id"]: n for n in self.schema["actions"]}
+        self.actions = {n["id"]: n for n in self.schema["actions"]}
         self.checkpoints = {c["alias"]: c for c in self.schema["checkpoints"]}
 
         self.edge_tuples = []
         self.gates = {}
+        self.dependency_hashes = {}
 
-        def hash_sorted_object(obj):
-            return hashlib.sha1(json.dumps(recursive_sort(obj)).encode()).digest()
-
-        dependency_hashes = {}
-        for action_id, node in self.nodes.items():
-            if "depends_on" not in node:
+        for action_id, action in self.actions.items():
+            if "depends_on" not in action:
                 continue
 
             self.edge_dict[action_id] = []
-            checkpoint = self.checkpoints[node["depends_on"]]
-            numDependencies = len(checkpoint["dependencies"])
-            if numDependencies > 1:
-                # represent the gate as a node
-                gate = checkpoint["alias"]
-                self.graph.add_node(gate)
-                self._add_edge(action_id, gate)
-                self.gates[gate] = checkpoint["gate_type"]
-
-                if gate not in self.edge_dict:
-                    self.edge_dict[gate] = []
-
-                if gate not in dependency_hashes:
-                    dependency_hashes[gate] = []
-
-                # connect the gate to the nodes it depends on
-                for dep in checkpoint["dependencies"]:
-                    # dependency sets can contain standalone dependencies and alias references
-                    if "node" in dep:
-                        # if there is already a connection from the gate to this node,
-                        # compare the dependencies and skip any duplicates.
-                        dependency_hash = hash_sorted_object(dep["node"])
-                        if dependency_hash in dependency_hashes[gate]:
-                            continue
-                        dependency_hashes[gate].append(dependency_hash)
-
-                        to_action_id = dep["node"]["action_id"]
-                        self._add_edge(gate, to_action_id)
-                    elif "checkpoint" in dep:
-                        subGate = dep["checkpoint"]
-                        self._add_edge(gate, subGate)
-
-            elif numDependencies == 1:
-                if "checkpoint" in checkpoint["dependencies"][0]:
-                    # single alias reference
-                    gate = checkpoint["dependencies"][0]["checkpoint"]
-                    self._add_edge(action_id, gate)
-
-                    if gate not in self.edge_dict:
-                        self.edge_dict[gate] = []
-
-                else:  # standalone dependency
-                    to_action_id = checkpoint["dependencies"][0]["node"]["action_id"]
-                    self._add_edge(action_id, to_action_id)
+            self._explore_edges_recursive(
+                action_id, checkpoint_alias=action["depends_on"]
+            )
 
         self._set_node_coordinates()
+
+    def _explore_edges_recursive(self, dependent_id, checkpoint_alias):
+        def hash_sorted_object(obj):
+            return hashlib.sha1(json.dumps(recursive_sort(obj)).encode()).digest()
+
+        checkpoint = self.checkpoints[checkpoint_alias]
+        num_dependencies = len(checkpoint["dependencies"])
+
+        if num_dependencies > 1:
+            # represent the checkpoint as a node
+            self.graph.add_node(checkpoint_alias)
+            self._add_edge(dependent_id, checkpoint_alias)
+            self.gates[checkpoint_alias] = checkpoint["gate_type"]
+
+            if checkpoint_alias not in self.edge_dict:
+                self.edge_dict[checkpoint_alias] = []
+
+            if checkpoint_alias not in self.dependency_hashes:
+                self.dependency_hashes[checkpoint_alias] = []
+
+            # connect the gate to the nodes it depends on
+            for dep in checkpoint["dependencies"]:
+                # checkpoints can contain standalone dependencies and checkpoint references
+                if "node" in dep:
+                    # if there is already a connection from the gate to this node,
+                    # compare the dependencies and skip any duplicates.
+                    dependency_hash = hash_sorted_object(dep["node"])
+                    if dependency_hash in self.dependency_hashes[checkpoint_alias]:
+                        continue
+                    self.dependency_hashes[checkpoint_alias].append(dependency_hash)
+
+                    to_action_id = dep["node"]["action_id"]
+                    self._add_edge(checkpoint_alias, to_action_id)
+                elif "checkpoint" in dep:
+                    self._explore_edges_recursive(checkpoint_alias, dep["checkpoint"])
+
+        elif num_dependencies == 1:
+            # standalone dependency
+            to_action_id = checkpoint["dependencies"][0]["node"]["action_id"]
+            self._add_edge(dependent_id, to_action_id)
+
+            action = self.actions[to_action_id]
+            if "depends_on" in action:
+                return self._explore_edges_recursive(to_action_id, action["depends_on"])
 
     def generate_miro_board(self, board_id=None, board_name=None):
         mb = MiroBoard(board_id)
@@ -143,7 +146,7 @@ class DependencyGraph:
     def _generate_miro_shapes(self, mb):
         shape_dict = {}
 
-        for action_id, node in self.nodes.items():
+        for action_id, node in self.actions.items():
             x = self.node_coordinates[action_id][0] * self.x_coord_factor
             y = self.node_coordinates[action_id][1] * self.y_coord_factor
 
@@ -222,7 +225,7 @@ class DependencyGraph:
         self.edge_tuples.append((from_action_id, to_action_id))
 
     def _set_node_coordinates(self):
-        nodes = list(self.nodes.keys()) + list(self.gates.keys())
+        nodes = list(self.actions.keys()) + list(self.gates.keys())
 
         if self.layout_algorithm == "dependency_chart":
             layout = DependencyChartLayout(
