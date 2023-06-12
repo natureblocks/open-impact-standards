@@ -47,18 +47,20 @@ class TestDependencyGraph:
             0: -3,
             1: -2,
             2: -2,
-            "a#0000": -1,
+            "1 and 2": -1,
             3: 0,
         }
         assert {
-            node_id: coords[0] for node_id, coords in graph.node_coordinates.items()
+            action_id: coords[0] for action_id, coords in graph.node_coordinates.items()
         } == expected_node_depths
 
     def test_multi_condition_node_dependency(self):
         graph = DependencyGraph(
             json_schema_file_path="schemas/test/multi_condition_node_dependency.json"
         )
-        # graph.generate_miro_board(board_name="Test Result (multi_condition_node_dependency)")
+        graph.generate_miro_board(
+            board_name="Test Result (multi_condition_node_dependency)"
+        )
 
         # If a node lists more than one dependency for the same node id, a gate should be created
         assert len(graph.gates) == 1
@@ -73,28 +75,28 @@ class TestDependencyGraph:
             "schemas/test/multi_entrance_node_layout_1.json": {
                 0: -2,
                 1: -2,
-                "a#0000": -1,
+                "0 and 1": -1,
                 2: 0,
             },
             "schemas/test/multi_entrance_node_layout_2.json": {
                 0: -3,
                 1: -2,
                 2: -2,
-                "a#0000": -1,
+                "1 and 2": -1,
                 3: 0,
             },
             "schemas/test/multi_entrance_node_layout_3.json": {
                 10: 0,
-                "d#0000": -1,
+                "8 and 9": -1,
                 9: -2,
                 8: -2,
-                "c#0000": -3,
-                "b#0000": -3,
+                "6 and 7": -3,
+                "4 and 5": -3,
                 7: -4,
                 6: -4,
                 5: -4,
                 4: -4,
-                "a#0000": -5,
+                "1 and 2": -5,
                 3: -5,
                 2: -6,
                 1: -6,
@@ -111,9 +113,11 @@ class TestDependencyGraph:
             # graph.generate_miro_board(board_name=f"Test Result (test_multi_entrance_node_layouts, case {i})")
             i += 1
 
-            assert {
-                node_id: coords[0] for node_id, coords in graph.node_coordinates.items()
-            } == expected_depths
+            actual_depths = {
+                action_id: coords[0]
+                for action_id, coords in graph.node_coordinates.items()
+            }
+            assert actual_depths == expected_depths
 
     def test_multi_exit_node_layouts(self):
         expected_node_depths = {
@@ -141,7 +145,7 @@ class TestDependencyGraph:
                 9: 0,
                 5: -1,
                 12: -1,
-                "a#0000": -2,
+                "4 and 7": -2,
                 11: -2,
                 7: -3,
                 4: -3,
@@ -154,17 +158,23 @@ class TestDependencyGraph:
         }
 
         i = 1
+        visualize_cases = []
         for path, expected_depths in expected_node_depths.items():
             graph = DependencyGraph(
                 json_schema_file_path=path,
                 validate_schema=False,
             )
-            # graph.generate_miro_board(board_name=f"Test Result (test_multi_exit_node_layouts, case {i})")
+            if i in visualize_cases:
+                graph.generate_miro_board(
+                    board_name=f"Test Result (test_multi_exit_node_layouts, case {i})"
+                )
             i += 1
 
-            assert {
-                node_id: coords[0] for node_id, coords in graph.node_coordinates.items()
-            } == expected_depths
+            actual_depths = {
+                action_id: coords[0]
+                for action_id, coords in graph.node_coordinates.items()
+            }
+            assert actual_depths == expected_depths
 
     def test_edge_overlap_prevention(self):
         possible_overlaps = {
@@ -182,9 +192,9 @@ class TestDependencyGraph:
             i += 1
 
             y_coords = []
-            for node_ids in tup:
-                for node_id in node_ids:
-                    y_coords.append(graph.node_coordinates[node_id][1])
+            for action_ids in tup:
+                for action_id in action_ids:
+                    y_coords.append(graph.node_coordinates[action_id][1])
 
             # the last node should be offset from the other two
             assert y_coords[0] == y_coords[1]
@@ -214,6 +224,7 @@ class TestDependencyGraph:
             1: -4,
             0: -4,
         }
-        assert {
-            node_id: coords[0] for node_id, coords in graph.node_coordinates.items()
-        } == expected_node_depths
+        actual_depths = {
+            action_id: coords[0] for action_id, coords in graph.node_coordinates.items()
+        }
+        assert actual_depths == expected_node_depths

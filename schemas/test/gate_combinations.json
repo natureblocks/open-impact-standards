@@ -1,42 +1,50 @@
 {
-    "referenced_dependency_sets": [
+    "checkpoints": [
         {
             "alias": "a#0000",
             "gate_type": "AND",
             "dependencies": [
-                {"node_id": 0},
-                {"node_id": 1},
-                {"node_id": 2}
+                {"node": {"action_id": 0}},
+                {"node": {"action_id": 1}},
+                {"node": {"action_id": 2}}
             ]
         },
         {
             "alias": "b#0000",
             "gate_type": "OR",
             "dependencies": [
-                {"node_id": 3},
-                {"node_id": 4}
+                {"node": {"action_id": 3}},
+                {"node": {"action_id": 4}}
             ]
         },
         {
             "alias": "c#0000",
             "gate_type": "AND",
             "dependencies": [
-                {"node_id": 5},
-                {"node_id": 6}
+                {"node": {"action_id": 5}},
+                {"node": {"action_id": 6}}
             ]
         },
         {
             "alias": "d#0000",
             "gate_type": "AND",
             "dependencies": [
-                {"alias": "a#0000"},
-                {"alias": "b#0000"},
-                {"node_id": 8},
-                {"node_id": 9}
+                {"checkpoint": "a#0000"},
+                {"checkpoint": "b#0000"},
+                {"node": {"action_id": 8}},
+                {"node": {"action_id": 9}}
+            ]
+        },
+        {
+            "alias": "e#0000",
+            "gate_type": "OR",
+            "dependencies": [
+                {"checkpoint": "c#0000"},
+                {"checkpoint": "d#0000"}
             ]
         }
     ],
-    "state_nodes": [
+    "actions": [
         {
             "id": 0
         },
@@ -60,14 +68,7 @@
         },
         {
             "id": 7,
-            "depends_on": {
-                "alias": "e#0000",
-                "gate_type": "OR",
-                "dependencies": [
-                    {"alias": "c#0000"},
-                    {"alias": "d#0000"}
-                ]
-            }
+            "depends_on": "e#0000"
         },
         {
             "id": 8

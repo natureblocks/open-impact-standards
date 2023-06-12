@@ -1,48 +1,47 @@
 {
-    "referenced_dependency_sets": [],
-    "state_nodes": [
+    "actions": [
         {
             "id": 0
         },
         {
             "id": 1,
-            "depends_on": {
-                "dependencies": [
-                    {"node_id": 0}
-                ]
-            }
+            "depends_on": "0"
         },
         {
             "id": 2,
-            "depends_on": {
-                "dependencies": [
-                    {"node_id": 1}
-                ]
-            }
+            "depends_on": "1"
         },
         {
             "id": 3,
-            "depends_on": {
-                "dependencies": [
-                    {"node_id": 2}
-                ]
-            }
+            "depends_on": "2"
         },
         {
             "id": 5,
-            "depends_on": {
-                "dependencies": [
-                    {"node_id": 1}
-                ]
-            }
+            "depends_on": "1"
         },
         {
             "id": 4,
-            "depends_on": {
-                "dependencies": [
-                    {"node_id": 2}
-                ]
-            }
+            "depends_on": "2"
+        }
+    ],
+    "checkpoints": [
+        {
+            "alias": "0",
+            "dependencies": [
+                {"node": {"action_id": 0}}
+            ]
+        },
+        {
+            "alias": "1",
+            "dependencies": [
+                {"node": {"action_id": 1}}
+            ]
+        },
+        {
+            "alias": "2",
+            "dependencies": [
+                {"node": {"action_id": 2}}
+            ]
         }
     ]
 }
