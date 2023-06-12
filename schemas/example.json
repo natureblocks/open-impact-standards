@@ -9,7 +9,21 @@
             "hex_code": "#dfb7e6"
         }
     ],
-    "node_definitions": {
+    "term_definitions": [
+        {
+            "name": "The name of a term that is used within the schema.",
+            "description": "A description of the term, possibly referring to one or more of the following attributes.",
+            "attributes": [
+                "An attribute that may be mentioned in the description of the term.",
+                "Another attribute that may be mentioned in the description of the term."
+            ]
+        },
+        {
+            "name": "Another term",
+            "description": "This one does not reference any attributes."
+        }
+    ],
+    "nodes": {
         "MyNodeTag": {
             "a_boolean_field": {
                 "field_type": "BOOLEAN",
@@ -47,146 +61,148 @@
             }
         }
     },
-    "state_nodes": [
+    "actions": [
         {
             "id": 0,
-            "description": "An entry node (no dependencies)",
-            "node_type": "STATE",
+            "description": "An entry action (no dependencies)",
             "applies_to": "Party 1",
             "tag": "MyNodeTag"
         },
         {
             "id": 1,
-            "description": "Another entry node",
-            "node_type": "STATE",
+            "description": "Another entry action",
             "applies_to": "Party 2",
             "tag": "MyNodeTag"
         },
         {
             "id": 2,
-            "description": "A node with a dependency",
-            "node_type": "ACTION",
+            "description": "An action that depends on a checkpoint",
             "applies_to": "Party 1",
             "tag": "MyNodeTag",
-            "depends_on": {
-                "dependencies": [
-                    {
+            "depends_on": "Example checkpoint#0000"
+        },
+        {
+            "id": 3,
+            "description": "An action with multiple dependencies",
+            "applies_to": "Party 1",
+            "tag": "MyNodeTag",
+            "depends_on": "Example dependency set#0000"
+        },
+        {
+            "id": 4,
+            "description": "An action with mixed dependencies",
+            "applies_to": "Party 2",
+            "tag": "MyNodeTag",
+            "depends_on": "A mixed checkpoint#0000"
+        },
+        {
+            "id": 5,
+            "description": "An action that is marked by a Milestone. When its dependencies are met, the Milestone is reached.",
+            "milestones": ["CLEAR_OWNERSHIP"],
+            "applies_to": "Party 1",
+            "tag": "MyNodeTag",
+            "depends_on": "Clear ownership achieved#0000"
+        }
+    ],
+    "checkpoints": [
+        {
+            "alias": "Example checkpoint#0000",
+            "description": "This is an example checkpoint containing a single dependency.",
+            "dependencies": [
+                {
+                    "node": {
                         "description": "An example of a dependency",
-                        "node_id": 0,
+                        "action_id": 0,
                         "field_name": "a_boolean_field",
                         "comparison_value_type": "BOOLEAN",
                         "comparison_operator": "EQUALS",
                         "boolean_comparison_value": true
                     }
-                ]
-            }
+                }
+            ]
         },
         {
-            "id": 3,
-            "description": "A node with multiple dependencies",
-            "node_type": "STATE",
-            "applies_to": "Party 1",
-            "tag": "MyNodeTag",
-            "depends_on": {
-                "alias": "A dependency set#0000",
-                "gate_type": "AND",
-                "dependencies": [
-                    {
-                        "node_id": 0,
+            "alias": "Example dependency set#0000",
+            "description": "This is an example checkpoint containing a set of dependencies.",
+            "gate_type": "AND",
+            "dependencies": [
+                {
+                    "node": {
+                        "action_id": 0,
                         "field_name": "a_numeric_field",
                         "comparison_value_type": "NUMERIC",
                         "comparison_operator": "GREATER_THAN",
                         "numeric_comparison_value": 9000
-                    },
-                    {
-                        "node_id": 1,
+                    }
+                },
+                {
+                    "node": {
+                        "action_id": 1,
                         "field_name": "a_string_list_field",
                         "comparison_value_type": "STRING_LIST",
                         "comparison_operator": "CONTAINS",
                         "string_list_comparison_value": "bar"
                     }
-                ]
-            }
+                }
+            ]
         },
         {
-            "id": 4,
-            "description": "A node with a dependency set reference",
-            "node_type": "ACTION",
-            "applies_to": "Party 1",
-            "tag": "MyNodeTag",
-            "depends_on": {
-                "dependencies": [
-                    {
-                        "alias": "A referenced dependency set#0000",
-                        "description": "A DependencySetReference example. The referenced 'alias' is from the 'referenced_dependency_sets' array"
-                    }
-                ]
-            }
-        },
-        {
-            "id": 5,
-            "description": "Another node with a dependency set reference",
-            "node_type": "ACTION",
-            "applies_to": "Party 2",
-            "tag": "MyNodeTag",
-            "depends_on": {
-                "alias": "A mixed DependencySet#0000",
-                "description": "The referenced DependencySet AND a new Dependency",
-                "gate_type": "AND",
-                "dependencies": [
-                    {
-                        "alias": "A referenced dependency set#0000",
-                        "description": "This DependencySetReference refers to the same 'alias' as the previous StateNode's dependencies"
-                    },
-                    {
-                        "node_id": 3,
-                        "field_name": "a_numeric_list_field",
-                        "comparison_value_type": "NUMERIC_LIST",
-                        "comparison_operator": "DOES_NOT_CONTAIN",
-                        "numeric_list_comparison_value": 13
-                    }
-                ]
-            }
-        },
-        {
-            "id": 6,
-            "description": "A node that is marked by a Milestone. When its dependencies are met, the Milestone is reached.",
-            "milestones": ["CLEAR_OWNERSHIP"],
-            "node_type": "STATE",
-            "applies_to": "Party 1",
-            "tag": "MyNodeTag",
-            "depends_on": {
-                "dependencies": [
-                    {
-                        "node_id": 5,
+            "alias": "A referenced checkpoint#0000",
+            "description": "This checkpoint is not directly referenced by any actions, but is referenced by another checkpoint.",
+            "gate_type": "OR",
+            "dependencies": [
+                {
+                    "node": {
+                        "action_id": 0,
                         "field_name": "a_boolean_field",
                         "comparison_value_type": "BOOLEAN",
                         "comparison_operator": "EQUALS",
                         "boolean_comparison_value": true
                     }
-                ]
-            }
-        }
-    ],
-    "referenced_dependency_sets": [
-        {
-            "alias": "A referenced dependency set#0000",
-            "gate_type": "OR",
-            "dependencies": [
-                {
-                    "node_id": 0,
-                    "field_name": "a_boolean_field",
-                    "comparison_value_type": "BOOLEAN",
-                    "comparison_operator": "EQUALS",
-                    "boolean_comparison_value": true
                     
                 },
                 {
-                    "node_id": 1,
-                    "field_name": "a_string_field",
-                    "comparison_value_type": "STRING",
-                    "comparison_operator": "DOES_NOT_EQUAL",
-                    "string_comparison_value": "foo"
+                    "node": {
+                        "action_id": 1,
+                        "field_name": "a_string_field",
+                        "comparison_value_type": "STRING",
+                        "comparison_operator": "DOES_NOT_EQUAL",
+                        "string_comparison_value": "foo"
+                    }
+                }
+            ]
+        },
+        {
+            "alias": "A mixed checkpoint#0000",
+            "description": "The referenced checkpoint AND another dependency",
+            "gate_type": "AND",
+            "dependencies": [
+                {
+                    "checkpoint": "A referenced checkpoint#0000"
+                },
+                {
+                    "node": {
+                        "action_id": 3,
+                        "field_name": "a_numeric_list_field",
+                        "comparison_value_type": "NUMERIC_LIST",
+                        "comparison_operator": "DOES_NOT_CONTAIN",
+                        "numeric_list_comparison_value": 13
+                    }
+                }
+            ]
+        },
+        {
+            "alias": "Clear ownership achieved#0000",
+            "description": "A Milestone depends on this checkpoint.",
+            "dependencies": [
+                {
+                    "node": {
+                        "action_id": 4,
+                        "field_name": "a_boolean_field",
+                        "comparison_value_type": "BOOLEAN",
+                        "comparison_operator": "EQUALS",
+                        "boolean_comparison_value": true
+                    }
                 }
             ]
         }

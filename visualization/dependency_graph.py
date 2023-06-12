@@ -1,6 +1,8 @@
+import hashlib
 import networkx as nx
 import json
 from validation.schema_validator import SchemaValidator
+from validation.utils import recursive_sort
 from visualization.dependency_chart_layout import DependencyChartLayout
 from services.miro import MiroBoard
 
@@ -25,11 +27,14 @@ class DependencyGraph:
                 validator.print_errors()
                 raise Exception("Schema validation failed. See output for details.")
 
-        self.nodes = {}
-        self.dependency_sets = []
+        self.actions = {}
+        self.checkpoints = []
         self.gates = {}
         self.edge_tuples = []
         self.edge_dict = {}
+        self.dependency_hashes = (
+            {}
+        )  # used to prevent duplicate dependencies from being added to a gate
 
         self.layout_algorithm = "dependency_chart"
         self.node_height = 2
@@ -62,68 +67,67 @@ class DependencyGraph:
     def _json_schema_to_graph(self):
         self.graph = nx.DiGraph()
 
-        self.nodes = {n["id"]: n for n in self.schema["state_nodes"]}
-        self.dependency_sets = self.schema["referenced_dependency_sets"]
+        self.actions = {n["id"]: n for n in self.schema["actions"]}
+        self.checkpoints = {c["alias"]: c for c in self.schema["checkpoints"]}
 
         self.edge_tuples = []
         self.gates = {}
+        self.dependency_hashes = {}
 
-        for node_id, node in self.nodes.items():
-            if "depends_on" not in node:
+        for action_id, action in self.actions.items():
+            if "depends_on" not in action:
                 continue
 
-            self.edge_dict[node_id] = []
-            nodeDS = node["depends_on"]
-            numDependencies = len(nodeDS["dependencies"])
-            if numDependencies > 1:
-                # represent the gate as a node
-                gate = nodeDS["alias"]
-                self.graph.add_node(gate)
-                self._add_edge(node_id, gate)
-                self.gates[gate] = nodeDS["gate_type"]
-
-                if gate not in self.edge_dict:
-                    self.edge_dict[gate] = []
-
-                # connect the gate to the nodes it depends on
-                for dep in nodeDS["dependencies"]:
-                    # dependency sets can contain standalone dependencies and alias references
-                    if "node_id" in dep:
-                        to_node_id = dep["node_id"]
-                        self._add_edge(gate, to_node_id)
-                    elif "alias" in dep:
-                        subGate = dep["alias"]
-                        self._add_edge(gate, subGate)
-
-            elif numDependencies == 1:
-                if "alias" in nodeDS["dependencies"][0]:
-                    # single alias reference
-                    gate = nodeDS["dependencies"][0]["alias"]
-                    self._add_edge(node_id, gate)
-
-                    if gate not in self.edge_dict:
-                        self.edge_dict[gate] = []
-
-                else:  # standalone dependency
-                    to_node_id = nodeDS["dependencies"][0]["node_id"]
-                    self._add_edge(node_id, to_node_id)
-
-        for ds in self.dependency_sets:
-            gate = ds["alias"]
-
-            self.gates[gate] = ds["gate_type"]
-            if gate not in self.edge_dict:
-                self.edge_dict[gate] = []
-
-            for dep in ds["dependencies"]:
-                if "node_id" in dep:
-                    to_node_id = dep["node_id"]
-                    self._add_edge(gate, to_node_id)
-                elif "alias" in dep:
-                    subGate = dep["alias"]
-                    self._add_edge(gate, subGate)
+            self.edge_dict[action_id] = []
+            self._explore_edges_recursive(
+                action_id, checkpoint_alias=action["depends_on"]
+            )
 
         self._set_node_coordinates()
+
+    def _explore_edges_recursive(self, dependent_id, checkpoint_alias):
+        def hash_sorted_object(obj):
+            return hashlib.sha1(json.dumps(recursive_sort(obj)).encode()).digest()
+
+        checkpoint = self.checkpoints[checkpoint_alias]
+        num_dependencies = len(checkpoint["dependencies"])
+
+        if num_dependencies > 1:
+            # represent the checkpoint as a node
+            self.graph.add_node(checkpoint_alias)
+            self._add_edge(dependent_id, checkpoint_alias)
+            self.gates[checkpoint_alias] = checkpoint["gate_type"]
+
+            if checkpoint_alias not in self.edge_dict:
+                self.edge_dict[checkpoint_alias] = []
+
+            if checkpoint_alias not in self.dependency_hashes:
+                self.dependency_hashes[checkpoint_alias] = []
+
+            # connect the gate to the nodes it depends on
+            for dep in checkpoint["dependencies"]:
+                # checkpoints can contain standalone dependencies and checkpoint references
+                if "node" in dep:
+                    # if there is already a connection from the gate to this node,
+                    # compare the dependencies and skip any duplicates.
+                    dependency_hash = hash_sorted_object(dep["node"])
+                    if dependency_hash in self.dependency_hashes[checkpoint_alias]:
+                        continue
+                    self.dependency_hashes[checkpoint_alias].append(dependency_hash)
+
+                    to_action_id = dep["node"]["action_id"]
+                    self._add_edge(checkpoint_alias, to_action_id)
+                elif "checkpoint" in dep:
+                    self._explore_edges_recursive(checkpoint_alias, dep["checkpoint"])
+
+        elif num_dependencies == 1:
+            # standalone dependency
+            to_action_id = checkpoint["dependencies"][0]["node"]["action_id"]
+            self._add_edge(dependent_id, to_action_id)
+
+            action = self.actions[to_action_id]
+            if "depends_on" in action:
+                return self._explore_edges_recursive(to_action_id, action["depends_on"])
 
     def generate_miro_board(self, board_id=None, board_name=None):
         mb = MiroBoard(board_id)
@@ -142,14 +146,12 @@ class DependencyGraph:
     def _generate_miro_shapes(self, mb):
         shape_dict = {}
 
-        for node_id, node in self.nodes.items():
-            x = self.node_coordinates[node_id][0] * self.x_coord_factor
-            y = self.node_coordinates[node_id][1] * self.y_coord_factor
+        for action_id, node in self.actions.items():
+            x = self.node_coordinates[action_id][0] * self.x_coord_factor
+            y = self.node_coordinates[action_id][1] * self.y_coord_factor
 
-            shape_dict[node_id] = mb.create_shape(
-                shape_type=shape_types[
-                    node["node_type"] if "node_type" in node else "STATE"
-                ],
+            shape_dict[action_id] = mb.create_shape(
+                shape_type=shape_types["ACTION"],
                 content=node["description"] if "description" in node else node["id"],
                 fill_color=self.party_colors[node["applies_to"]]
                 if "applies_to" in node
@@ -218,12 +220,12 @@ class DependencyGraph:
                     )
                     mb.create_connector(elbow_id, shape_dict[to_id])
 
-    def _add_edge(self, from_node_id, to_node_id):
-        self.edge_dict[from_node_id].append(to_node_id)
-        self.edge_tuples.append((from_node_id, to_node_id))
+    def _add_edge(self, from_action_id, to_action_id):
+        self.edge_dict[from_action_id].append(to_action_id)
+        self.edge_tuples.append((from_action_id, to_action_id))
 
     def _set_node_coordinates(self):
-        nodes = list(self.nodes.keys()) + list(self.gates.keys())
+        nodes = list(self.actions.keys()) + list(self.gates.keys())
 
         if self.layout_algorithm == "dependency_chart":
             layout = DependencyChartLayout(

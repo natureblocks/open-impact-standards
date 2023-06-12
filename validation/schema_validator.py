@@ -9,7 +9,11 @@ from validation import templates, oisql, utils
 class SchemaValidator:
     def __init__(self):
         self.schema = None
-        self._node_dependency_sets = {}  # to be collected during validation
+
+        # { action_id: checkpoint_alias }
+        self._action_checkpoints = {}  # to be collected during validation
+        # { alias: checkpoint}
+        self._checkpoints = {}  # to be collected during validation
 
         # for including helpful context information in error messages
         self._path_context = ""
@@ -29,7 +33,7 @@ class SchemaValidator:
 
         self.errors = (
             self._validate_object("root", self.schema, templates.root_object)
-            + self._validate_node_dependency_sets()
+            + self._detect_circular_dependencies()
         )
 
         return self.errors
@@ -37,26 +41,26 @@ class SchemaValidator:
     def print_errors(self):
         print("\n".join(self.errors))
 
-    def get_next_node_id(self, json_file_path):
+    def get_next_action_id(self, json_file_path):
         if self.validate(json_file_path=json_file_path):
             print(f"Invalid schema ({json_file_path}):\n")
             self.print_errors()
             raise Exception(f"Invalid schema")
 
         next_id = 0
-        if "state_nodes" in self.schema:
-            node_ids = [node["id"] for node in self.schema["state_nodes"]]
-            next_id = max(node_ids) + 1
+        if "actions" in self.schema:
+            action_ids = [node["id"] for node in self.schema["actions"]]
+            next_id = max(action_ids) + 1
 
         return next_id
 
-    def get_all_node_ids(self, json_file_path):
+    def get_all_action_ids(self, json_file_path):
         if self.validate(json_file_path=json_file_path):
             print(f"Invalid schema ({json_file_path}):\n")
             self.print_errors()
             raise Exception(f"Invalid schema")
 
-        return [node["id"] for node in self.schema["state_nodes"]]
+        return [action["id"] for action in self.schema["actions"]]
 
     def _validate_field(
         self, path, field, template, parent_object_template=None, parent_object=None
@@ -102,13 +106,15 @@ class SchemaValidator:
         ]
 
     def _validate_object(self, path, field, template):
+        self._object_context = path
+
         if not isinstance(field, dict):
             return [f"{self._context(path)}: expected object, got {str(type(field))}"]
 
         if "any_of_templates" in template:
             return self._validate_multi_template_object(path, field, template)
 
-        template = self._resolve_template(path, field, template)
+        template = self._resolve_template(field, template)
 
         errors = []
         if "properties" in template:
@@ -352,30 +358,49 @@ class SchemaValidator:
             constraint_map["unique"] + constraint_map["unique_if_not_null"]
         ):
             unique_values = {}
-            for item in field if isinstance(field, list) else field.values():
-                if isinstance(item, list):
-                    for sub_item in item:
-                        key = (
-                            sub_item
-                            if not isinstance(sub_item, dict)
-                            else json.dumps(utils.recursive_sort(sub_item))
-                        )
-                        unique_values[key] = key not in unique_values
-                elif field_name in item:
-                    if isinstance(item[field_name], list):
-                        # Note that if a field of type "array" is specified as unique,
-                        # a value cannot be repeated within the array or across arrays.
-                        for sub_item in item[field_name]:
-                            unique_values[sub_item] = sub_item not in unique_values
-                    else:
-                        unique_values[item[field_name]] = (
-                            item[field_name] not in unique_values
-                        )
-                elif "." in field_name:
-                    val = self._get_field(field_name, obj=item)
-                    unique_values[val] = val not in unique_values
+            hash_map = {}
 
-            unique[field_name] = unique_values
+            if isinstance(field_name, list):
+                # The unique constraint applies to a combination of fields
+                for item in field if isinstance(field, list) else field.values():
+                    unique_obj = {}
+                    for prop in field_name:
+                        if prop in item:
+                            unique_obj[prop] = item[prop]
+
+                    obj_hash = hashlib.sha1(
+                        json.dumps(utils.recursive_sort(unique_obj)).encode()
+                    ).digest()
+
+                    unique_values[obj_hash] = obj_hash not in unique_values
+                    hash_map[obj_hash] = unique_obj
+            else:
+                for item in field if isinstance(field, list) else field.values():
+                    if isinstance(item, list):
+                        for sub_item in item:
+                            key = (
+                                sub_item
+                                if not isinstance(sub_item, dict)
+                                else json.dumps(utils.recursive_sort(sub_item))
+                            )
+                            unique_values[key] = key not in unique_values
+                    elif field_name in item:
+                        if isinstance(item[field_name], list):
+                            # Note that if a field of type "array" is specified as unique,
+                            # a value cannot be repeated within the array or across arrays.
+                            for sub_item in item[field_name]:
+                                unique_values[sub_item] = sub_item not in unique_values
+                        else:
+                            unique_values[item[field_name]] = (
+                                item[field_name] not in unique_values
+                            )
+                    elif "." in field_name:
+                        val = self._get_field(field_name, obj=item)
+                        unique_values[val] = val not in unique_values
+
+            unique[
+                json.dumps(field_name) if isinstance(field_name, list) else field_name
+            ] = unique_values
 
         errors = []
         for field_name in unique:
@@ -385,13 +410,18 @@ class SchemaValidator:
                         continue
 
                 if not is_unique:
-                    errors += [
-                        f"{self._context(path)}: duplicate value provided for unique field {json.dumps(field_name)}: {json.dumps(value)}"
-                    ]
+                    if value in hash_map:
+                        error = f"duplicate value provided for unique field combination {json.dumps(field_name)}: {json.dumps(hash_map[value])}"
+                    else:
+                        error = f"duplicate value provided for unique field {json.dumps(field_name)}: {json.dumps(value)}"
+
+                    errors += [f"{self._context(path)}: {error}"]
 
         return errors
 
-    def _get_field(self, path, obj=None, throw_on_invalid_path=False):
+    def _get_field(
+        self, path, obj=None, throw_on_invalid_path=False, exception_context=None
+    ):
         if not path:
             return obj
 
@@ -418,7 +448,14 @@ class SchemaValidator:
 
             # If a continue statement was not reached, the path leads nowhere
             if throw_on_invalid_path:
-                raise Exception(f"Invalid path: {path}")
+                if exception_context is None:
+                    message = f"Invalid path: {path}"
+                elif callable(exception_context):
+                    message = exception_context(path)
+                else:
+                    exception_context
+
+                raise Exception(message)
 
             return None
 
@@ -543,13 +580,15 @@ class SchemaValidator:
 
         return ([], modified_template)
 
-    def _resolve_template(self, path, field, template):
+    def _resolve_template(self, field, template):
         if "template" in template:
             template_name = template["template"]
             referenced_template = utils.get_template(template_name)
 
-            if template_name == "state_node":
-                self._collect_node_dependency_set(path, field)
+            if template_name == "action":
+                self._collect_action_checkpoint(field)
+            elif template_name == "checkpoint":
+                self._collect_checkpoint(field)
 
             if (
                 "template_modifiers" in template
@@ -670,7 +709,12 @@ class SchemaValidator:
         if not all(prop in condition for prop in required_props):
             raise Exception(f"Invalid template condition: {condition}")
 
-        prop = self._get_field(condition["property"], field, throw_on_invalid_path=True)
+        prop = self._get_field(
+            condition["property"],
+            field,
+            throw_on_invalid_path=True,
+            exception_context=lambda path: f"Unable to evaluate template condition for object at path: '{self._object_context}': missing required field: {path}",
+        )
 
         if "attribute" in condition:
             if condition["attribute"] == "length":
@@ -719,101 +763,75 @@ class SchemaValidator:
 
         return to_template
 
-    def _collect_node_dependency_set(self, path, node):
-        if "depends_on" not in node or "id" not in node:
-            return
+    def _collect_action_checkpoint(self, action):
+        if "id" in action and "depends_on" in action:
+            self._action_checkpoints[action["id"]] = action["depends_on"]
 
-        dependency_set_is_invalid = len(
-            self._validate_object(path, node["depends_on"], templates.dependency_set)
-        )
-        if dependency_set_is_invalid:
-            return
-
-        self._node_dependency_sets[node["id"]] = node["depends_on"]
-
-    def _validate_node_dependency_sets(self):
-        return (
-            self._detect_duplicate_dependency_sets()
-            + self._detect_circular_dependencies()
-        )
-
-    def _detect_duplicate_dependency_sets(self):
-        ds_hashes = {}
-        for node_id, dependency_set in self._node_dependency_sets.items():
-            if len(dependency_set["dependencies"]) == 1:
-                continue
-
-            dsh = hashlib.sha1(
-                json.dumps(utils.recursive_sort(dependency_set)).encode()
-            ).digest()
-
-            if dsh in ds_hashes:
-                ds_hashes[dsh].append(node_id)
-            else:
-                ds_hashes[dsh] = [node_id]
-
-        errors = []
-        for node_ids in ds_hashes.values():
-            if len(node_ids) > 1:
-                errors += [
-                    f"The following node ids specify identical dependency sets: {json.dumps(node_ids)}"
-                ]
-
-        if len(errors):
-            error_explanation = [
-                "Any recurring DependencySet objects (Node.depends_on) should be added to root.referenced_dependency_sets, and nodes should specify a DependencySetReference with the alias of the DependencySet object."
-            ]
-            return error_explanation + errors
-
-        return []
+    def _collect_checkpoint(self, checkpoint):
+        if "alias" in checkpoint:
+            self._checkpoints[checkpoint["alias"]] = checkpoint
 
     def _detect_circular_dependencies(self):
-        def _get_recurring_dependency_set(alias):
-            for ds in self.schema["referenced_dependency_sets"]:
-                if ds["alias"] == alias:
-                    return ds
+        def _explore_checkpoint_recursive(checkpoint, visited, dependency_path):
+            for dependency in checkpoint["dependencies"]:
+                # Could be a Dependency or a CheckpointReference
+                if "node" in dependency:
+                    # Dependency
+                    errors = _explore_recursive(
+                        dependency["node"]["action_id"],
+                        visited,
+                        dependency_path,
+                    )
 
-        def _explore_recursive(node_id, visited, dependency_path):
-            if node_id in dependency_path:
+                    if errors:
+                        return errors
+
+                elif "checkpoint" in dependency:
+                    # CheckpointReference
+                    errors = _explore_checkpoint_recursive(
+                        checkpoint=self._checkpoints[dependency["checkpoint"]],
+                        visited=visited,
+                        dependency_path=dependency_path,
+                    )
+
+                    if errors:
+                        return errors
+
+            return []
+
+        def _explore_recursive(action_id, visited, dependency_path):
+            if action_id in dependency_path:
                 if len(dependency_path) > 1:
                     return [
                         f"Circular dependency detected (dependency path: {dependency_path})"
                     ]
-                return [f"A node cannot have itself as a dependency (id: {node_id})"]
+                return [f"A node cannot have itself as a dependency (id: {action_id})"]
 
-            if node_id in visited:
+            if action_id in visited:
                 return []
 
-            visited.add(node_id)
+            visited.add(action_id)
 
-            if node_id not in self._node_dependency_sets:
+            if action_id not in self._action_checkpoints:
                 return []
 
-            dependency_path.append(node_id)
+            dependency_path.append(action_id)
 
-            errors = []
-            for dependency in self._node_dependency_sets[node_id]["dependencies"]:
-                # Could be a Dependency object or a DependencySetReference
-                if "node_id" in dependency:
-                    # Dependency
-                    errors += _explore_recursive(
-                        dependency["node_id"],
-                        visited,
-                        dependency_path,
-                    )
-                elif "alias" in dependency:
-                    # DependencySetReference
-                    recurring_ds = _get_recurring_dependency_set(dependency["alias"])
-                    for dep in recurring_ds["dependencies"]:
-                        errors += _explore_recursive(
-                            dep["node_id"], visited, dependency_path
-                        )
+            alias = self._action_checkpoints[action_id]
+            if not isinstance(alias, str) or alias not in self._checkpoints:
+                return []
+
+            errors = _explore_checkpoint_recursive(
+                checkpoint=self._checkpoints[alias],
+                visited=visited,
+                dependency_path=dependency_path,
+            )
 
             return [errors[0]] if errors else []
 
         visited = set()
-        for node_id in self._node_dependency_sets.keys():
-            errors = _explore_recursive(node_id, visited, dependency_path=[])
+        for action_id in self._action_checkpoints.keys():
+            errors = _explore_recursive(action_id, visited, dependency_path=[])
             # It's simpler to return immediately when a circular dependency is found
             if errors:
                 return errors
@@ -827,9 +845,9 @@ class SchemaValidator:
         # For paths that should include some sort of context,
         # add the path and context resolver here.
         context_resolvers = {
-            "root.state_nodes": lambda path: "node id: "
-            + str(self._resolve_node_id(path))
-            if path != "root.state_nodes"
+            "root.actions": lambda path: "node id: "
+            + str(self._resolve_action_id(path))
+            if path != "root.actions"
             else ""
         }
 
@@ -848,12 +866,12 @@ class SchemaValidator:
             f" ({','.join(self._path_context)})" if self._path_context else ""
         )
 
-    def _resolve_node_id(self, path):
+    def _resolve_action_id(self, path):
         ex = Exception(
             f"Cannot resolve node id: path does not lead to a node object ({path})"
         )
 
-        if "root.state_nodes" not in path:
+        if "root.actions" not in path:
             raise ex
 
         idx = path.find("]")

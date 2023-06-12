@@ -1,115 +1,117 @@
 {
-    "referenced_dependency_sets": [],
-    "state_nodes": [
+    "actions": [
         {
             "id": 0
         },
         {
             "id": 1,
-            "depends_on": {
-                "dependencies": [
-                    {"node_id": 0}
-                ]
-            }
+            "depends_on": "0"
         },
         {
             "id": 2,
-            "depends_on": {
-                "dependencies": [
-                    {"node_id": 1}
-                ]
-            }
+            "depends_on": "1"
         },
         {
             "id": 3,
-            "depends_on": {
-                "dependencies": [
-                    {"node_id": 2}
-                ]
-            }
+            "depends_on": "2"
         },
         {
             "id": 4,
-            "depends_on": {
-                "dependencies": [
-                    {"node_id": 3}
-                ]
-            }
+            "depends_on": "3"
         },
         {
             "id": 5,
-            "depends_on": {
-                "alias": "a#0000",
-                "gate_type": "AND",
-                "dependencies": [
-                    {"node_id": 4},
-                    {"node_id": 7}
-                ]
-            }
+            "depends_on": "4 and 7"
         },
         {
             "id": 6,
-            "depends_on": {
-                "dependencies": [
-                    {"node_id": 5}
-                ]
-            }
+            "depends_on": "5"
         },
         {
             "id": 8,
-            "depends_on": {
-                "dependencies": [
-                    {"node_id": 1}
-                ]
-            }
+            "depends_on": "1"
         },
         {
             "id": 9,
-            "depends_on": {
-                "dependencies": [
-                    {"node_id": 8}
-                ]
-            }
+            "depends_on": "8"
         },
         {
             "id": 11,
-            "depends_on": {
-                "dependencies": [
-                    {"node_id": 8}
-                ]
-            }
+            "depends_on": "8"
         },
         {
             "id": 10,
-            "depends_on": {
-                "dependencies": [
-                    {"node_id": 11}
-                ]
-            }
+            "depends_on": "11"
         },
         {
             "id": 12,
-            "depends_on": {
-                "dependencies": [
-                    {"node_id": 11}
-                ]
-            }
+            "depends_on": "11"
         },
         {
             "id": 13,
-            "depends_on": {
-                "dependencies": [
-                    {"node_id": 12}
-                ]
-            }
+            "depends_on": "12"
         },
         {
             "id": 7,
-            "depends_on": {
-                "dependencies": [
-                    {"node_id": 2}
-                ]
-            }
+            "depends_on": "2"
+        }
+    ],
+    "checkpoints": [
+        {
+            "alias": "0",
+            "dependencies": [
+                {"node": {"action_id": 0}}
+            ]
+        },
+        {
+            "alias": "1",
+            "dependencies": [
+                {"node": {"action_id": 1}}
+            ]
+        },
+        {
+            "alias": "2",
+            "dependencies": [
+                {"node": {"action_id": 2}}
+            ]
+        },
+        {
+            "alias": "3",
+            "dependencies": [
+                {"node": {"action_id": 3}}
+            ]
+        },
+        {
+            "alias": "4 and 7",
+            "gate_type": "AND",
+            "dependencies": [
+                {"node": {"action_id": 4}},
+                {"node": {"action_id": 7}}
+            ]
+        },
+        {
+            "alias": "5",
+            "dependencies": [
+                {"node": {"action_id": 5}}
+            ]
+        },
+        {
+            "alias": "8",
+            "dependencies": [
+                {"node": {"action_id": 8}}
+            ]
+        },
+        {
+            "alias": "11",
+            "dependencies": [
+                {"node": {"action_id": 11}}
+            ]
+        },
+        {
+            "alias": "12",
+            "dependencies": [
+                {"node": {"action_id": 12}}
+            ]
         }
     ]
 }

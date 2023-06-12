@@ -1,5 +1,6 @@
 {
     "standard": "Project Development Test",
+    "term_definitions": [],
     "parties": [
         {
             "name": "Land Representative",
@@ -26,47 +27,52 @@
             "hex_code": "#fffcc7"
         }
     ],
-    "referenced_dependency_sets": [],
-    "node_definitions": {
+    "checkpoints": [
+        {
+            "alias": "a#0000",
+            "description": "placeholder description",
+            "gate_type": "AND",
+            "dependencies": [
+                {
+                    "node": {
+                        "action_id": 0,
+                        "field_name": "completed",
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
+                    }
+                },
+                {
+                    "node": {
+                        "action_id": 0,
+                        "field_name": "did_the_thing",
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
+                    }
+                }
+            ]
+        }
+    ],
+    "nodes": {
         "Placeholder": {
             "completed": {"field_type": "BOOLEAN"},
             "did_the_thing": {"field_type": "BOOLEAN"}
         }
     },
-    "state_nodes": [
+    "actions": [
         {
             "id": 0,
             "description": "Node 0",
-            "node_type": "ACTION",
             "applies_to": "Project Developer",
             "tag": "Placeholder"
         },
         {
             "id": 1,
             "description": "Node 1",
-            "node_type": "ACTION",
             "applies_to": "Project Developer",
             "tag": "Placeholder",
-            "depends_on": {
-                "alias": "a#0000",
-                "gate_type": "AND",
-                "dependencies": [
-                    {
-                        "node_id": 0,
-                        "field_name": "completed",
-                        "comparison_operator": "EQUALS",
-                        "comparison_value_type": "BOOLEAN",
-                        "boolean_comparison_value": true
-                    },
-                    {
-                        "node_id": 0,
-                        "field_name": "did_the_thing",
-                        "comparison_operator": "EQUALS",
-                        "comparison_value_type": "BOOLEAN",
-                        "boolean_comparison_value": true
-                    }
-                ]
-            }
+            "depends_on": "a#0000"
         }
     ]
 }

@@ -1,5 +1,6 @@
 {
     "standard": "Project Development Test",
+    "term_definitions": [],
     "parties": [
         {
             "name": "Land Representative",
@@ -26,7 +27,7 @@
             "hex_code": "#fffcc7"
         }
     ],
-    "node_definitions": {
+    "nodes": {
         "Placeholder": {
             "completed": {
                 "field_type": "BOOLEAN",
@@ -34,213 +35,213 @@
             }
         }
     },
-    "referenced_dependency_sets": [
-        {
-            "alias": "Land owner or Tenant#0000",
-            "gate_type": "OR",
-            "dependencies": [
-                {
-                    "node_id": 13,
-                    "field_name": "completed",
-                    "comparison_operator": "EQUALS",
-                    "comparison_value_type": "BOOLEAN",
-                    "boolean_comparison_value": true
-                    
-                },
-                {
-                    "node_id": 14,
-                    "field_name": "completed",
-                    "comparison_operator": "EQUALS",
-                    "comparison_value_type": "BOOLEAN",
-                    "boolean_comparison_value": true
-                }
-            ]
-        }
-    ],
-    "state_nodes": [
+    "actions": [
         {
             "id": 7,
             "description": "Set up survey",
-            "node_type": "ACTION",
             "applies_to": "Project Developer",
             "tag": "Placeholder"
         },
         {
             "id": 8,
             "description": "Make contact with them with preliminary set of questions",
-            "node_type": "ACTION",
             "applies_to": "Project Developer",
             "tag": "Placeholder",
-            "depends_on": {
-                "dependencies": [
-                    {
-                        "node_id": 7,
-                        "field_name": "completed",
-                        "comparison_operator": "EQUALS",
-                        "comparison_value_type": "BOOLEAN",
-                        "boolean_comparison_value": true
-                    }
-                ]
-            }
+            "depends_on": "Set up survey#0000"
         },
         {
             "id": 9,
             "description": "Agreement decided between tenant and owner.",
-            "node_type": "ACTION",
             "applies_to": "Land Representative",
             "tag": "Placeholder"
         },
         {
             "id": 10,
             "description": "Guidance on what should be on the contract from Natureblocks",
-            "node_type": "ACTION",
             "applies_to": "Project Developer",
             "tag": "Placeholder"
         },
         {
             "id": 11,
             "description": "Written agreement to generate Carbon offsets",
-            "node_type": "ACTION",
             "applies_to": "Land Representative",
             "tag": "Placeholder",
-            "depends_on": {
-                "alias": "Agreement and Guidance#0000",
-                "gate_type": "AND",
-                "dependencies": [
-                    {
-                        "node_id": 9,
-                        "field_name": "completed",
-                        "comparison_operator": "EQUALS",
-                        "comparison_value_type": "BOOLEAN",
-                        "boolean_comparison_value": true
-                    },
-                    {
-                        "node_id": 10,
-                        "field_name": "completed",
-                        "comparison_operator": "EQUALS",
-                        "comparison_value_type": "BOOLEAN",
-                        "boolean_comparison_value": true
-                    }
-                ]
-            }
+            "depends_on": "Agreement and Guidance#0000"
         },
         {
             "id": 12,
             "description": "Laws and contracts adhered to by both parties",
-            "node_type": "STATE",
             "applies_to": "Land Representative",
             "tag": "Placeholder",
-            "depends_on": {
-                "dependencies": [
-                    {
-                        "node_id": 8,
-                        "field_name": "completed",
-                        "comparison_operator": "EQUALS",
-                        "comparison_value_type": "BOOLEAN",
-                        "boolean_comparison_value": true
-                    }
-                ]
-            }
+            "depends_on": "8"
         },
         {
             "id": 13,
             "description": "Tenant of land",
-            "node_type": "STATE",
             "applies_to": "Land Representative",
             "tag": "Placeholder",
-            "depends_on": {
-                "alias": "Written Agreement, Laws and Contracts#0000",
-                "gate_type": "AND",
-                "dependencies": [
-                    {
-                        "node_id": 11,
-                        "field_name": "completed",
-                        "comparison_operator": "EQUALS",
-                        "comparison_value_type": "BOOLEAN",
-                        "boolean_comparison_value": true
-                    },
-                    {
-                        "node_id": 12,
-                        "field_name": "completed",
-                        "comparison_operator": "EQUALS",
-                        "comparison_value_type": "BOOLEAN",
-                        "boolean_comparison_value": true
-                    }
-                ]
-            }
+            "depends_on": "Written Agreement, Laws and Contracts#0000"
         },
         {
             "id": 14,
             "description": "Is the owner of land",
-            "node_type": "STATE",
             "applies_to": "Land Representative",
             "tag": "Placeholder",
-            "depends_on": {
-                "dependencies": [
-                    {
-                        "node_id": 8,
-                        "field_name": "completed",
-                        "comparison_operator": "EQUALS",
-                        "comparison_value_type": "BOOLEAN",
-                        "boolean_comparison_value": true
-                    }
-                ]
-            }
+            "depends_on": "8"
         },
         {
             "id": 15,
             "description": "Land user has the rights to generate carbon offsets",
-            "node_type": "STATE",
             "applies_to": "Project",
             "tag": "Placeholder",
-            "depends_on": {
-                "dependencies": [
-                    {
-                        "alias": "Land owner or Tenant#0000"
-                    }
-                ]
-            }
+            "depends_on": "Land owner or Tenant#0000"
         },
         {
             "id": 16,
             "description": "No local laws would be broken by planting crops / trees / etc",
-            "node_type": "STATE",
             "applies_to": "Project",
             "tag": "Placeholder",
-            "depends_on": {
-                "dependencies": [
-                    {
-                        "alias": "Land owner or Tenant#0000"
-                    }
-                ]
-            }
+            "depends_on": "Land owner or Tenant#0000"
         },
         {
             "id": 17,
             "description": "Usable land available",
-            "node_type": "STATE",
             "applies_to": "Project",
             "tag": "Placeholder",
-            "depends_on": {
-                "alias": "Land Rights and Local Laws#0000",
-                "gate_type": "AND",
-                "dependencies": [
-                    {
-                        "node_id": 15,
-                        "field_name": "completed",
-                        "comparison_operator": "EQUALS",
-                        "comparison_value_type": "BOOLEAN",
-                        "boolean_comparison_value": true
-                    },
-                    {
-                        "node_id": 16,
+            "depends_on": "Land Rights and Local Laws#0000"
+        }
+    ],
+    "checkpoints": [
+        {
+            "alias": "8",
+            "description": "placeholder description",
+            "dependencies": [
+                {
+                    "node": {
+                        "action_id": 8,
                         "field_name": "completed",
                         "comparison_operator": "EQUALS",
                         "comparison_value_type": "BOOLEAN",
                         "boolean_comparison_value": true
                     }
-                ]
-            }
+                }
+            ]
+        },
+        {
+            "alias": "Written Agreement, Laws and Contracts#0000",
+            "gate_type": "AND",
+            "description": "placeholder description",
+            "dependencies": [
+                {
+                    "node": {
+                        "action_id": 11,
+                        "field_name": "completed",
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
+                    }
+                },
+                {
+                    "node": {
+                        "action_id": 12,
+                        "field_name": "completed",
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
+                    }
+                }
+            ]
+        },
+        {
+            "alias": "Set up survey#0000",
+            "description": "placeholder description",
+            "dependencies": [
+                {
+                    "node": {
+                        "action_id": 7,
+                        "field_name": "completed",
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
+                    }
+                }
+            ]
+        },
+        {
+            "alias": "Agreement and Guidance#0000",
+            "gate_type": "AND",
+            "description": "placeholder description",
+            "dependencies": [
+                {
+                    "node": {
+                        "action_id": 9,
+                        "field_name": "completed",
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
+                    }
+                },
+                {
+                    "node": {
+                        "action_id": 10,
+                        "field_name": "completed",
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
+                    }
+                }
+            ]
+        },
+        {
+            "alias": "Land owner or Tenant#0000",
+            "gate_type": "OR",
+            "description": "placeholder description",
+            "dependencies": [
+                {
+                    "node": {
+                        "action_id": 13,
+                        "field_name": "completed",
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
+                    }
+                    
+                },
+                {
+                    "node": {
+                        "action_id": 14,
+                        "field_name": "completed",
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
+                    }
+                }
+            ]
+        },
+        {
+            "alias": "Land Rights and Local Laws#0000",
+            "gate_type": "AND",
+            "description": "placeholder description",
+            "dependencies": [
+                {
+                    "node": {
+                        "action_id": 15,
+                        "field_name": "completed",
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
+                    }
+                },
+                {
+                    "node": {
+                        "action_id": 16,
+                        "field_name": "completed",
+                        "comparison_operator": "EQUALS",
+                        "comparison_value_type": "BOOLEAN",
+                        "boolean_comparison_value": true
+                    }
+                }
+            ]
         }
     ]
 }

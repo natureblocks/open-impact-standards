@@ -153,7 +153,7 @@
       "hex_code": "#00FFFF"
     }
   ],
-  "node_definitions": {
+  "nodes": {
     "BooleanNode": {
       "completed": { "field_type": "BOOLEAN" }
     },
@@ -172,24 +172,22 @@
       "land_area_unit": { "field_type": "STRING" }
     }
   },
-  "state_nodes": [
+  "actions": [
     {
       "id": 0,
       "description": "This methodology comes into force on its publication date. The previous version of the methodology is valid until the attached date. The projects already submitted for listing or achieved listed status may continue with the previous version of methodology as long as the project is in compliance with applicable requirements of Emissions Reduction and Sequestration Product Requirements.",
-      "node_type": "STATE",
       "applies_to": "Methodology",
       "tag": "DateNode"
     },
     {
       "id": 1,
       "description": "Project has been conceptualized.",
-      "node_type": "STATE",
       "applies_to": "Project",
       "tag": "BooleanNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 0,
+            "action_id": 0,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -201,13 +199,12 @@
     {
       "id": 2,
       "description": "Carry out spatial assessment of land to assess eligibility of areas according to our: <a href='#'> Land-use & Forest General Requirements </a>.",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "SpatialAssessmentOfLandNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 1,
+            "action_id": 1,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -219,13 +216,12 @@
     {
       "id": 3,
       "description": "Project includes the planting of trees on land that does not meet the definition of forest.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 2,
+            "action_id": 2,
             "field_name": "eligible",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -238,13 +234,12 @@
     {
       "id": 4,
       "description": "Project is not a mangrove project.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 3,
+            "action_id": 3,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -256,13 +251,12 @@
     {
       "id": 5,
       "description": "Is the project on a wetland?",
-      "node_type": "QUESTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 4,
+            "action_id": 4,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -274,13 +268,12 @@
     {
       "id": 6,
       "description": "Will project areas with organic soils be drained or irrigated (except for irrigation for planting)?",
-      "node_type": "QUESTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 4,
+            "action_id": 4,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -292,13 +285,12 @@
     {
       "id": 7,
       "description": "Will there be soil disturbance (through ploughing, digging of pits, stump removals, infrastructure, etc.) on organic soils exceeding more than 10% of the area that is submitted to certification (not 10% of the entire project area)?",
-      "node_type": "QUESTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 4,
+            "action_id": 4,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -310,13 +302,12 @@
     {
       "id": 8,
       "description": "Is the most likely scenario without the project (baseline scenario) defined and shows no significant increase of the baseline biomass ('tree' and 'non-tree')?",
-      "node_type": "QUESTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 4,
+            "action_id": 4,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -328,7 +319,6 @@
     {
       "id": 9,
       "description": "Project meets all non-mangrove requirements.",
-      "node_type": "STATE",
       "applies_to": "Land Representative",
       "tag": "BooleanNode",
       "supporting_info": [
@@ -340,28 +330,28 @@
         "gate_type": "AND",
         "dependencies": [
           {
-            "node_id": 5,
+            "action_id": 5,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 6,
+            "action_id": 6,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": false
           },
           {
-            "node_id": 7,
+            "action_id": 7,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": false
           },
           {
-            "node_id": 8,
+            "action_id": 8,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -373,13 +363,12 @@
     {
       "id": 10,
       "description": "Mangrove Project.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 4,
+            "action_id": 4,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -391,13 +380,12 @@
     {
       "id": 11,
       "description": "Is 90% or more of the planting area going to be planted with mangrove species?",
-      "node_type": "QUESTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 10,
+            "action_id": 10,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -409,7 +397,6 @@
     {
       "id": 12,
       "description": "Project meets all mangrove requirements.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "supporting_info": [
@@ -420,7 +407,7 @@
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 11,
+            "action_id": 11,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -432,7 +419,6 @@
     {
       "id": 13,
       "description": "Project meets all requirements for this methodology to be applicable for the calculation of CO2 removal units from the project.",
-      "node_type": "STATE",
       "applies_to": "Land Representative",
       "tag": "BooleanNode",
       "depends_on": {
@@ -440,14 +426,14 @@
         "gate_type": "OR",
         "dependencies": [
           {
-            "node_id": 12,
+            "action_id": 12,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 9,
+            "action_id": 9,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -459,13 +445,12 @@
     {
       "id": 19,
       "description": "Project Design can begin.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 13,
+            "action_id": 13,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -477,13 +462,12 @@
     {
       "id": 20,
       "description": "Determine the modelling units.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 19,
+            "action_id": 19,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -495,13 +479,12 @@
     {
       "id": 21,
       "description": "Each modelling unit area has homogeneous charcteristics in growth patterns, silvicultural treatment and planting date.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 20,
+            "action_id": 20,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -513,13 +496,12 @@
     {
       "id": 22,
       "description": "Modelling units determined.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 21,
+            "action_id": 21,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -531,13 +513,12 @@
     {
       "id": 23,
       "description": "Forest Inventory has been completed.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 19,
+            "action_id": 19,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -549,13 +530,12 @@
     {
       "id": 24,
       "description": "The process of a forest inventory is documented clearly and can be easily replicated.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 23,
+            "action_id": 23,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -567,13 +547,12 @@
     {
       "id": 25,
       "description": "The forest inventories follow the guidelines located in the <a href='https://winrock.org/wp-content/uploads/2016/03/Winrock-BioCarbon_Fund_Sourcebook-compressed.pdf' target='_blank'>BioCarbon Fund sourcebook</a>.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 23,
+            "action_id": 23,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -585,7 +564,6 @@
     {
       "id": 26,
       "description": "The number of sample plots of a forest inventory shall be sufficient to meet a MU precision with a maximum error of ±20% at a 90% confidence interval. Where the error is above 20%, the additional difference shall be deducted. For example. A forest inventory determined the mean 'Stem volume' of a MU at 100 m3/ha with an error of 23%. The error is 3% higher than required: 3% * 100 m3/ha = 3 m3/ha. The mean 'Stem volume' which can be accounted for is: 100 - 3 = 97 m3/ha.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
@@ -593,14 +571,14 @@
         "gate_type": "AND",
         "dependencies": [
           {
-            "node_id": 22,
+            "action_id": 22,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 23,
+            "action_id": 23,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -612,7 +590,6 @@
     {
       "id": 27,
       "description": "Growth models of the MU confirmed by the results of MU specific forest inventories.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
@@ -620,21 +597,21 @@
         "gate_type": "AND",
         "dependencies": [
           {
-            "node_id": 25,
+            "action_id": 25,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 24,
+            "action_id": 24,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 26,
+            "action_id": 26,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -646,13 +623,12 @@
     {
       "id": 28,
       "description": "Carbon pool calculation can begin.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 27,
+            "action_id": 27,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -671,13 +647,12 @@
     {
       "id": 34,
       "description": "Selection and justification of The Baseline scenario can begin.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 28,
+            "action_id": 28,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -689,13 +664,12 @@
     {
       "id": 35,
       "description": "Baseline determination starting point.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 34,
+            "action_id": 34,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -707,13 +681,12 @@
     {
       "id": 36,
       "description": "Eligible planting area has been stratified according to its vegetation types (grassland, shrubland, etc.).",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 35,
+            "action_id": 35,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -725,13 +698,12 @@
     {
       "id": 37,
       "description": "For each of these strata, scientifically based project-specific, regional or national default values were found which state 'tree' and 'non-tree' biomass of these vegetation types.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 36,
+            "action_id": 36,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -746,13 +718,12 @@
     {
       "id": 39,
       "description": "Baseline calculations can begin.",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 37,
+            "action_id": 37,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -764,13 +735,12 @@
     {
       "id": 40,
       "description": "Calculate tree biomass for each strata.",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 39,
+            "action_id": 39,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -788,13 +758,12 @@
     {
       "id": 44,
       "description": "Calculate above ground biomass.",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 40,
+            "action_id": 40,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -811,7 +780,6 @@
     {
       "id": 47,
       "description": "Calculate below ground biomass.",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "supporting_info": [
@@ -820,7 +788,7 @@
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 40,
+            "action_id": 40,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -832,13 +800,12 @@
     {
       "id": 48,
       "description": "Calculate non-tree biomass for each strata. Non-tree biomass [tdm] x Carbon Fraction [tC/tdm] * C to CO2 Factor [tCO2/tC] = Non-tree biomass [tCO2e] ",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 39,
+            "action_id": 39,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -850,13 +817,12 @@
     {
       "id": 49,
       "description": "Calculate soil organic carbon for each strata. (Optional) ",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 39,
+            "action_id": 39,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -871,7 +837,6 @@
     {
       "id": 51,
       "description": "Confirmed that a conservative approach was followed when performing calculations.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "supporting_info": [
@@ -882,28 +847,28 @@
         "gate_type": "AND",
         "dependencies": [
           {
-            "node_id": 47,
+            "action_id": 47,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 44,
+            "action_id": 44,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 48,
+            "action_id": 48,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 49,
+            "action_id": 49,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -915,13 +880,12 @@
     {
       "id": 52,
       "description": "Biomass calculation completed. ",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 51,
+            "action_id": 51,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -933,7 +897,6 @@
     {
       "id": 53,
       "description": "Determine the Baseline for each Modelling Unit (MU) level",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "supporting_info": [
@@ -942,7 +905,7 @@
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 52,
+            "action_id": 52,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -954,13 +917,12 @@
     {
       "id": 54,
       "description": "Baseline has been determined and was not underestimated.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 53,
+            "action_id": 53,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -975,13 +937,12 @@
     {
       "id": 56,
       "description": "Was The Baseline determined in the eligible planting area just prior to the start date of the project? (within 90 days)",
-      "node_type": "QUESTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 54,
+            "action_id": 54,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -993,13 +954,12 @@
     {
       "id": 57,
       "description": "The baseline document is completed and ready for submission.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 56,
+            "action_id": 56,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1011,13 +971,12 @@
     {
       "id": 58,
       "description": "Determined the silivicultural method for each Modelling Unit.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 28,
+            "action_id": 28,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1029,13 +988,12 @@
     {
       "id": 59,
       "description": "If the silvicultural method is 'rotation forestry', the long- term CO2 removal is the average 'tree biomass' of a MU during the planting start and the end of the crediting period.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 58,
+            "action_id": 58,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1047,13 +1005,12 @@
     {
       "id": 60,
       "description": "If the silvicultural method is selective harvesting or conservation forest, the long-term CO2 removal is determined by the 'tree biomass' when a MU reaches its equilibrium.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 58,
+            "action_id": 58,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1068,7 +1025,6 @@
     {
       "id": 62,
       "description": "CO2-removal calculation start",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
@@ -1076,14 +1032,14 @@
         "gate_type": "OR",
         "dependencies": [
           {
-            "node_id": 59,
+            "action_id": 59,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 60,
+            "action_id": 60,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1095,13 +1051,12 @@
     {
       "id": 63,
       "description": "Calculate tree biomass for each MU. ",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 62,
+            "action_id": 62,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1117,7 +1072,6 @@
     {
       "id": 65,
       "description": "Calculate above ground biomass. ",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "supporting_info": [
@@ -1126,7 +1080,7 @@
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 63,
+            "action_id": 63,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1138,7 +1092,6 @@
     {
       "id": 66,
       "description": "Calculate below ground biomass. ",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "supporting_info": [
@@ -1147,7 +1100,7 @@
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 63,
+            "action_id": 63,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1159,7 +1112,6 @@
     {
       "id": 68,
       "description": "Calculate CO2 removal of a MU / year.",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
@@ -1167,21 +1119,21 @@
         "gate_type": "AND",
         "dependencies": [
           {
-            "node_id": 65,
+            "action_id": 65,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 66,
+            "action_id": 66,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 78,
+            "action_id": 78,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1193,14 +1145,13 @@
     {
       "id": 69,
       "description": "Calculate long-term CO2 removal units ",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "supporting_info": "Sum: T=1 -> T CRMU,long_term = (∑T CR MU,t) / T",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 68,
+            "action_id": 68,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1212,13 +1163,12 @@
     {
       "id": 70,
       "description": "The yearly CO2 removal is determined at the level of MU during the crediting period.",
-      "node_type": "QUESTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 69,
+            "action_id": 69,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1230,13 +1180,12 @@
     {
       "id": 71,
       "description": "For every MU a growth-model and conversion factors have been determined using the standardized procedure.",
-      "node_type": "State",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 69,
+            "action_id": 69,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1248,13 +1197,12 @@
     {
       "id": 72,
       "description": "The conversion factors allow the conversion of the 'Stem volume'.",
-      "node_type": "QUESTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 69,
+            "action_id": 69,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1270,13 +1218,12 @@
     {
       "id": 74,
       "description": "Is existing 'tree biomass' from the carbon stock of The Baseline that is not removed is reflected in the growth model?",
-      "node_type": "QUESTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 69,
+            "action_id": 69,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1288,13 +1235,12 @@
     {
       "id": 75,
       "description": "Is a realistic survival rate is reflected in the growth models?",
-      "node_type": "QUESTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 69,
+            "action_id": 69,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1306,13 +1252,12 @@
     {
       "id": 76,
       "description": "Was the long term CO2 removal was determined based on the silvicultural method applied / envisioned?",
-      "node_type": "QUESTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 69,
+            "action_id": 69,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1324,7 +1269,6 @@
     {
       "id": 77,
       "description": "CO2 Removal document completed.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
@@ -1332,42 +1276,42 @@
         "gate_type": "AND",
         "dependencies": [
           {
-            "node_id": 76,
+            "action_id": 76,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 75,
+            "action_id": 75,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 74,
+            "action_id": 74,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 72,
+            "action_id": 72,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 71,
+            "action_id": 71,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 70,
+            "action_id": 70,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1379,13 +1323,12 @@
     {
       "id": 78,
       "description": "Calculate soil organic carbon for each MU. (Optional) ",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 62,
+            "action_id": 62,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1400,13 +1343,12 @@
     {
       "id": 80,
       "description": "Other Emissions calculations start. ",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 28,
+            "action_id": 28,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1422,14 +1364,13 @@
     {
       "id": 83,
       "description": "Calculate - Site preparation - Where existing 'tree' and 'non-tree' biomass of the Baseline is burned for the purpose of land preparation, an additional 10% of the Baseline has been deducted. ",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "supporting_info": "This is to account for N2O and CH4 emissions that are released during the burning process. Based on project specific data, a lower percentage may be applied when justified based on relevant literature and other sources.",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 80,
+            "action_id": 80,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1441,14 +1382,13 @@
     {
       "id": 84,
       "description": "Calculate - Fertiliser - 0.005 tCO2 per kg of nitrogen (N) fertiliser has been deducted.",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "supporting_info": " No differentiation is made between synthetic and organic fertiliser. Based on project specific data, a lower value may be applied when justified based on relevant literature and other sources.",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 80,
+            "action_id": 80,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1460,7 +1400,6 @@
     {
       "id": 85,
       "description": "Other Emissions document completed.",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
@@ -1468,14 +1407,14 @@
         "gate_type": "AND",
         "dependencies": [
           {
-            "node_id": 83,
+            "action_id": 83,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 84,
+            "action_id": 84,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1487,13 +1426,12 @@
     {
       "id": 86,
       "description": "Leakage calculation start point.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 28,
+            "action_id": 28,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1510,13 +1448,12 @@
     {
       "id": 90,
       "description": "Caculate CO2 stock for collection of wood (for firewood, charcoal, etc.).",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 86,
+            "action_id": 86,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1528,13 +1465,12 @@
     {
       "id": 91,
       "description": "Caculate CO2 stock for timber harvesting.",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 86,
+            "action_id": 86,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1546,13 +1482,12 @@
     {
       "id": 92,
       "description": "Caculate CO2 stock for agriculture (crop cultivation, shrimp cultivation, etc.)",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 86,
+            "action_id": 86,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1564,7 +1499,6 @@
     {
       "id": 93,
       "description": "Determine % activity-shift using a credible etimation or representative survey.",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
@@ -1572,21 +1506,21 @@
         "gate_type": "OR",
         "dependencies": [
           {
-            "node_id": 90,
+            "action_id": 90,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 91,
+            "action_id": 91,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 92,
+            "action_id": 92,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1598,14 +1532,13 @@
     {
       "id": 94,
       "description": "Calculate leakage emissions.",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "supporting_info": ["Use the following formula: Leakage Project area [tCO2] = Area [ha] x % of activity-shift [%] x CO2-stock [tCO2/ha]"],
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 93,
+            "action_id": 93,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1617,13 +1550,12 @@
     {
       "id": 95,
       "description": "Calculate Livestock CO2 stock [tCO2/ha], displaced heads [head], and grazing capacity [ha/head] using a credible estimation or representative survey.",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 86,
+            "action_id": 86,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1635,14 +1567,13 @@
     {
       "id": 96,
       "description": "Calculate leakage emissions.",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "supporting_info": ["Use the following formula: Leakage Project area [tCO2] = Displaced heads [head] x Grazing capacity [ha/head] x CO2- stock [tCO2/ha]"],
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 95,
+            "action_id": 95,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1654,7 +1585,6 @@
     {
       "id": 97,
       "description": "Leakage document completed.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
@@ -1662,14 +1592,14 @@
         "gate_type": "AND",
         "dependencies": [
           {
-            "node_id": 94,
+            "action_id": 94,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 96,
+            "action_id": 96,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1681,7 +1611,6 @@
     {
       "id": 98,
       "description": "Carbon pool calculations completed",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
@@ -1689,28 +1618,28 @@
         "gate_type": "AND",
         "dependencies": [
           {
-            "node_id": 57,
+            "action_id": 57,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 77,
+            "action_id": 77,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 85,
+            "action_id": 85,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 97,
+            "action_id": 97,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1722,13 +1651,12 @@
     {
       "id": 99,
       "description": "Carbon performance document start.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 98,
+            "action_id": 98,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1740,13 +1668,12 @@
     {
       "id": 100,
       "description": "Document Shortfalls of the project.",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 99,
+            "action_id": 99,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1758,13 +1685,12 @@
     {
       "id": 101,
       "description": "Document how you propose to make the project compliant again, latest in 5 years.",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 99,
+            "action_id": 99,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1776,7 +1702,6 @@
     {
       "id": 102,
       "description": "Carbon performance document completed.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
@@ -1784,14 +1709,14 @@
         "gate_type": "AND",
         "dependencies": [
           {
-            "node_id": 100,
+            "action_id": 100,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 101,
+            "action_id": 101,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1803,13 +1728,12 @@
     {
       "id": 103,
       "description": "Submit Carbon performance document.",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 102,
+            "action_id": 102,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1821,13 +1745,12 @@
     {
       "id": 104,
       "description": "Submit Leakage document.",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 97,
+            "action_id": 97,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1839,13 +1762,12 @@
     {
       "id": 105,
       "description": "Submit CO2 Removal document.",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 77,
+            "action_id": 77,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1857,13 +1779,12 @@
     {
       "id": 106,
       "description": "Submit Other Emissions document.",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 85,
+            "action_id": 85,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1875,13 +1796,12 @@
     {
       "id": 107,
       "description": "Submit Baseline document.",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 57,
+            "action_id": 57,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1893,21 +1813,18 @@
     {
       "id": 108,
       "description": "Demonstrate additionality - the project developer shall demonstrate additionality as per the requirements defined in Land Use & Forests Activity Requirements (LINK).",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode"
     },
     {
       "id": 109,
       "description": "Applicability documents submitted.",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode"
     },
     {
       "id": 110,
       "description": "Project documents and proposal accepted/verified by natureblocks or Ecora.",
-      "node_type": "STATE",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
@@ -1915,49 +1832,49 @@
         "gate_type": "AND",
         "dependencies": [
           {
-            "node_id": 103,
+            "action_id": 103,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 104,
+            "action_id": 104,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 105,
+            "action_id": 105,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 106,
+            "action_id": 106,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 107,
+            "action_id": 107,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 108,
+            "action_id": 108,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           },
           {
-            "node_id": 109,
+            "action_id": 109,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1969,13 +1886,12 @@
     {
       "id": 111,
       "description": "Planned or Verified offsets generated.",
-      "node_type": "ACTION",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "depends_on": {
         "dependencies": [
           {
-            "node_id": 110,
+            "action_id": 110,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
@@ -1985,5 +1901,5 @@
       }
     }
   ],
-  "referenced_dependency_sets": []
+  "checkpoints": []
 }

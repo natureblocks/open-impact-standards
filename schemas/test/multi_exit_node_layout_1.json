@@ -1,24 +1,23 @@
 {
-    "referenced_dependency_sets": [],
-    "state_nodes": [
+    "actions": [
         {
             "id": 0
         },
         {
             "id": 1,
-            "depends_on": {
-                "dependencies": [
-                    {"node_id": 0}
-                ]
-            }
+            "depends_on": "0"
         },
         {
             "id": 2,
-            "depends_on": {
-                "dependencies": [
-                    {"node_id": 0}
-                ]
-            }
+            "depends_on": "0"
+        }
+    ],
+    "checkpoints": [
+        {
+            "alias": "0",
+            "dependencies": [
+                {"node": {"action_id": 0}}
+            ]
         }
     ]
 }
