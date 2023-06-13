@@ -122,7 +122,21 @@ class DependencyGraph:
 
         elif num_dependencies == 1:
             # standalone dependency
-            to_action_id = checkpoint["dependencies"][0]["node"]["action_id"]
+            dependency = checkpoint["dependencies"][0]
+
+            # prevent edge duplication for identical dependencies
+            dependency_hash = hash_sorted_object(dependency["node"])
+            if (
+                dependent_id in self.dependency_hashes
+                and dependency_hash in self.dependency_hashes[dependent_id]
+            ):
+                return
+
+            if dependent_id not in self.dependency_hashes:
+                self.dependency_hashes[dependent_id] = []
+            self.dependency_hashes[dependent_id].append(dependency_hash)
+
+            to_action_id = dependency["node"]["action_id"]
             self._add_edge(dependent_id, to_action_id)
 
             action = self.actions[to_action_id]
