@@ -164,6 +164,16 @@ class DependencyGraph:
         self._generate_miro_connectors(mb, shape_dict)
 
     def _generate_miro_shapes(self, mb):
+        def create_supporting_info_shape(supporting_info, x, y):
+            mb.create_shape(
+                shape_type=shape_types["SUPPORTING_INFO"],
+                content="- " + "<br/>- ".join(supporting_info),
+                text_align="left",
+                fill_color="#D0E78C",
+                x=x + self.node_spacing * self.x_coord_factor / 5,
+                y=y - self.node_height * self.y_coord_factor / 2,
+            )
+
         shape_dict = {}
 
         for action_id, node in self.actions.items():
@@ -181,23 +191,24 @@ class DependencyGraph:
             )
 
             if "supporting_info" in node:
-                mb.create_shape(
-                    shape_type=shape_types["SUPPORTING_INFO"],
-                    content="- " + "<br/>- ".join(node["supporting_info"]),
-                    text_align="left",
-                    fill_color="#D0E78C",
-                    x=x + self.node_spacing * self.x_coord_factor / 5,
-                    y=y - self.node_height * self.y_coord_factor / 2,
-                )
+                create_supporting_info_shape(node["supporting_info"], x, y)
 
         for alias, gate_type in self.gates.items():
+            x = self.node_coordinates[alias][0] * self.x_coord_factor
+            y = self.node_coordinates[alias][1] * self.y_coord_factor
+
             shape_dict[alias] = mb.create_shape(
                 shape_type=shape_types["GATE"],
                 content=gate_type,
                 fill_color=gate_colors[gate_type],
-                x=self.node_coordinates[alias][0] * self.x_coord_factor,
-                y=self.node_coordinates[alias][1] * self.y_coord_factor,
+                x=x,
+                y=y,
             )
+
+            if "supporting_info" in self.checkpoints[alias]:
+                create_supporting_info_shape(
+                    self.checkpoints[alias]["supporting_info"], x, y
+                )
 
         return shape_dict
 
