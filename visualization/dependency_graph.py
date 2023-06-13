@@ -89,10 +89,24 @@ class DependencyGraph:
         def hash_sorted_object(obj):
             return hashlib.sha1(json.dumps(recursive_sort(obj)).encode()).digest()
 
+        def is_duplicate_dependency(dependent_id, dependency_obj):
+            if dependent_id not in self.dependency_hashes:
+                self.dependency_hashes[dependent_id] = []
+
+            dependency_hash = hash_sorted_object(dependency_obj)
+            if dependency_hash in self.dependency_hashes[dependent_id]:
+                return True
+
+            self.dependency_hashes[dependent_id].append(dependency_hash)
+            return False
+
         checkpoint = self.checkpoints[checkpoint_alias]
         num_dependencies = len(checkpoint["dependencies"])
 
         if num_dependencies > 1:
+            if is_duplicate_dependency(dependent_id, checkpoint):
+                return
+
             # represent the checkpoint as a node
             self.graph.add_node(checkpoint_alias)
             self._add_edge(dependent_id, checkpoint_alias)
@@ -108,15 +122,10 @@ class DependencyGraph:
             for dep in checkpoint["dependencies"]:
                 # checkpoints can contain standalone dependencies and checkpoint references
                 if "node" in dep:
-                    # if there is already a connection from the gate to this node,
-                    # compare the dependencies and skip any duplicates.
-                    dependency_hash = hash_sorted_object(dep["node"])
-                    if dependency_hash in self.dependency_hashes[checkpoint_alias]:
+                    if is_duplicate_dependency(checkpoint_alias, dep):
                         continue
-                    self.dependency_hashes[checkpoint_alias].append(dependency_hash)
 
-                    to_action_id = dep["node"]["action_id"]
-                    self._add_edge(checkpoint_alias, to_action_id)
+                    self._add_edge(checkpoint_alias, dep["node"]["action_id"])
                 elif "checkpoint" in dep:
                     self._explore_edges_recursive(checkpoint_alias, dep["checkpoint"])
 
@@ -125,16 +134,8 @@ class DependencyGraph:
             dependency = checkpoint["dependencies"][0]
 
             # prevent edge duplication for identical dependencies
-            dependency_hash = hash_sorted_object(dependency["node"])
-            if (
-                dependent_id in self.dependency_hashes
-                and dependency_hash in self.dependency_hashes[dependent_id]
-            ):
+            if is_duplicate_dependency(dependent_id, dependency):
                 return
-
-            if dependent_id not in self.dependency_hashes:
-                self.dependency_hashes[dependent_id] = []
-            self.dependency_hashes[dependent_id].append(dependency_hash)
 
             to_action_id = dependency["node"]["action_id"]
             self._add_edge(dependent_id, to_action_id)

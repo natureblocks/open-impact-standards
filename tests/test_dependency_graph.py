@@ -235,6 +235,9 @@ class TestDependencyGraph:
         # graph.generate_miro_board(board_name="Test Result (test_multi_dependent_node)")
 
         expected_edge_tuples = [
+            (0, "6 or 7"),
+            ("6 or 7", 6),
+            ("6 or 7", 7),
             (1, 0),
             (2, 1),
             (3, 1),
