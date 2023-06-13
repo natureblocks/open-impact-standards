@@ -1,7 +1,14 @@
 {
     "actions": [
         {
-            "id": 0
+            "id": 6
+        },
+        {
+            "id": 7
+        },
+        {
+            "id": 0,
+            "depends_on": "6 or 7"
         },
         {
             "id": 1,
@@ -43,6 +50,14 @@
             "dependencies": [
                 {"node": {"action_id": 3}},
                 {"node": {"action_id": 4}}
+            ]
+        },
+        {
+            "alias": "6 or 7",
+            "gate_type": "OR",
+            "dependencies": [
+                {"node": {"action_id": 6}},
+                {"node": {"action_id": 7}}
             ]
         }
     ]
