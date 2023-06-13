@@ -226,3 +226,21 @@ class TestDependencyGraph:
             action_id: coords[0] for action_id, coords in graph.node_coordinates.items()
         }
         assert actual_depths == expected_node_depths
+
+    def test_multi_dependent_node(self):
+        graph = DependencyGraph(
+            json_schema_file_path="schemas/test/multi_dependent_node.json",
+            validate_schema=False,
+        )
+        # graph.generate_miro_board(board_name="Test Result (test_multi_dependent_node)")
+
+        expected_edge_tuples = [
+            (1, 0),
+            (2, 1),
+            (3, 1),
+            (4, 1),
+            (5, "3 and 4"),
+            ("3 and 4", 3),
+            ("3 and 4", 4),
+        ]
+        assert graph.edge_tuples == expected_edge_tuples
