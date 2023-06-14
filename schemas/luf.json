@@ -1,0 +1,1557 @@
+{
+  "standard": "Land Use and Forestry",
+  "term_definitions": [
+    {
+      "name": "Agriculture (AGR)",
+      "description": "The Open Impact Standard defines agriculture in accordance with the FAO, as agricultural activities that contribute to the achievementof sustainable development goals: www.fao.org/climate-change/en",
+      "attributes": []
+    },
+    {
+      "name": "Crop",
+      "description": "A crop is a plant or fungus species that is purposefully cultivated and/or harvested to satisfy human and livestock needs.",
+      "attributes": []
+    },
+    {
+      "name": "Forest",
+      "description": "A forest is defined by the Designated National Authority (DNA) of the project's host country http://cdm.unfccc.int/DNA/index.html. In case no forest definition is yet given by the DNA, the Project Developer can refer to the forest definition of the FAO: http://www.fao.org/docrep/003/x6896e/x6896e0e.html or the national forest definition of the project's host country. ",
+      "attributes": []
+    },
+    {
+      "name": "Invasive Species",
+      "description": "An organism introduced by man into places out of its natural range of distribution, where it becomes established and disperses, generating a negative impact on the local ecosystems and species. An invasive species is likely to cause economic harm or harm to human health. Note that species which are already locally established and of economic importance are excluded under this definition. Source: Adapted from IUCN, available at https://www.iucn.org/theme/species/our-work/invasive-species",
+      "attributes": []
+    },
+    {
+      "name": "Livestock",
+      "description": "Livestock comprises all domestic animals. Non-domestic animals are not included unless they are kept or raised in captivity on agricultural holdings, including holdings without land. Source: FAO, available at http://www.fao.org/waicent/faoinfo/economic/faodef/fdef16e.htm",
+      "attributes": []
+    },
+    {
+      "name": "Modelling Unit (MU)",
+      "description": "Modelling Units are distinct parts of the eligible area where carbon stocks can be quantified based on an applicable Open Impact Standard Methodology. To meet the precision level for the carbon stocks estimation (see Annex A- Uncertainty of LUF Parameters). MU areas normally have homogeneous characteristics to quantify a certain SDG Impact (growth patterns, management treatment and start date).",
+      "attributes": []
+    },
+    {
+      "name": "New Area",
+      "description": "New areas are project areas that are added to a project after it achieves Project Certification",
+      "attributes": []
+    },
+    {
+      "name": "People Affected",
+      "description": "People affected are individuals or an entity that are, or are likely to be, subject to the project activities. 4 Examples of people affected are local: (a)Communities, indigenous peoples, neighbors, processors, and local businesses, AND (b)Organizations authorized or known to act on behalf of people affected (e.g., NGOs, labour organizations). Source: Adapted from FSC where the term is 'affected stakeholder'",
+      "attributes": []
+    },
+    {
+      "name": "Planting Area",
+      "description": "The planting area is the eligible area of A/R projects where tree planting activities take place. The planting area is the part of the project area which meets the applicability conditions of the applied Open Impact Standard Methodology. Non-eligible areas are those which do not meet the applicability conditions of the applied Open Impact Standard Methodology.",
+      "attributes": []
+    },
+    {
+      "name": "Project Area",
+      "description": "As per Open Impact Standard, definitions are as follows: 1. The project area is a spatial area or areas submitted for certification with clearly defined boundaries managed to a set of explicit long-term management objectives. Source: Adapted from FSC, where the relevant term is 'Management Unit'. The project area is the sum of all eligible and non-eligible areas. 2. Boundaries of the project area shall be clearly distinguishable in the field. 5 3. Under the Open Impact Standard the project area is divided in Modelling Units (MU) for an efficient calculation of the amount of Certified SDG Impact Statement or Product (for example GSVERs). The 'project area' as the area of certification shall be limited to eligible areas, any riparian or other buffer zones located within eligible areas, and areas set aside for conservation in accordance with Open Impact Standard LUF requirements. Project Types A grouped project encompasses several single area projects but applies the 'Land Use & Forests Requirements' in the same way as a single area project. Grouped projects are similar to a Programme of Activities (PoA) under the Clean Development Mechanism (CDM), allowing for an unlimited number of new project areas to be added without undergoing the complete Gold Standard certification process. The project developer can add new areas to a project (grouped projects) or expand an existing project area (single area projects) at any time after a project reaches Registered status. Figure 2: Grouped Project Figure 3: Single Area Project",
+      "attributes": []
+    },
+    {
+      "name": "Project Participant",
+      "description": "A project participant is an individual or entity that is contributing to the generation of the SDG certified impacts.",
+      "attributes": []
+    },
+    {
+      "name": "Project Region",
+      "description": "The project region is the spatial area where people and environment are influenced by the project activities. A project region can be expanded over time. All project areas are located within the project region. The 'project region' must be identified in the Project Design Document (PDD) and may indicate areas of future project growth through new area certifications.",
+      "attributes": []
+    },
+    {
+      "name": "Project Start",
+      "description": "i. A/R specific: The project start date shall be the earliest date when the first trees are planted. ii. AGR specific: The project start shall be the earliest date when implementation of the project activities that lead to the certification of Ecosystem Services and SDG Impacts starts. For example, for a project that involves shift in agricultural practice the start date is the date when the first project participant shifted to the improved agricultural practice.",
+      "attributes": []
+    },
+    {
+      "name": "SDG Impacts & Ecosystem Services",
+      "description": "Ecosystem services are benefits people obtain from ecosystems. Examples include SDG Impacts such as: i. Carbon sequestration and greenhouse gas reduction (SDG 13), AND ii. Water supply and purification (SDG 6), AND iii. Biodiversity conservation and enhancement (SDG 15)",
+      "attributes": []
+    },
+    {
+      "name": "Smallholder",
+      "description": "Smallholders are farmers that have more than 50% of farm work done by family members, cooperative members or neighbours.",
+      "attributes": []
+    },
+    {
+      "name": "Tree",
+      "description": "(a) A tree is a perennial woody plant with one or several dominant sprouts that increase its circumference due to secondary growth. (b) For a practical use of this document the definition of a tree also includes shrubs, palms and bamboo plants. (c) In any project, trees shall reach a minimum height of 2 meters. A/R specific: For forest inventories of different types of trees additional guidance is provided by the forest inventory guidelines of the BioCarbon Fund1.",
+      "attributes": []
+    },
+    {
+      "name": "Tree Planting AR Specific",
+      "description": "Tree planting refers to the activity of putting trees in the ground for growth; it also includes sowing or assisted natural regeneration.",
+      "attributes": []
+    },
+    {
+      "name": "Wetlands",
+      "description": "Wetlands are lands that are transitional between terrestrial and aquatic systems where the water table is usually at or near the surface or the land is covered by shallow water, and that have one or more of the following attributes: Source: Cowardin et al. 1979 - Classification of Wetlands and Deepwater Habitats of the United States (a) At least periodically, the land supports predominantly plants typically occurring in wetlands, AND (b) The substrate is predominantly undrained and water saturated soil, AND (c) The substrate is non-soil and is saturated with water or covered by shallow water at some time during the growing season of each year.",
+      "attributes": []
+    },
+    {
+      "name": "Workers",
+      "description": "Workers are all persons that are employed by a written or verbal agreement. This includes permanent, migrant, part-time and seasonal employees of all ranks and categories, including field workers, artisans, labourers, administrators, supervisors, executives, contractor employees as well as self-employed contractors and sub-contractors. AGR specific: Excepted from the definition above are: (a)Workers employed by a verbal agreement on smallholder farms for less than 3 months per year, AND (b)Smallholder farmers themselves, AND (c) Family members of the smallholder farmer",
+      "attributes": []
+    }
+  ],
+  "parties": [
+    {
+      "name": "Land Representative",
+      "hex_code": "#fdeeb7"
+    },
+    {
+      "name": "Project",
+      "hex_code": "#dfb7e6"
+    },
+    {
+      "name": "Project Developer",
+      "hex_code": "#c0e1fa"
+    },
+    {
+      "name": "Methodology",
+      "hex_code": "#00FFFF"
+    }
+  ],
+  "nodes": {
+    "BooleanNode": {
+      "completed": { "field_type": "BOOLEAN" }
+    },
+    "DateNode": {
+      "completed": { "field_type": "BOOLEAN" },
+      "date": { "field_type": "STRING" }
+    },
+    "BooleanCommentNode": {
+      "completed": { "field_type": "BOOLEAN" },
+      "comment": { "field_type": "STRING" }
+    },
+    "EligibilityNode": {
+      "eligible": { "field_type": "BOOLEAN" },
+      "comment": { "field_type": "STRING" }
+    }
+  },
+  "actions": [
+    {
+      "id": 0,
+      "description": "The project in question is either an Afforestation & Reforestation (AR) or Agricultural (AGR) project as defined by the eligibility criteria defined in the respective methodology schema.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "supporting_info": [
+        "In this document The 'Land Use & Forests Requirements' include sections or items within sections that apply only to A/R or to AGR projects. The sections/items marked as “A/R specific” apply only to A/R projects and “AGR specific” apply only to AGR projects. Sections/items without any specific labelling apply to both A/R and AGR projects.",
+        "This schema is part of the pathway to certification within the Open Impact Standard for Land Use and Forestry Activities. This pathway is applied in conjunction with the General Requirements schema as well as the specific methodology schema (LUF-AR or LUF-AGR)."
+      ]
+    },
+    {
+      "id": 1,
+      "description": "Has the eligible area met the definition of a forest within 10 years before project start date?",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "Eligible#0000"
+    },
+    {
+      "id": 2,
+      "description": "The eligibility of the project is being determined by the Open Impact Standard as part of the Preliminary Review process. The Project Developer has provided evidence that the deforestation activity has not taken place with an intention to implement project activities that generate Open Impact Standard credits.",
+      "applies_to": "Project Developer",
+      "tag": "EligibilityNode",
+      "depends_on": "Recent Forest#0000"
+    },
+    {
+      "id": 3,
+      "description": "Is the project located in a country or state that has an operational mandatory national or pan-national cap-and-trade scheme to reduce greenhouse-gas (GHG) emissions, and accounts for its own land-based activities under its national or subnational accounting?",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "No Recent Forest#0000"
+    },
+    {
+      "id": 4,
+      "description": "Double counting requirements section of the Reduction and Sequestration Product Requirements applied.",
+      "applies_to": "Project Developer",
+      "tag": "EligibilityNode",
+      "depends_on": "Cap and Trade Country#0000"
+    },
+    {
+      "id": 5,
+      "description": "For the duration of the crediting period has the Project Developer demonstrated with evidence that they a) own the CO2 user rights or carbon sequestration rights for the project area, b) hold an uncontested legal land title for the Project Area, c) own the rights for timber and non-timber forest products for the project area, d) hold all necessary permits to implement the project (planting permits, infrastructure permits, harvesting permits, etc.), e) is participating in the financing of the project?",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "supporting_info": [
+        "CO2 user rights are rights that grant the titleholder any benefit that could be generated from the certification of the carbon sequestration or greenhouse gas reduction by the project.",
+        "For land use projects, the holder of the CO2 user rights is usually the owner of the land, where the project activity takes place - except when such rights have been expressly transmitted to another person or entity by the land owner, or when an authority act / decision / order / regulation assigns such rights to a different person than the land owner."
+      ],
+      "depends_on": "Eligibility Confirmed#0000"
+    },
+    {
+      "id": 6,
+      "description": "The persons or legal entities that do meet those respective requirements have endorsed the proposed project through an agreement with the Project Developer that aligns with the duration of the crediting period.Each agreement confirms: (a) The project participant holds the CO2 user rights3 that are associated with the project activities and has passed these on to the Project Developer, AND (b) The project participant holds all necessary rights to implement the project activities (e.g., rights to harvest), AND (c) The legal land title or similar entitlement4 for the land on which the project activities are implemented is uncontested. Each agreement includes: (a) Contact details of the project participants, AND (b) The legal registration number and documentation by the governing jurisdiction that proves that the entity is in good standing (in case of an organisation), AND (c) Contact details of the land owner (if differing), AND (d) Length of lease contract (if applicable), AND (e) The liabilities and benefits for the person or entity to implement the project activities (e.g., switch to another crop and get access to the seeds).",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "supporting_info": [
+        "Similar Entitlement: It is considered that similar entitlement exists, when 1) A person or entity has been using the land of the project as its owner, for the period of time that the applicable law requires for persons or entity to acquire property by its use, AND 2) Neighbours or neighbouring community agrees that the land has been used for such time by the person or entity claiming it.",
+        "CO2 user rights are rights that grant the titleholder any benefit that could be generated from the certification of the carbon sequestration or greenhouse gas reduction by the project. For land use projects, the holder of the CO2 user rights is usually the owner of the land, where the project activity takes place – except when such rights have been expressly transmitted to another person or entity by the land owner, or when an authority act / decision / order / regulation assigns such rights to a different person than the land owner."
+      ],
+      "depends_on": "Developer Does Not Own Rights#0000"
+    },
+    {
+      "id": 7,
+      "description": "For all project participants, the following information has been provided: Name and contact details. Each entity's legal registration number and documentation by the governing jurisdiction that proves that the entity is in good standing",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "Rights Or Endorsement#0000"
+    },
+    {
+      "id": 8,
+      "description": "The Project Developer has informed the authorities of all project participants with respect of instructing the Open Impact Standard and agrees to be accountable for the requesting or communicating addition or edits of project participants as well as receiving all information from the Open Impact Standard Secretariat on matters related to the project.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "Contact Info Provided#0000"
+    },
+    {
+      "id": 9,
+      "description": "Is this an AGR project?",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "Authorities Informed#0000"
+    },
+    {
+      "id": 10,
+      "description": "Contribution to climate security in sustainable development Increasing resilience to be able to deal with impacts of climate change is crucial for achieving income stability, food security and long-term development. Hence, preserving and increasing adaptive capacity for project participants must be an integral element of every project. Specifically: (a) The Project Developer shall identify the current and predicted variability in climate/weather for the project region. (b) Based on the current and predicted variability in climate/weather, the Project Developer shall analyse the possible effects on the project within the crediting period. (c) The Project Developer shall implement adaptation activities appropriate to the context and need of the respective project. Adaptation activities may include: i. Practices that increase the resilience of farming systems, OR ii. Measures to improve the efficiency of water use, OR iii. Crops (crop breeds) with improved characteristics, OR iv. Crop rotation schemes, OR v. Sharing of existing farmers' knowledge as well as knowledge on new agriculture practices, OR vi. Diversification of livelihoods, e.g., through increased agricultural productivity, increased variety of cultivated crops, identification of other income streams, OR vii. Measures to improve soil fertility.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "AGR#0000"
+    },
+    {
+      "id": 11,
+      "description": "Carry out Risks and Capacities assessment for the Project Area using the Risks and Capacities Schema taking into account likely issues in the context of the Project Region.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "Authorities Informed#0000"
+    },
+    {
+      "id": 12,
+      "description": "Carry out Safeguarding Principles assessment using the Safeguaring Principles and Requirements Schema taking into account likely issues in the context of the Project Region.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "Authorities Informed#0000"
+    },
+    {
+      "id": 13,
+      "description": "A minimum of 10% of the total Project Area has been identified and used to protect or enhance the biological diversity following High Conservation Value (HCV) approach. The designated protected area is located within the Project Area and managed by the Project Developer. The protected area can include buffer zone areas for water bodies. To protect or enhance biological diversity, the following shall be identified and managed. (a) Existing patches of native tree species, AND (b) Single solitary stems of native tree species, AND (c) Habitats of rare, threatened and endangered species, AND (d) Areas relevant for habitat connectivity.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "supporting_info": [
+        "Refer to High Conservation Value Resource Network for definition of High Conservation Value Area. Available at https://hcvnetwork.org/",
+        "All endangered and critically endangered species as defined by the IUCN Red List - www.IUCNredlist.org",
+        "Native tree species (Source: FSC) Species, subspecies, or lower taxon, occurring within its natural range (past or present) and dispersal potential that is, within the range it occupies naturally or could occupy without direct or indirect introduction or care by humans.",
+        "The variability among living organisms from all sources including, inter alia, terrestrial, marine and other aquatic ecosystems and the ecological complexes of which they are a part; this includes diversity within species, between species and of ecosystems. Source: FSC."
+      ],
+      "depends_on": "P2-SPR#0000"
+    },
+    {
+      "id": 14,
+      "description": "The Project Developer will maintain a buffer zone of 15 meters for water bodies on both sides of any permanent or temporary water bodies such as lakes, streams, rivers, wetlands, etc. Irrigation channels are excluded from this requirement. In these buffer zones: (a) All existing native trees shall be kept, AND (b) No fertilizer and pesticides shall be used, AND (c) No logging activities shall take place, AND (d) No heavy machinery shall be used, AND (e) No cropping is allowed, AND (f) In case trees are being planted, these need to be native tree species.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "P2-SPR#0000"
+    },
+    {
+      "id": 15,
+      "description": "Conduct the Stakeholder Consultation prior to the project start date. Use the Stakeholder Consultation Engagement Requirements Schema.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "Authorities Informed#0000"
+    },
+    {
+      "id": 16,
+      "description": "Preliminary Review, PDD or Performance Certification document adheres to the requirements outlined in the General Principles & Requirements Schema",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "Authorities Informed#0000"
+    },
+    {
+      "id": 17,
+      "description": "AR project",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "P4-Real Outcomes#0000"
+    },
+    {
+      "id": 18,
+      "description": "AGR project",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "P4-Real Outcomes#0000"
+    },
+    {
+      "id": 19,
+      "description": "The crediting period is a minimum of 30 years and maximum 50 years. The Project Developer has selected the crediting period based on the characteristics of the project. Verification is completed at least every 5 years until the end of the crediting period.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "supporting_info": [
+        "The crediting period starts either with the Project Start Date or three years prior to the date of Project Design Certification, whichever occurs later."
+      ],
+      "depends_on": "P4-AR#0000"
+    },
+    {
+      "id": 20,
+      "description": "The crediting period is a fixed 10-year period unless otherwise stated in applicable Impact Quantification Methodology. The first Verification is completed either within two years of project start date or Project Design Certification, whichever is later.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "supporting_info": [
+        "The crediting period starts either with the Project Start Date or three years prior to the date of Project Design Certification, whichever occurs later."
+      ],
+      "depends_on": "P4-AGR#0000"
+    },
+    {
+      "id": 21,
+      "description": "Verification & Issuance review (Performance Certification): The performance review is planned to take place either alongside or after Project Design Certification and occurs at least once during the 5-year Certification cycle.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "supporting_info": [
+        " According to the Principles & Requirements, the project continues to seek Crediting Period Renewal every 5th year. At the time of project renewal, The A/R and AGR projects has updated the baseline following the applied Impact Quantification Methodology requirements schema."
+      ],
+      "depends_on": "P4-Crediting Period#0000"
+    },
+    {
+      "id": 22,
+      "description": "The project demonstrates additionality as per the Principles & Requirements Schema, or GHG Emissions Reduction and Sequestration Product Requirements Schema, as applicable.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "Authorities Informed#0000"
+    },
+    {
+      "id": 23,
+      "description": "AR project",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "P5-Additionality#0000"
+    },
+    {
+      "id": 24,
+      "description": "AGR project",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "P5-Additionality#0000"
+    },
+    {
+      "id": 25,
+      "description": "Apply the latest version of the A/R CDM 'Combined tool to identify the baseline scenario and demonstrate additionality in A/R CDM project activities' https://cdm.unfccc.int/methodologies/ARmethodologies/tools/ar-am-tool-02-v1.pdf/history_view",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "supporting_info": [
+        " The 'Guideline on the assessment of investment analysis' and the 'Guidelines for objective demonstration and assessment of barriers' can be used. https://cdm.unfccc.int/Reference/Guidclarif/index.html"
+      ],
+      "depends_on": "P5-AR#0000"
+    },
+    {
+      "id": 26,
+      "description": "Project meets requirements (a), (b) and (c) in the list below and at least one of the requirements from (d) to (g) to apply option 2. (a) The project is located in a Least Developed Country (LDCs) or in a region with a recent UNDP Human Development Indicator below 0.8. AND (b) The project shall have no intention of creating a forest for the commercial use of the timber or non- timber forest products. AND (c) The project activities shall not be mandatory by any law or regulation, OR if it is mandatory, it shall demonstrate that these laws or regulations are systematically not enforced. AND (d) The project is located in a region with a mean annual precipitation of less than 600 mm. OR (e) The soil pH of the planting area is less than 4.0. OR (f) The planting area is planted with minimum 5 different native tree species in mixed stands, covering at a minimum 50% of the planting area. OR (g) The project area is located in a country or region with a recent UNDP Human Development Indicator12 below 0.5, OR in a Small Island Developing State (SIDS) https://sustainabledevelopment.un.org/topics/sids/list",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "supporting_info": [
+        "UNDP Human Development Indicator: http://hdr.undp.org/en/data/profiles/"
+      ],
+      "depends_on": "P5-AR#0000"
+    },
+    {
+      "id": 27,
+      "description": "Apply the latest version of CDM 'Guidelines for the establishment of sector specific standardized baselines', https://cdm.unfccc.int/Reference/Guidclarif/index.html or 'Combined tool to identify the baseline scenario and demonstrate additionality' https://cdm.unfccc.int/methodologies/ARmethodologies/tools/ar-am-tool-02-v1.pdf/history_view. The 'Guideline on the assessment of investment analysis' and the 'Guidelines for objective demonstration and assessment of barriers' can be used. https://cdm.unfccc.int/Reference/Guidclarif/index.html",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "P5-AGR#0000"
+    },
+    {
+      "id": 28,
+      "description": "Project meets requirements (a) and (b) in the list below and at least one of the requirements from (c) to (f). (a) The project area is located in a country or in a region with the latest UNDP Human Development Indicator below or equal to 0.7. AND (b) The project activities shall not be mandatory by any law or regulation, OR if they are mandatory, the Project Developer shall demonstrate that these laws or regulations are systematically not enforced. AND (c) The mean annual precipitation in the project area is less than 600 mm. OR (d) In the project area a minimum of 5 native crop species are being cultivated in a locally adapted agroforestry system. OR (e) The project is a smallholder project and results in Gold Standard VERs of less than 60,000 tCO2eq per annum. OR (f) The project area is located in a country or region with a recent UNDP Human Development Indicator below 0.5, OR In a Small Island Developing State (SIDS). https://sustainabledevelopment.un.org/topics/sids/list",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "supporting_info": [
+        "A locally adapted agroforestry system refers to land-use systems and practices where trees are deliberately integrated with crops and/or livestock on the same land management unit adapted to the local geophysical and social conditions."
+      ],
+      "depends_on": "P5-AGR#0000"
+    },
+    {
+      "id": 29,
+      "description": "Activity Penetration",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "supporting_info": [
+        "An AGR project can only use this option if the project is applying the GHG Emissions Reductions & Sequestration Product Requirements Schema and annual GHGs reductions are less than 60,000 tCO2eq. The project is deemed additional when the project activity is adopted by less than 5% of farmers in the Reference Area. The 'Number of farmers adopting the project activity' represents the farmers participating in the project. Reference Area: an area with similar climatic and social conditions as defined by the Köppen-classification http://en.wikipedia.org/wiki/Köppen_climate_classification"
+      ],
+      "depends_on": "P5-AGR#0000"
+    },
+    {
+      "id": 33,
+      "description": "General description and overview of project activities provided.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode"
+    },
+    {
+      "id": 34,
+      "description": "All organizations that are involved in the project are listed (project participants)",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode"
+    },
+    {
+      "id": 35,
+      "description": "All communities and stakeholders involved in the project are listed.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode"
+    },
+    {
+      "id": 36,
+      "description": "Timeframe for the project activities are provided.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode"
+    },
+    {
+      "id": 37,
+      "description": "Number of predicted credits sought listed.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode"
+    },
+    {
+      "id": 38,
+      "description": "Land-Use history and currect situation of the project area is described.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode"
+    },
+    {
+      "id": 39,
+      "description": "Socio-economic history and the current situation provided.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode"
+    },
+    {
+      "id": 40,
+      "description": "Main social impacts (risks and benefits) provided.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode"
+    },
+    {
+      "id": 41,
+      "description": "Main environmental impacts (risks and benefits) provided.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode"
+    },
+    {
+      "id": 42,
+      "description": "Financial structure provided.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode"
+    },
+    {
+      "id": 43,
+      "description": "AR project",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode"
+    },
+    {
+      "id": 44,
+      "description": "AGR project",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode"
+    },
+    {
+      "id": 45,
+      "description": "Location of the project area and the planting area provided (as applicable).",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "PR-AR#0000"
+    },
+    {
+      "id": 46,
+      "description": "Size of the project area and the eligible planting area provided (as applicable).",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "PR-AR#0000"
+    },
+    {
+      "id": 47,
+      "description": "Number of Modelling Units and size of each one provided.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "PR-AR#0000"
+    },
+    {
+      "id": 48,
+      "description": "Forest managment applied is listed (10 years in the past until end project date).",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "PR-AR#0000"
+    },
+    {
+      "id": 49,
+      "description": "Forest characteristics (including main tree species planted).",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "PR-AR#0000"
+    },
+    {
+      "id": 50,
+      "description": "Information on distribution of revenues (between the Project Developer and the smallholders) provided, if applicable.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "PR-AGR#0000"
+    },
+    {
+      "id": 51,
+      "description": "GIS Spatial Land Assessment Carried out.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "Authorities Informed#0000"
+    },
+    {
+      "id": 54,
+      "description": "Project Region outlined.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "GIS Performed#0000"
+    },
+    {
+      "id": 55,
+      "description": "Project Area outlined.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "GIS Performed#0000"
+    },
+    {
+      "id": 56,
+      "description": "Eligible areas outlined.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "GIS Performed#0000"
+    },
+    {
+      "id": 57,
+      "description": "Individual modelling units outlined.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "GIS Performed#0000"
+    },
+    {
+      "id": 58,
+      "description": "Infrastructure (road, houses, etc.) outlined.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "GIS Performed#0000"
+    },
+    {
+      "id": 59,
+      "description": "Water bodies outlined.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "GIS Performed#0000"
+    },
+    {
+      "id": 60,
+      "description": "Protected areas outlined.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "GIS Performed#0000"
+    },
+    {
+      "id": 61,
+      "description": "Biodiversity areas outlined.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "GIS Performed#0000"
+    },
+    {
+      "id": 62,
+      "description": "Where affected peoples are outlined.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "GIS Performed#0000"
+    },
+    {
+      "id": 64,
+      "description": "Submit Preliminary Review.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "PR-Requirements Completed#0000"
+    },
+    {
+      "id": 65,
+      "description": "Sites with special cultural, ecological, economic, religious or spiritual significance",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "GIS Performed#0000"
+    },
+    {
+      "id": 66,
+      "description": "Sites with special significance for indigenous people and local communities - resulting from the Local Stakeholder Consultation (LSC)",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "GIS Performed#0000"
+    },
+    {
+      "id": 67,
+      "description": "Where indigenous people and local communities are situated",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "GIS Performed#0000"
+    },
+    {
+      "id": 68,
+      "description": "Where indigenous people and local communities have legal rights, customary rights or sites with special cultural, ecological, economic, religious or spiritual significance.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "GIS Performed#0000"
+    },
+    {
+      "id": 69,
+      "description": "Submit PDD.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "PDD-Requirements Completed#0000"
+    },
+    {
+      "id": 70,
+      "description": "PDD Approved.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "PDD Submitted#0000"
+    }
+  ],
+  "checkpoints": [
+    {
+      "alias": "Eligible#0000",
+      "description": "The project is eligible.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 0,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Recent Forest#0000",
+      "description": "The project is located in a region which was recently a forest.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 1,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "No Recent Forest#0000",
+      "description": "The project is located in a region which was not recently a forest.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 1,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": false
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Cap and Trade Country#0000",
+      "description": "The project is located in a country with a cap and trade system.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 3,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Eligibility Confirmed#0000",
+      "description": "The project eligibility has been confirmed.",
+      "gate_type": "OR",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 2,
+            "field_name": "eligible",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 3,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": false
+          }
+        },
+        {
+          "node": {
+            "action_id": 4,
+            "field_name": "eligible",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Rights Or Endorsement#0000",
+      "description": "The project developer has CO2 ownership rights or endorsement from owners.",
+      "gate_type": "OR",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 5,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 6,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Developer Does Not Own Rights#0000",
+      "description": "The project developer does not own the CO2 rights.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 5,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Contact Info Provided#0000",
+      "description": "Contact information provided by all project participants.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 7,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Authorities Informed#0000",
+      "description": "The relevant authorities have been informed about the project and communication channels.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 8,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "AGR#0000",
+      "description": "The project is an Agriculture project.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 9,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "P1-Completed#0000",
+      "description": "Principle 1: Contribution to climate security in sustainable development - Completed",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 10,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "P2-R&C#0000",
+      "description": "Risks and Capacities Assessment - Completed",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 11,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "P2-SPR#0000",
+      "description": "Safeguarding Principles and Requirements - Completed",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 12,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "P2-Completed#0000",
+      "description": "Principle 2: Safeguarding and Risks Principles - Completed",
+      "gate_type": "AND",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 13,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 14,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "checkpoint": "P2-R&C#0000"
+        }
+      ]
+    },
+    {
+      "alias": "P3-Completed#0000",
+      "description": "Principle 3: Stakeholder Inclusivity - Completed",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 15,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "P4-Real Outcomes#0000",
+      "description": "Principle 4: Demonstration of Real Outcomes",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 16,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "P4-AR#0000",
+      "description": "Afforestation Reforestation project in P4 path.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 17,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "P4-AGR#0000",
+      "description": "Agricultural project in P4 path.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 18,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "P4-Crediting Period#0000",
+      "description": "Crediting Period - Confirmed",
+      "gate_type": "AND",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 19,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 20,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "P4-Completed#0000",
+      "description": "Principle 4: Real Outcomes - Completed",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 21,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "P5-Additionality#0000",
+      "description": "Additionality start checkpoint.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 22,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "P5-AR#0000",
+      "description": "Afforestation Reforestation project in P5 path.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 23,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "P5-AGR#0000",
+      "description": "Agricultural project in P5 path.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 24,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "P5-AR Additionality Proved#0000",
+      "description": "Additionality has been proved for an AR project in P5 path.",
+      "gate_type": "OR",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 25,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 26,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "P5-AGR Additionality Proved#0000",
+      "description": "Additionality has been proved for an AGR project in P5 path.",
+      "gate_type": "OR",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 27,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 28,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 29,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "P5-Additionality Proved#0000",
+      "description": "Principle 5: Additionality - Completed",
+      "gate_type": "OR",
+      "dependencies": [
+        {
+          "checkpoint": "P5-AR Additionality Proved#0000"
+        },
+        {
+          "checkpoint": "P5-AGR Additionality Proved#0000"
+        }
+      ]
+    },
+    {
+      "alias": "PR-AR#0000",
+      "description": "Preliminary Review - Afforestation or Reforestation project.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 43,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "PR-AGR#0000",
+      "description": "Preliminary Review - Agriculture project.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 44,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "PR-AR Requirements Completed#0000",
+      "description": "Preliminary Review - AR requirements completed.",
+      "gate_type": "AND",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 45,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 46,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 47,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 48,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 49,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "PR-AGR Requirements Completed#0000",
+      "description": "Preliminary Review - AGR requirements completed.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 50,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "PR-Project Specific Requirements Completed#0000",
+      "description": "Preliminary Review - Project Specific requirements completed.",
+      "gate_type": "OR",
+      "dependencies": [
+        {
+          "checkpoint": "PR-AGR Requirements Completed#0000"
+        },
+        {
+          "checkpoint": "PR-AR Requirements Completed#0000"
+        }
+      ]
+    },
+    {
+      "alias": "PR-GIS Requirements Completed#0000",
+      "description": "Preliminary Review - All GIS requirements provided.",
+      "supporting_info": [
+        "AGR Project requirements for smallholder projects use the following guidance to provide GIS information; (b) Project region: A map with a polygon reflecting the boundaries (c) Project areas: A map with one GPS point per project participant and each project participant shall have a hand- drawn map of its part of the project area (d) Protected areas: A map with national parks (as by Google Maps) and UNESCO sites (as by http://whc.unesco.org/en/interactive- map/) (e) Biodiversity areas: A map with a polygon reflecting the boundaries (f) Infrastructure and permanent water bodies: As by Google Maps (g) Location of affected people: One GPS point per person, group of persons or community with a caption that describes the effect (h) Sites with special cultural, ecological, economic, religious or spiritual significance: One GPS point per site with a caption that describes the significance and effect"
+      ],
+      "gate_type": "AND",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 54,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 55,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 56,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 57,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 58,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 59,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 60,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 61,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 62,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "PR-Requirements Completed#0000",
+      "description": "Preliminary Review - All requirements completed.",
+      "gate_type": "AND",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 11,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 13,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 14,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 33,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 34,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 35,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 36,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 37,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 38,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 39,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 40,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 41,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 42,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "checkpoint": "PR-Project Specific Requirements Completed#0000"
+        },
+        {
+          "checkpoint": "PR-GIS Requirements Completed#0000"
+        }
+      ]
+    },
+    {
+      "alias": "PDD-GIS Requirements Completed#0000",
+      "description": "PDD - GIS requirements completed.",
+      "gate_type": "AND",
+      "supporting_info": [
+        "AGR Project requirements for smallholder projects use the following guidance to provide GIS information; (b) Project region: A map with a polygon reflecting the boundaries (c) Project areas: A map with one GPS point per project participant and each project participant shall have a hand- drawn map of its part of the project area (d) Protected areas: A map with national parks (as by Google Maps) and UNESCO sites (as by http://whc.unesco.org/en/interactive- map/) (e) Biodiversity areas: A map with a polygon reflecting the boundaries (f) Infrastructure and permanent water bodies: As by Google Maps (g) Location of affected people: One GPS point per person, group of persons or community with a caption that describes the effect (h) Sites with special cultural, ecological, economic, religious or spiritual significance: One GPS point per site with a caption that describes the significance and effect"
+      ],
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 65,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 66,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 67,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 68,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "PR-Approved#0000",
+      "description": "Preliminary Review has been approved by VVB.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 64,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "PDD-Requirements Completed#0000",
+      "description": "PDD - All requirements completed.",
+      "gate_type": "AND",
+      "dependencies": [
+        { "checkpoint": "P5-Additionality Proved#0000" },
+        { "checkpoint": "PR-Approved#0000" },
+        { "checkpoint": "PDD-GIS Requirements Completed#0000" },
+        {
+          "node": {
+            "action_id": 10,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 15,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 21,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 28,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "PDD Submitted#0000",
+      "description": "Project Design Document is complete and Submitted to VVB for review.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 69,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "GIS Performed#0000",
+      "description": "GIS vector layers have been produced for the project area.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 51,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    }
+  ]
+}

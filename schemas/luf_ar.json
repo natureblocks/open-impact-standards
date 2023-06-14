@@ -16,7 +16,7 @@
       "description": "Wetlands are lands that are transitional between terrestrial and aquatic systems where the water table is usually at or near the surface or the land is covered by shallow water, and that have one or more of these listed attributes.",
       "attributes": [
         "At least periodically, the land supports predominantly hydrophytes.",
-        "The substrate is predominantly undrained hydric soil",
+        "The substrate is predominantly undrained hydric soil.",
         "The substrate is non-soil and is saturated with water or covered by shallow water at some time during the growing season of each year."
       ]
     },
@@ -137,28 +137,8 @@
   ],
   "parties": [
     {
-      "name": "Land Representative",
-      "hex_code": "#fdeeb7"
-    },
-    {
-      "name": "Project",
-      "hex_code": "#dfb7e6"
-    },
-    {
       "name": "Project Developer",
       "hex_code": "#c0e1fa"
-    },
-    {
-      "name": "Financiers / Bankers / Investors",
-      "hex_code": "#b7f0f2"
-    },
-    {
-      "name": "Government Representatives",
-      "hex_code": "#c6c9e8"
-    },
-    {
-      "name": "Carbon Auditor",
-      "hex_code": "#fffcc7"
     },
     {
       "name": "Methodology",
@@ -166,9 +146,6 @@
     }
   ],
   "nodes": {
-    "BooleanNode": {
-      "completed": { "field_type": "BOOLEAN" }
-    },
     "DateNode": {
       "completed": { "field_type": "BOOLEAN" },
       "date": { "field_type": "STRING" }
@@ -177,11 +154,8 @@
       "completed": { "field_type": "BOOLEAN" },
       "comment": { "field_type": "STRING" }
     },
-    "SpatialAssessmentOfLandNode": {
-      "completed": { "field_type": "BOOLEAN" },
-      "eligible": { "field_type": "BOOLEAN" },
-      "land_area": { "field_type": "NUMERIC" },
-      "land_area_unit": { "field_type": "STRING" }
+    "SilviculturalMethodNode": {
+      "silvicultural_method": { "field_type": "STRING" }
     }
   },
   "actions": [
@@ -192,574 +166,94 @@
       "tag": "DateNode"
     },
     {
-      "id": 1,
-      "description": "Project has been conceptualized.",
-      "applies_to": "Project",
-      "tag": "BooleanNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 0,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 2,
-      "description": "Carry out spatial assessment of land to assess eligibility of areas according to our: <a href='#'> Land-use & Forest General Requirements </a>.",
-      "applies_to": "Project Developer",
-      "tag": "SpatialAssessmentOfLandNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 1,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 3,
-      "description": "Project includes the planting of trees on land that does not meet the definition of forest.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 2,
-            "field_name": "eligible",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true,
-            "description": "The project developer has completed the spatial assessment of land and deemed it eligible to apply for this methodology."
-          }
-        ]
-      }
-    },
-    {
       "id": 4,
       "description": "Project is not a mangrove project.",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 3,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "depends_on": "Into force#0000"
     },
     {
       "id": 5,
       "description": "Is the project on a wetland?",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 4,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": false
-          }
-        ]
-      }
+      "depends_on": "Not a mangrove project#0000"
     },
     {
       "id": 6,
       "description": "Will project areas with organic soils be drained or irrigated (except for irrigation for planting)?",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 4,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "depends_on": "Not a mangrove project#0000"
     },
     {
       "id": 7,
       "description": "Will there be soil disturbance (through ploughing, digging of pits, stump removals, infrastructure, etc.) on organic soils exceeding more than 10% of the area that is submitted to certification (not 10% of the entire project area)?",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 4,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "depends_on": "Not a mangrove project#0000"
     },
     {
       "id": 8,
       "description": "Is the most likely scenario without the project (baseline scenario) defined and shows no significant increase of the baseline biomass ('tree' and 'non-tree')?",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 4,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 9,
-      "description": "Project meets all non-mangrove requirements.",
-      "applies_to": "Land Representative",
-      "tag": "BooleanNode",
-      "supporting_info": [
-        "Project can apply all silvicultural systems: Conservation forests (no use of timber), Forests with selective harvesting, and Rotation forestry.",
-        "All projects can include agriculture (agroforestry) or pasture (silvopasture) activites."
-      ],
-      "depends_on": {
-        "alias": "Non-mangrove requirements met#0000",
-        "gate_type": "AND",
-        "dependencies": [
-          {
-            "action_id": 5,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 6,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": false
-          },
-          {
-            "action_id": 7,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": false
-          },
-          {
-            "action_id": 8,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 10,
-      "description": "Mangrove Project.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 4,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "depends_on": "Not a mangrove project#0000"
     },
     {
       "id": 11,
       "description": "Is 90% or more of the planting area going to be planted with mangrove species?",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 10,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 12,
-      "description": "Project meets all mangrove requirements.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "supporting_info": [
-        "Due to the accumulation of soil organic carbon, an additional 1.8 tCO2/ha/year can be accounted for in the first 20 years after a Modelling Unit is planted, unless transparent and verifiable information can be provided to justify a different value. This value is based on the recommendation of 0.5 tC/ha/year by the A/R CDM methodoology  AR-AM0014  v.30. It has been converted to the unit tCO2/ha/year.",
-        "In case there are targeted managment / inputs leading to SOC improvement involved, applicable SOC Framework Methodology approaches may be allowed.",
-        "Support Info - SOC sequestration component will be excluded from the issuance of Planned Emission Reductions"
-      ],
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 11,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 13,
-      "description": "Project meets all requirements for this methodology to be applicable for the calculation of CO2 removal units from the project.",
-      "applies_to": "Land Representative",
-      "tag": "BooleanNode",
-      "depends_on": {
-        "alias": "Preliminary Requirements Met#0000",
-        "gate_type": "OR",
-        "dependencies": [
-          {
-            "action_id": 12,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 9,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 19,
-      "description": "Project Design can begin.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 13,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "depends_on": "Mangrove project#0000"
     },
     {
       "id": 20,
-      "description": "Determine the modelling units.",
+      "description": "Identify the modelling units.",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 19,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 21,
-      "description": "Each modelling unit area has homogeneous charcteristics in growth patterns, silvicultural treatment and planting date.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 20,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 22,
-      "description": "Modelling units determined.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 21,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "depends_on": "Preliminary requirements met#0000"
     },
     {
       "id": 23,
-      "description": "Forest Inventory has been completed.",
+      "description": "Complete forest inventories for each modelling unit.",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 19,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 24,
-      "description": "The process of a forest inventory is documented clearly and can be easily replicated.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 23,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 25,
-      "description": "The forest inventories follow the guidelines located in the <a href='https://winrock.org/wp-content/uploads/2016/03/Winrock-BioCarbon_Fund_Sourcebook-compressed.pdf' target='_blank'>BioCarbon Fund sourcebook</a>.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 23,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "depends_on": "Modelling units identified#0000"
     },
     {
       "id": 26,
-      "description": "The number of sample plots of a forest inventory shall be sufficient to meet a MU precision with a maximum error of ±20% at a 90% confidence interval. Where the error is above 20%, the additional difference shall be deducted. For example. A forest inventory determined the mean 'Stem volume' of a MU at 100 m3/ha with an error of 23%. The error is 3% higher than required: 3% * 100 m3/ha = 3 m3/ha. The mean 'Stem volume' which can be accounted for is: 100 - 3 = 97 m3/ha.",
+      "description": "The number of sample plots of a forest inventory is sufficient to meet a MU precision with a maximum error of ±20% at a 90% confidence interval. ",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "alias": "Forest Inventory MU Aligned#0000",
-        "gate_type": "AND",
-        "dependencies": [
-          {
-            "action_id": 22,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 23,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 27,
-      "description": "Growth models of the MU confirmed by the results of MU specific forest inventories.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "alias": "Growth models confirmed#0000",
-        "gate_type": "AND",
-        "dependencies": [
-          {
-            "action_id": 25,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 24,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 26,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 28,
-      "description": "Carbon pool calculation can begin.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 27,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      },
       "supporting_info": [
-        "Positive leakage and market leakage are not accounted for under this methodology.",
-        "Harvested wood (timber & energy wood) as well as litter & lying deadwood are excluded.",
-        "More default values for 'tree biomass' are in the <a href='https://www.ipccnggip.iges.or.jp/public/2019rf/pdf/4_Volume4/19R_V4_Ch04_Forest%20Land.pdf' target='_blank'> IPCC Guidelines for National GHG Inventories</a>",
-        "More default values for 'non-tree biomass' are in the <a href='https://www.ipccnggip.iges.or.jp/public/2019rf/pdf/4_Volume4/19R_V4_Ch06_Grassland.pdf' target='_blank'> IPCC Guidelines for National GHG Inventories</a>",
-        "If preferred, project develoFutures may also select the more precise IPCC defaults when available in place of the provided defaults for factors relating to tree and non- tree biomass with no justification required."
-      ]
-    },
-    {
-      "id": 34,
-      "description": "Selection and justification of The Baseline scenario can begin.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 28,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 35,
-      "description": "Baseline determination starting point.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 34,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+        "Where the error is above 20%, the additional difference shall be deducted. For example. A forest inventory determined the mean 'Stem volume' of a MU at 100 m3/ha with an error of 23%. The error is 3% higher than required: 3% * 100 m3/ha = 3 m3/ha. The mean 'Stem volume' which can be accounted for is: 100 - 3 = 97 m3/ha."
+      ],
+      "depends_on": "Forest inventories completed#0000"
     },
     {
       "id": 36,
-      "description": "Eligible planting area has been stratified according to its vegetation types (grassland, shrubland, etc.).",
+      "description": "Stratify eligible planting area according to its vegetation types (grassland, shrubland, etc.).",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 35,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "depends_on": "MU growth models confirmed valid#0000"
     },
     {
       "id": 37,
-      "description": "For each of these strata, scientifically based project-specific, regional or national default values were found which state 'tree' and 'non-tree' biomass of these vegetation types.",
+      "description": "For each of these strata, find scientifically based project-specific, regional or national default values for 'tree' and 'non-tree' biomass of these vegetation types.",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 36,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      },
+      "depends_on": "MUs stratified#0000",
       "supporting_info": [
         "Default values from the IPCC shall only be used if no other values are available."
       ]
-    },
-    {
-      "id": 39,
-      "description": "Baseline calculations can begin.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 37,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
     },
     {
       "id": 40,
       "description": "Calculate tree biomass for each strata.",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 39,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      },
+      "depends_on": "Baseline default values determined#0000",
       "supporting_info": [
         "The BEF can be age-dependent and thus change over time.",
         "In cases where a Biomass Conversion and Expansion Factor (BCEF) is used, the factors BEF and Wood Density are both integrated.",
@@ -772,17 +266,7 @@
       "description": "Calculate above ground biomass.",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 40,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      },
+      "depends_on": "Baseline tree biomass determined#0000",
       "supporting_info": [
         "C to CO2 default value is 44/12.",
         "Carbon Fraction default value is 0.5.",
@@ -797,285 +281,49 @@
       "supporting_info": [
         "Above Ground Biomass [tCO2e] x Root to Shoot Ratio [] = Below Ground Biomass [tCO2e]"
       ],
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 40,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "depends_on": "Baseline tree biomass determined#0000"
     },
     {
       "id": 48,
       "description": "Calculate non-tree biomass for each strata. Non-tree biomass [tdm] x Carbon Fraction [tC/tdm] * C to CO2 Factor [tCO2/tC] = Non-tree biomass [tCO2e] ",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 39,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "depends_on": "Baseline default values determined#0000"
     },
     {
       "id": 49,
       "description": "Calculate soil organic carbon for each strata. (Optional) ",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 39,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      },
+      "depends_on": "Baseline default values determined#0000",
       "supporting_info": [
         "Projects complying with this methodology's requirements may use the Yardstick integration Tool in order to account for SOC. The tool assists you in measuring the change in soil organic carbon stocks due to the planting of forests and applies to soils on planting areas only. Once a project has undergone a successful design certification, credits calculated using this tool may be issued following a successful performance certification. Projects shall not issue Futures resulting from this calculation tool."
       ]
     },
     {
-      "id": 51,
-      "description": "Confirmed that a conservative approach was followed when performing calculations.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "supporting_info": [
-        "The CO2 removal was not exaggerated. The Baseline and Leakage were not underestimated."
-      ],
-      "depends_on": {
-        "alias": "Conservative Approach followed#0000",
-        "gate_type": "AND",
-        "dependencies": [
-          {
-            "action_id": 47,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 44,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 48,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 49,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 52,
-      "description": "Biomass calculation completed. ",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 51,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
       "id": 53,
-      "description": "Determine the Baseline for each Modelling Unit (MU) level",
+      "description": "Determine the Baseline for each Modelling Unit.",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
       "supporting_info": [
-        "Use the following formula: Baseline MU,t [tCO2/ha] = Baseline Eligible planting area [tCO2] ÷ Eligible planting area [ha]"
+        "Use the following formula: Baseline MU,t [tCO2/ha] = Baseline Eligible planting area [tCO2] ÷ Eligible planting area [ha]",
+        "Eligible planting area is tree biomass, non-tree biomass and soil organic carbon."
       ],
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 52,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 54,
-      "description": "Baseline has been determined and was not underestimated.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 53,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      },
-      "supporting_info": [
-        "The Baseline is not subject to monitoring or reassessment at the time of renewal of the credit period."
-      ]
-    },
-    {
-      "id": 56,
-      "description": "Was The Baseline determined in the eligible planting area just prior to the start date of the project? (within 90 days)",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 54,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 57,
-      "description": "The baseline document is completed and ready for submission.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 56,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "depends_on": "Conservative approach followed#0000"
     },
     {
       "id": 58,
-      "description": "Determined the silivicultural method for each Modelling Unit.",
+      "description": "Determine the silivicultural method for each Modelling Unit.",
       "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 28,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 59,
-      "description": "If the silvicultural method is 'rotation forestry', the long- term CO2 removal is the average 'tree biomass' of a MU during the planting start and the end of the crediting period.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 58,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 60,
-      "description": "If the silvicultural method is selective harvesting or conservation forest, the long-term CO2 removal is determined by the 'tree biomass' when a MU reaches its equilibrium.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 58,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      },
-      "supporting_info": [
-        "If the 'tree biomass' is still increasing at the end of the crediting period, the long-term CO2 removal is determined by the 'tree biomass' of a MU in the year the crediting period ends."
-      ]
-    },
-    {
-      "id": 62,
-      "description": "CO2-removal calculation start",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "alias": "CO2 removal calculation start",
-        "gate_type": "OR",
-        "dependencies": [
-          {
-            "action_id": 59,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 60,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "tag": "SilviculturalMethodNode",
+      "depends_on": "MU growth models confirmed valid#0000"
     },
     {
       "id": 63,
       "description": "Calculate tree biomass for each MU. ",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 62,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      },
+      "depends_on": "Silvicultural method determined#0000",
       "supporting_info": [
         "Where stem volume is predicted/measured at the end of the crediting period.",
         "The following default factors shall be used when no rigorous scientific information is available: a. For the parameters of CO2 removal: i. 0.3 [tdm/m3] Wood density ii. 1.1 [ ] BEF iii. 0.2 [ ] Root-to-Shoot ratio for 'tree biomass'"
@@ -1089,17 +337,7 @@
       "supporting_info": [
         "Biomass Expansion Factor [] x Stem Volume [m^3] x Wood Density [tdm/m^3] * Carbon Fraction [tC/tdm] * C to CO2 Factor [tCO2/tC] = Above Ground Biomass [tCO2e] "
       ],
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 63,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "depends_on": "CO2 removal tree biomass determined#0000"
     },
     {
       "id": 66,
@@ -1109,119 +347,56 @@
       "supporting_info": [
         "Above Ground Biomass [tCO2e] x Root to Shoot Ratio [] = Below Ground Biomass [tCO2e]"
       ],
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 63,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "depends_on": "CO2 removal tree biomass determined#0000"
+    },
+    {
+      "id": 67,
+      "description": "Calculate soil organic carbon for each MU. (Optional) ",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "supporting_info": [
+        "Projects complying with this methodology's requirements may use the Yardstick integration Tool in order to account for SOC. The tool assists you in measuring the change in soil organic carbon stocks due to the planting of forests and applies to soils on planting areas only. Once a project has undergone a successful design certification, credits calculated using this tool may be issued following a successful performance certification. Projects shall not issue Futures resulting from this calculation tool."
+      ],
+      "depends_on": "Silvicultural method determined#0000"
     },
     {
       "id": 68,
       "description": "Calculate CO2 removal of a MU / year.",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "alias": "CO2 removal MU#0000",
-        "gate_type": "AND",
-        "dependencies": [
-          {
-            "action_id": 65,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 66,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 78,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "supporting_info": [
+        "Sum of tree biomass, non-tree biomass and soil organic carbon."
+      ],
+      "depends_on": "CO2 removal subcomponents determined#0000"
     },
     {
       "id": 69,
       "description": "Calculate long-term CO2 removal units ",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "supporting_info": "Sum: T=1 -> T CRMU,long_term = (∑T CR MU,t) / T",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 68,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "supporting_info": ["Sum: T=1 -> T CRMU,long_term = (∑T CR MU,t) / T"],
+      "depends_on": "CO2 removal determined#0000"
     },
     {
       "id": 70,
       "description": "The yearly CO2 removal is determined at the level of MU during the crediting period.",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 69,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "depends_on": "CO2 removal long term determined#0000"
     },
     {
       "id": 71,
       "description": "For every MU a growth-model and conversion factors have been determined using the standardized procedure.",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 69,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "depends_on": "CO2 removal yearly determined#0000"
     },
     {
       "id": 72,
       "description": "The conversion factors allow the conversion of the 'Stem volume'.",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 69,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      },
+      "depends_on": "CO2 removal all conversion factors determined#0000",
       "supporting_info": [
         "The conversion factors are not subject to monitoring.",
         "Normally measured in cubic meters [m3] during the forest inventories, to 'tree biomass' with the unit tCO2. For the conversion, the standardized procedure was used."
@@ -1232,686 +407,917 @@
       "description": "Is existing 'tree biomass' from the carbon stock of The Baseline that is not removed is reflected in the growth model?",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 69,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "depends_on": "CO2 removal long term determined#0000"
     },
     {
       "id": 75,
       "description": "Is a realistic survival rate is reflected in the growth models?",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 69,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "depends_on": "CO2 removal long term determined#0000"
     },
     {
       "id": 76,
-      "description": "Was the long term CO2 removal was determined based on the silvicultural method applied / envisioned?",
+      "description": "Was the long term CO2 removal determined based on the silvicultural method applied / envisioned?",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 69,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 77,
-      "description": "CO2 Removal document completed.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "alias": "CO2 Removal document completed#0000",
-        "gate_type": "AND",
-        "dependencies": [
-          {
-            "action_id": 76,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 75,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 74,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 72,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 71,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 70,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 78,
-      "description": "Calculate soil organic carbon for each MU. (Optional) ",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 62,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      },
-      "supporting_info": [
-        "Projects complying with this methodology's requirements may use the Yardstick integration Tool in order to account for SOC. The tool assists you in measuring the change in soil organic carbon stocks due to the planting of forests and applies to soils on planting areas only. Once a project has undergone a successful design certification, credits calculated using this tool may be issued following a successful performance certification. Projects shall not issue Futures resulting from this calculation tool."
-      ]
-    },
-    {
-      "id": 80,
-      "description": "Other Emissions calculations start. ",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 28,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      },
-      "supporting_info": [
-        "Combustion of fossil fuel - CO2 and Non-CO2 green-house-gas emissions caused by the use of fossil fuel from project activities (flights, management operations, etc.) are insignificant and may therefore be neglected.",
-        "N-fixing trees, CO2 and Non-CO2 green-house-gas emissions caused by the use of N-fixing species may be conservatively assumed to be zero."
-      ]
+      "depends_on": "CO2 removal long term determined#0000"
     },
     {
       "id": 83,
       "description": "Calculate - Site preparation - Where existing 'tree' and 'non-tree' biomass of the Baseline is burned for the purpose of land preparation, an additional 10% of the Baseline has been deducted. ",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "supporting_info": "This is to account for N2O and CH4 emissions that are released during the burning process. Based on project specific data, a lower percentage may be applied when justified based on relevant literature and other sources.",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 80,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "supporting_info": [
+        "This is to account for N2O and CH4 emissions that are released during the burning process. Based on project specific data, a lower percentage may be applied when justified based on relevant literature and other sources."
+      ],
+      "depends_on": "MU growth models confirmed valid#0000"
     },
     {
       "id": 84,
       "description": "Calculate - Fertiliser - 0.005 tCO2 per kg of nitrogen (N) fertiliser has been deducted.",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "supporting_info": " No differentiation is made between synthetic and organic fertiliser. Based on project specific data, a lower value may be applied when justified based on relevant literature and other sources.",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 80,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 85,
-      "description": "Other Emissions document completed.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "alias": "Other Emissions document completed#0000",
-        "gate_type": "AND",
-        "dependencies": [
-          {
-            "action_id": 83,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 84,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "supporting_info": [
+        "No differentiation is made between synthetic and organic fertiliser. Based on project specific data, a lower value may be applied when justified based on relevant literature and other sources."
+      ],
+      "depends_on": "MU growth models confirmed valid#0000"
     },
     {
       "id": 86,
-      "description": "Leakage calculation start point.",
+      "description": "AR Project",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 28,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      },
+      "depends_on": "MU growth models confirmed valid#0000"
+    },
+    {
+      "id": 87,
+      "description": "AGR Project",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
+      "depends_on": "MU growth models confirmed valid#0000"
+    },
+    {
+      "id": 90,
+      "description": "Caculate CO2 stock for collection of wood (for firewood, charcoal, etc.), if applicable.",
+      "applies_to": "Project Developer",
+      "tag": "BooleanCommentNode",
       "supporting_info": [
         "The following default factors shall be used when no rigorous scientific information is available: 0.7 [tdm/m3] Wood density 3.5[]BEF 0.8 [ ] Root-to-Shoot ratio for 'tree biomass' 4.0[ ] Root-to-Shoot ratio for 'non-tree biomass'",
         "General leakage formula: Leakage MU,t [tCO2/ha] = Leakage Project area [tCO2] ÷ Eligible planting area [ha]",
         "Leakage is deducted in the first year (t=1). With the application of formulas, all potential Leakage caused by a project within its crediting period is accounted for in year 1. Thus, the parameter is not subject to monitoring."
-      ]
-    },
-    {
-      "id": 90,
-      "description": "Caculate CO2 stock for collection of wood (for firewood, charcoal, etc.).",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 86,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      ],
+      "depends_on": "MU growth models confirmed valid#0000"
     },
     {
       "id": 91,
-      "description": "Caculate CO2 stock for timber harvesting.",
+      "description": "Caculate CO2 stock for timber harvesting, if applicable.",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 86,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "supporting_info": [
+        "The following default factors shall be used when no rigorous scientific information is available: 0.7 [tdm/m3] Wood density 3.5[]BEF 0.8 [ ] Root-to-Shoot ratio for 'tree biomass' 4.0[ ] Root-to-Shoot ratio for 'non-tree biomass'",
+        "General leakage formula: Leakage MU,t [tCO2/ha] = Leakage Project area [tCO2] ÷ Eligible planting area [ha]",
+        "Leakage is deducted in the first year (t=1). With the application of formulas, all potential Leakage caused by a project within its crediting period is accounted for in year 1. Thus, the parameter is not subject to monitoring."
+      ],
+      "depends_on": "Leakage AR project#0000"
     },
     {
       "id": 92,
-      "description": "Caculate CO2 stock for agriculture (crop cultivation, shrimp cultivation, etc.)",
+      "description": "Caculate CO2 stock for agriculture (crop cultivation, shrimp cultivation, etc.), if applicable.",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 86,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "supporting_info": [
+        "The following default factors shall be used when no rigorous scientific information is available: 0.7 [tdm/m3] Wood density 3.5[]BEF 0.8 [ ] Root-to-Shoot ratio for 'tree biomass' 4.0[ ] Root-to-Shoot ratio for 'non-tree biomass'",
+        "General leakage formula: Leakage MU,t [tCO2/ha] = Leakage Project area [tCO2] ÷ Eligible planting area [ha]",
+        "Leakage is deducted in the first year (t=1). With the application of formulas, all potential Leakage caused by a project within its crediting period is accounted for in year 1. Thus, the parameter is not subject to monitoring."
+      ],
+      "depends_on": "Leakage AGR project#0000"
     },
     {
       "id": 93,
-      "description": "Determine % activity-shift using a credible etimation or representative survey.",
+      "description": "Determine % activity-shift for each using a credible estimation or representative survey.",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "alias": "Leakage Activity-shift#0000",
-        "gate_type": "OR",
-        "dependencies": [
-          {
-            "action_id": 90,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 91,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 92,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "depends_on": "Leakage co2 stocks#0000"
     },
     {
       "id": 94,
       "description": "Calculate leakage emissions.",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "supporting_info": ["Use the following formula: Leakage Project area [tCO2] = Area [ha] x % of activity-shift [%] x CO2-stock [tCO2/ha]"],
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 93,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "supporting_info": [
+        "Use the following formula: Leakage Project area [tCO2] = Area [ha] x % of activity-shift [%] x CO2-stock [tCO2/ha]"
+      ],
+      "depends_on": "Leakage activity-shift determined#0000"
     },
     {
       "id": 95,
-      "description": "Calculate Livestock CO2 stock [tCO2/ha], displaced heads [head], and grazing capacity [ha/head] using a credible estimation or representative survey.",
+      "description": "Calculate Livestock CO2 stock [tCO2/ha], displaced heads [head], and grazing capacity [ha/head] using a credible estimation or representative survey, if applicable.",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 86,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "depends_on": "Leakage AGR project#0000"
     },
     {
       "id": 96,
-      "description": "Calculate leakage emissions.",
+      "description": "Calculate leakage emissions for livestock.",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "supporting_info": ["Use the following formula: Leakage Project area [tCO2] = Displaced heads [head] x Grazing capacity [ha/head] x CO2- stock [tCO2/ha]"],
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 95,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 97,
-      "description": "Leakage document completed.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "alias": "Leakage Document#0000",
-        "gate_type": "AND",
-        "dependencies": [
-          {
-            "action_id": 94,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 96,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 98,
-      "description": "Carbon pool calculations completed",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "alias": "Carbon Pool Calculations Completed#0000",
-        "gate_type": "AND",
-        "dependencies": [
-          {
-            "action_id": 57,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 77,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 85,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 97,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 99,
-      "description": "Carbon performance document start.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 98,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "supporting_info": [
+        "Use the following formula: Leakage Project area [tCO2] = Displaced heads [head] x Grazing capacity [ha/head] x CO2- stock [tCO2/ha]"
+      ],
+      "depends_on": "Leakage livestock completed#0000"
     },
     {
       "id": 100,
       "description": "Document Shortfalls of the project.",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 99,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "depends_on": "Carbon pool documents completed#0000"
     },
     {
       "id": 101,
       "description": "Document how you propose to make the project compliant again, latest in 5 years.",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 99,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "depends_on": "Carbon pool documents completed#0000"
     },
     {
       "id": 102,
-      "description": "Carbon performance document completed.",
+      "description": "Complete applicability document",
       "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "alias": "Carbon performance document completed#0000",
-        "gate_type": "AND",
-        "dependencies": [
-          {
-            "action_id": 100,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 101,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "tag": "BooleanCommentNode"
     },
     {
       "id": 103,
-      "description": "Submit Carbon performance document.",
+      "description": "Documents Submitted.",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 102,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 104,
-      "description": "Submit Leakage document.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 97,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 105,
-      "description": "Submit CO2 Removal document.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 77,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 106,
-      "description": "Submit Other Emissions document.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 85,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 107,
-      "description": "Submit Baseline document.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
-            "action_id": 57,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
-    },
-    {
-      "id": 108,
-      "description": "Demonstrate additionality - the project developer shall demonstrate additionality as per the requirements defined in Land Use & Forests Activity Requirements (LINK).",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode"
-    },
-    {
-      "id": 109,
-      "description": "Applicability documents submitted.",
-      "applies_to": "Project Developer",
-      "tag": "BooleanCommentNode"
+      "depends_on": "Documents submitted#0000"
     },
     {
       "id": 110,
-      "description": "Project documents and proposal accepted/verified by natureblocks or Ecora.",
+      "description": "Project documents and proposal accepted/verified by VVB.",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "alias": "Documents Accepted#0000",
-        "gate_type": "AND",
-        "dependencies": [
-          {
-            "action_id": 103,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 104,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 105,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 106,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 107,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 108,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          },
-          {
-            "action_id": 109,
-            "field_name": "completed",
-            "comparison_operator": "EQUALS",
-            "comparison_value_type": "BOOLEAN",
-            "boolean_comparison_value": true
-          }
-        ]
-      }
+      "depends_on": "Documents submitted#0000"
     },
     {
       "id": 111,
       "description": "Planned or Verified offsets generated.",
       "applies_to": "Project Developer",
       "tag": "BooleanCommentNode",
-      "depends_on": {
-        "dependencies": [
-          {
+      "depends_on": "Documents accepted#0000"
+    }
+  ],
+  "checkpoints": [
+    {
+      "alias": "Into force#0000",
+      "description": "Into Force statement acknowledged.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 0,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Not a mangrove project#0000",
+      "description": "No project area is planting mangroves.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 4,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Mangrove project#0000",
+      "description": "This is a mangrove project.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 4,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": false
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Mangrove requirements met#0000",
+      "description": "All requirements to qualify this project as a mangrove project have been met.",
+      "supporting_info": [
+        "Due to the accumulation of soil organic carbon, an additional 1.8 tCO2/ha/year can be accounted for in the first 20 years after a Modelling Unit is planted, unless transparent and verifiable information can be provided to justify a different value. This value is based on the recommendation of 0.5 tC/ha/year by the A/R CDM methodoology  AR-AM0014  v.30. It has been converted to the unit tCO2/ha/year.",
+        "In case there are targeted management / inputs leading to SOC improvement involved, applicable SOC Framework Methodology approaches may be allowed.",
+        "Support Info - SOC sequestration component will be excluded from the issuance of Planned Emission Reductions"
+      ],
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 11,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": false
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Non-mangrove requirements met#0000",
+      "description": "Project meets all non-mangrove requirements.",
+      "gate_type": "AND",
+      "supporting_info": [
+        "Project can apply all silvicultural systems: Conservation forests (no use of timber), Forests with selective harvesting, and Rotation forestry.",
+        "All projects can include agriculture (agroforestry) or pasture (silvopasture) activites."
+      ],
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 5,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 6,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": false
+          }
+        },
+        {
+          "node": {
+            "action_id": 7,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": false
+          }
+        },
+        {
+          "node": {
+            "action_id": 8,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Preliminary requirements met#0000",
+      "description": "Project meets all preliminary requirements.",
+      "gate_type": "OR",
+      "dependencies": [
+        { "checkpoint": "Mangrove requirements met#0000" },
+        { "checkpoint": "Non-mangrove requirements met#0000" }
+      ]
+    },
+    {
+      "alias": "Modelling units identified#0000",
+      "description": "Modelling units have been identified.",
+      "supporting_info": [
+        "Each modelling unit area has homogeneous charcteristics in growth patterns, silvicultural treatment and planting date."
+      ],
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 20,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Forest inventories completed#0000",
+      "description": "Forest inventories have been completed for every MU",
+      "supporting_info": [
+        "The process of a forest inventory is documented clearly and can be easily replicated.",
+        "The forest inventories follow the guidelines located in the <a href='https://winrock.org/wp-content/uploads/2016/03/Winrock-BioCarbon_Fund_Sourcebook-compressed.pdf' target='_blank'>BioCarbon Fund sourcebook</a>."
+      ],
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 23,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "MU growth models confirmed valid#0000",
+      "description": "Growth models have been confirmed valid for every MU and carbon calculations can begin. ",
+      "supporting_info": [
+        "Positive leakage and market leakage are not accounted for under this methodology.",
+        "Harvested wood (timber & energy wood) as well as litter & lying deadwood are excluded.",
+        "More default values for 'tree biomass' are in the <a href='https://www.ipccnggip.iges.or.jp/public/2019rf/pdf/4_Volume4/19R_V4_Ch04_Forest%20Land.pdf' target='_blank'> IPCC Guidelines for National GHG Inventories</a>",
+        "More default values for 'non-tree biomass' are in the <a href='https://www.ipccnggip.iges.or.jp/public/2019rf/pdf/4_Volume4/19R_V4_Ch06_Grassland.pdf' target='_blank'> IPCC Guidelines for National GHG Inventories</a>",
+        "If preferred, project develoFutures may also select the more precise IPCC defaults when available in place of the provided defaults for factors relating to tree and non- tree biomass with no justification required."
+      ],
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 26,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "MUs stratified#0000",
+      "description": "Modelling units have been stratified.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 36,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Baseline default values determined#0000",
+      "description": "Default values for all MU strata have been determined.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 37,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Baseline tree biomass determined#0000",
+      "description": "Tree biomass determined for the baseline. ",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 40,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Conservative approach followed#0000",
+      "description": "Conservative approach followed for calculations",
+      "supporting_info": [
+        "The CO2 removal was not exaggerated. The Baseline and Leakage were not underestimated."
+      ],
+      "gate_type": "AND",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 47,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 44,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 48,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 49,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Rotation forestry silviculture#0000",
+      "description": "The selected silivicultural method is Rotation Forestry.",
+      "supporting_info": [
+        "The long- term CO2 removal is the average 'tree biomass' of a MU between the planting start and the end of the crediting period."
+      ],
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 58,
+            "field_name": "silvicultural_method",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "STRING",
+            "string_comparison_value": "ROTATION FORESTRY"
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Selective harvesting or conservation silviculture#0000",
+      "description": "The selected silivicultural method is Selective Harvesting or Conservation.",
+      "supporting_info": [
+        "The long-term CO2 removal is determined by the 'tree biomass' when a MU reaches its equilibrium.",
+        "If the 'tree biomass' is still increasing at the end of the crediting period, the long-term CO2 removal is determined by the 'tree biomass' of a MU in the year the crediting period ends.      "
+      ],
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 58,
+            "field_name": "silvicultural_method",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "STRING",
+            "string_comparison_value": "SELECTIVE HARVESTING OR CONSERVATION FORESTRY "
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Silvicultural method determined#0000",
+      "description": "The silvicultural method has been determined for all MUs in the project.",
+      "gate_type": "OR",
+      "dependencies": [
+        {
+          "checkpoint": "Selective harvesting or conservation silviculture#0000"
+        },
+        {
+          "checkpoint": "Rotation forestry silviculture#0000"
+        }
+      ]
+    },
+    {
+      "alias": "CO2 removal tree biomass determined#0000",
+      "description": "Tree biomass has been determined for an MU during the calculation of CO2 removal for the project.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 63,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "CO2 removal subcomponents determined#0000",
+      "description": "subcomponents of CO2 removal have been determined for an MU during the calculation of CO2 removal for the project.",
+      "gate_type": "AND",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 65,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 66,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 67,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "CO2 removal determined#0000",
+      "description": "CO2 removal has been determined for an MU during the calculation of CO2 removal for the project.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 68,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "CO2 removal long term determined#0000",
+      "description": "CO2 removal has been determined long term for an MU during the calculation of CO2 removal for the project.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 69,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "CO2 removal yearly determined#0000",
+      "description": "CO2 removal has been determined yearly for an MU during the calculation of CO2 removal for the project.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 70,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "CO2 removal all conversion factors determined#0000",
+      "description": "CO2 removal all conversion factors determined.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 71,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "CO2 removal document completed#0000",
+      "description": "All CO2 removal calculations have been completed and documented.",
+      "gate_type": "AND",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 76,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 75,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 74,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 72,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 71,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 70,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Other emissions document completed#0000",
+      "description": "All Other emissiosn calculations have been completed and documented.",
+      "gate_type": "AND",
+      "supporting_info": [
+        "Combustion of fossil fuel - CO2 and Non-CO2 green-house-gas emissions caused by the use of fossil fuel from project activities (flights, management operations, etc.) are insignificant and may therefore be neglected.",
+        "N-fixing trees, CO2 and Non-CO2 green-house-gas emissions caused by the use of N-fixing species may be conservatively assumed to be zero."
+      ],
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 83,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 84,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Leakage co2 stocks#0000",
+      "description": "Now that you have the CO2 stocks for relevant leakage activities, you can calculate the leakage emissions.",
+      "gate_type": "AND",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 90,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 91,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 92,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Leakage AR project#0000",
+      "description": "Leakage calculation for AR project.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 86,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Leakage AGR project#0000",
+      "description": "Leakage calculation for AGR project.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 87,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Leakage activity-shift determined#0000",
+      "description": "Activity shift for relevant activities have been calculated.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 93,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Leakage livestock completed#0000",
+      "description": "Leakage calculation for livestock completed",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 95,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Leakage document completed#0000",
+      "description": "All leakage calculations have been completed and documented.",
+      "gate_type": "AND",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 94,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 96,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        { "checkpoint": "Leakage livestock completed#0000" }
+      ]
+    },
+    {
+      "alias": "Carbon pool documents completed#0000",
+      "description": "All carbon pool calculations have been completed and documented.",
+      "gate_type": "AND",
+      "dependencies": [
+        {
+          "checkpoint": "Leakage document completed#0000"
+        },
+        {
+          "checkpoint": "CO2 removal document completed#0000"
+        },
+        {
+          "checkpoint": "Other emissions document completed#0000"
+        },
+        {
+          "checkpoint": "Baseline document completed#0000"
+        }
+      ]
+    },
+    {
+      "alias": "Carbon performance document completed#0000",
+      "description": "All carbon performance requirements have been completed and documented.",
+      "gate_type": "AND",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 100,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        },
+        {
+          "node": {
+            "action_id": 101,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Applicability document completed#0000",
+      "description": "Applicability document has been completed.",
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 102,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
+    },
+    {
+      "alias": "Documents submitted#0000",
+      "description": "All carbon performance requirements have been completed, documented, and submitted.",
+      "gate_type": "AND",
+      "dependencies": [
+        {
+          "checkpoint": "Carbon pool documents completed#0000"
+        },
+        {
+          "checkpoint": "Carbon performance document completed#0000"
+        },
+        {
+          "checkpoint": "Applicability document completed#0000"
+        }
+      ]
+    },
+    {
+      "alias": "Documents accepted#0000",
+      "description": "Documents have been accepted by OIS/relevant VVB.",
+      "dependencies": [
+        {
+          "node": {
             "action_id": 110,
             "field_name": "completed",
             "comparison_operator": "EQUALS",
             "comparison_value_type": "BOOLEAN",
             "boolean_comparison_value": true
           }
-        ]
-      }
+        }
+      ]
+    },
+    {
+      "alias": "Baseline document completed#0000",
+      "description": "Baseline has been determined and document is completed.",
+      "supporting_info": [
+        "The Baseline is not subject to monitoring or reassessment at the time of renewal of the credit period.",
+        "The baseline was determined in the eligible planting area just prior to the start date of the project (within 90 days)"
+      ],
+      "dependencies": [
+        {
+          "node": {
+            "action_id": 53,
+            "field_name": "completed",
+            "comparison_operator": "EQUALS",
+            "comparison_value_type": "BOOLEAN",
+            "boolean_comparison_value": true
+          }
+        }
+      ]
     }
-  ],
-  "checkpoints": []
+  ]
 }
