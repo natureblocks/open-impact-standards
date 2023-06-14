@@ -89,7 +89,13 @@ class MiroBoard:
         return self._miro_api_request(url, payload)
 
     def create_connector(
-        self, from_id, to_id, end_stroke_cap="arrow", end_position_obj=None
+        self,
+        from_id,
+        to_id,
+        end_stroke_cap="arrow",
+        end_position_obj=None,
+        caption=None,
+        caption_position=None,
     ):
         self._check_board_id()
 
@@ -105,6 +111,14 @@ class MiroBoard:
         if end_position_obj is not None:
             del payload["endItem"]["snapTo"]
             payload["endItem"]["position"] = end_position_obj
+
+        if caption is not None:
+            payload["captions"] = [
+                {
+                    "content": caption,
+                    "position": (caption_position if caption_position else "50") + "%",
+                }
+            ]
 
         return self._miro_api_request(url, payload)
 

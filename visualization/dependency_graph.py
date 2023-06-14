@@ -32,6 +32,7 @@ class DependencyGraph:
         self.gates = {}
         self.edge_tuples = []
         self.edge_dict = {}
+        self.edge_captions = {}
         self.dependency_hashes = (
             {}
         )  # used to prevent duplicate dependencies from being added to a gate
@@ -78,7 +79,6 @@ class DependencyGraph:
             if "depends_on" not in action:
                 continue
 
-            self.edge_dict[action_id] = []
             self._explore_edges_recursive(
                 action_id, checkpoint_alias=action["depends_on"]
             )
@@ -109,11 +109,10 @@ class DependencyGraph:
 
             # represent the checkpoint as a node
             self.graph.add_node(checkpoint_alias)
-            self._add_edge(dependent_id, checkpoint_alias)
+            self._add_edge(
+                dependent_id, checkpoint_alias, checkpoint_dependency=checkpoint
+            )
             self.gates[checkpoint_alias] = checkpoint["gate_type"]
-
-            if checkpoint_alias not in self.edge_dict:
-                self.edge_dict[checkpoint_alias] = []
 
             if checkpoint_alias not in self.dependency_hashes:
                 self.dependency_hashes[checkpoint_alias] = []
@@ -125,7 +124,11 @@ class DependencyGraph:
                     if is_duplicate_dependency(checkpoint_alias, dep):
                         continue
 
-                    self._add_edge(checkpoint_alias, dep["node"]["action_id"])
+                    self._add_edge(
+                        checkpoint_alias,
+                        dep["node"]["action_id"],
+                        action_dependency=dep["node"],
+                    )
                 elif "checkpoint" in dep:
                     self._explore_edges_recursive(checkpoint_alias, dep["checkpoint"])
 
@@ -138,7 +141,9 @@ class DependencyGraph:
                 return
 
             to_action_id = dependency["node"]["action_id"]
-            self._add_edge(dependent_id, to_action_id)
+            self._add_edge(
+                dependent_id, to_action_id, action_dependency=dependency["node"]
+            )
 
             action = self.actions[to_action_id]
             if "depends_on" in action:
@@ -159,6 +164,16 @@ class DependencyGraph:
         self._generate_miro_connectors(mb, shape_dict)
 
     def _generate_miro_shapes(self, mb):
+        def create_supporting_info_shape(supporting_info, x, y):
+            mb.create_shape(
+                shape_type=shape_types["SUPPORTING_INFO"],
+                content="- " + "<br/>- ".join(supporting_info),
+                text_align="left",
+                fill_color="#D0E78C",
+                x=x + self.node_spacing * self.x_coord_factor / 5,
+                y=y - self.node_height * self.y_coord_factor / 2,
+            )
+
         shape_dict = {}
 
         for action_id, node in self.actions.items():
@@ -176,23 +191,24 @@ class DependencyGraph:
             )
 
             if "supporting_info" in node:
-                mb.create_shape(
-                    shape_type=shape_types["SUPPORTING_INFO"],
-                    content="- " + "<br/>- ".join(node["supporting_info"]),
-                    text_align="left",
-                    fill_color="#D0E78C",
-                    x=x + self.node_spacing * self.x_coord_factor / 5,
-                    y=y - self.node_height * self.y_coord_factor / 2,
-                )
+                create_supporting_info_shape(node["supporting_info"], x, y)
 
         for alias, gate_type in self.gates.items():
+            x = self.node_coordinates[alias][0] * self.x_coord_factor
+            y = self.node_coordinates[alias][1] * self.y_coord_factor
+
             shape_dict[alias] = mb.create_shape(
                 shape_type=shape_types["GATE"],
                 content=gate_type,
                 fill_color=gate_colors[gate_type],
-                x=self.node_coordinates[alias][0] * self.x_coord_factor,
-                y=self.node_coordinates[alias][1] * self.y_coord_factor,
+                x=x,
+                y=y,
             )
+
+            if "supporting_info" in self.checkpoints[alias]:
+                create_supporting_info_shape(
+                    self.checkpoints[alias]["supporting_info"], x, y
+                )
 
         return shape_dict
 
@@ -206,7 +222,14 @@ class DependencyGraph:
 
         for from_id, to_id in self.edge_tuples:
             if tuple_occurences[(from_id, to_id)] == 1:
-                mb.create_connector(shape_dict[from_id], shape_dict[to_id])
+                mb.create_connector(
+                    shape_dict[from_id],
+                    shape_dict[to_id],
+                    caption=self.edge_captions[(from_id, to_id)][0]
+                    if (from_id, to_id) in self.edge_captions
+                    and len(self.edge_captions[(from_id, to_id)]) == 1
+                    else None,
+                )
             else:
                 # "elbow" shapes are needed to space out the multiple connectors
                 num_strands = tuple_occurences[(from_id, to_id)]
@@ -228,16 +251,70 @@ class DependencyGraph:
                     )
                     elbow_y += self.strand_spacing
 
+                    caption = (
+                        self.edge_captions[(from_id, to_id)][i]
+                        if (from_id, to_id) in self.edge_captions
+                        and len(self.edge_captions[(from_id, to_id)]) > i
+                        else None
+                    )
+
                     # Connect the gate and node through the elbow
                     # using two connector segments
                     mb.create_connector(
-                        shape_dict[from_id], elbow_id, end_stroke_cap="none"
+                        shape_dict[from_id],
+                        elbow_id,
+                        end_stroke_cap="none",
+                        caption=caption if i % 2 == 0 else None,
                     )
-                    mb.create_connector(elbow_id, shape_dict[to_id])
+                    mb.create_connector(
+                        elbow_id,
+                        shape_dict[to_id],
+                        caption=caption if i % 2 == 1 else None,
+                    )
 
-    def _add_edge(self, from_action_id, to_action_id):
+    def _add_edge(
+        self,
+        from_action_id,
+        to_action_id,
+        action_dependency=None,
+        checkpoint_dependency=None,
+    ):
+        if from_action_id not in self.edge_dict:
+            self.edge_dict[from_action_id] = []
+
         self.edge_dict[from_action_id].append(to_action_id)
-        self.edge_tuples.append((from_action_id, to_action_id))
+        edge_tuple = (from_action_id, to_action_id)
+        self.edge_tuples.append(edge_tuple)
+
+        if (
+            action_dependency or checkpoint_dependency
+        ) and edge_tuple not in self.edge_captions:
+            self.edge_captions[edge_tuple] = []
+
+        if (
+            action_dependency
+            and "field_name" in action_dependency
+            and "comparison_operator" in action_dependency
+            and "comparison_value_type" in action_dependency
+        ):
+            self.edge_captions[edge_tuple].append(
+                action_dependency["field_name"]
+                + " "
+                + _comparison_operator_map[action_dependency["comparison_operator"]]
+                + " "
+                + str(
+                    action_dependency[
+                        action_dependency["comparison_value_type"].lower()
+                        + "_comparison_value"
+                    ]
+                )
+            )
+        elif checkpoint_dependency and "description" in checkpoint_dependency:
+            self.edge_captions[edge_tuple].append(
+                checkpoint_dependency["abbreviated_description"]
+                if "abbreviated_description" in checkpoint_dependency
+                else checkpoint_dependency["description"]
+            )
 
     def _set_node_coordinates(self):
         nodes = list(self.actions.keys()) + list(self.gates.keys())
@@ -275,4 +352,19 @@ gate_colors = {
     "XOR": "#50da8b",
     "NAND": "#FFBA91",
     "NOR": "#E8A5D8",
+}
+_comparison_operator_map = {
+    "EQUALS": "=",
+    "DOES_NOT_EQUAL": "!=",
+    "GREATER_THAN": ">",
+    "LESS_THAN": "<",
+    "GREATER_THAN_OR_EQUAL_TO": ">=",
+    "LESS_THAN_OR_EQUAL_TO": "<=",
+    "ONE_OF": "IN",
+    "NONE_OF": "NOT IN",
+    "CONTAINS": "CONTAINS",
+    "DOES_NOT_CONTAIN": "DOES NOT CONTAIN",
+    "CONTAINS_ANY_OF": "CONTAINS ANY OF",
+    "CONTAINS_ALL_OF": "CONTAINS ALL OF",
+    "CONTAINS_NONE_OF": "CONTAINS NONE OF",
 }

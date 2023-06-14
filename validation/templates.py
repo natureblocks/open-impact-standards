@@ -375,6 +375,11 @@ checkpoint = {
     "properties": {
         "alias": {"type": "string"},
         "description": {"type": "string"},
+        "abbreviated_description": {"type": "string"},
+        "supporting_info": {
+            "type": "array",
+            "values": {"type": "string"}
+        },
         "gate_type": {"type": "enum", "values": gate_types},
         "dependencies": {
             "type": "array",
@@ -385,6 +390,7 @@ checkpoint = {
             "min_length": 1,
         },
     },
+    "optional": ["abbreviated_description", "supporting_info"],
     "if": [
         {
             "property": "dependencies",
