@@ -5,7 +5,7 @@
         },
         {
             "id": 1,
-            "depends_on": "0"
+            "depends_on": "checkpoint:{0}"
         },
         {
             "id": 2
@@ -15,75 +15,75 @@
         },
         {
             "id": 4,
-            "depends_on": "1 and 2"
+            "depends_on": "checkpoint:{1 and 2}"
         },
         {
             "id": 5
         },
         {
             "id": 6,
-            "depends_on": "3"
+            "depends_on": "checkpoint:{3}"
         },
         {
             "id": 7,
-            "depends_on": "3"
+            "depends_on": "checkpoint:{3}"
         },
         {
             "id": 8,
-            "depends_on": "4 and 5"
+            "depends_on": "checkpoint:{4 and 5}"
         },
         {
             "id": 9,
-            "depends_on": "6 and 7"
+            "depends_on": "checkpoint:{6 and 7}"
         },
         {
             "id": 10,
-            "depends_on": "8 and 9"
+            "depends_on": "checkpoint:{8 and 9}"
         }
     ],
     "checkpoints": [
         {
             "alias": "0",
             "dependencies": [
-                {"node": {"action_id": 0}}
+                {"compare": {"left": {"ref": "action:{0}"}}}
             ]
         },
         {
             "alias": "1 and 2",
             "gate_type": "AND",
             "dependencies": [
-                {"node": {"action_id": 1}},
-                {"node": {"action_id": 2}}
+                {"compare": {"left": {"ref": "action:{1}"}}},
+                {"compare": {"left": {"ref": "action:{2}"}}}
             ]
         },
         {
             "alias": "3",
             "dependencies": [
-                {"node": {"action_id": 3}}
+                {"compare": {"left": {"ref": "action:{3}"}}}
             ]
         },
         {
             "alias": "4 and 5",
             "gate_type": "AND",
             "dependencies": [
-                {"node": {"action_id": 4}},
-                {"node": {"action_id": 5}}
+                {"compare": {"left": {"ref": "action:{4}"}}},
+                {"compare": {"left": {"ref": "action:{5}"}}}
             ]
         },
         {
             "alias": "6 and 7",
             "gate_type": "AND",
             "dependencies": [
-                {"node": {"action_id": 6}},
-                {"node": {"action_id": 7}}
+                {"compare": {"left": {"ref": "action:{6}"}}},
+                {"compare": {"left": {"ref": "action:{7}"}}}
             ]
         },
         {
             "alias": "8 and 9",
             "gate_type": "AND",
             "dependencies": [
-                {"node": {"action_id": 8}},
-                {"node": {"action_id": 9}}
+                {"compare": {"left": {"ref": "action:{8}"}}},
+                {"compare": {"left": {"ref": "action:{9}"}}}
             ]
         }
     ]

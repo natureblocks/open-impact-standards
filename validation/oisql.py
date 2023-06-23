@@ -10,7 +10,9 @@ query = {
         },
         "extract": {"type": "string"}
     },
-    "optional": ["where"]
+    "constraints": {
+        "optional": ["where"]
+    },
 }
 
 condition = {
@@ -19,13 +21,13 @@ condition = {
         "property": {"type": "string"},
         "operator": {
             "type": "enum",
-            "values": ["EQUALS", "IN"],
+            "values": ["EQUALS", "IN", "IS_REFERENCED_BY"],
         },
         "value": {
             "type": "object",
             "template": "query",
-        }
-    }
+        },
+    },
 }
 
 condition_group = {

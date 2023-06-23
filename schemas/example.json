@@ -2,9 +2,11 @@
     "standard": "Example Standard",
     "parties": [
         {
+            "id": 0,
             "name": "Party 1"
         },
         {
+            "id": 1,
             "name": "Party 2",
             "hex_code": "#dfb7e6"
         }
@@ -65,143 +67,208 @@
         {
             "id": 0,
             "description": "An entry action (no dependencies)",
-            "applies_to": "Party 1",
-            "tag": "MyNodeTag"
+            "party": "party:{Party 1}",
+            "supporting_info": [
+                "Specify 'CREATE' to indicate that this action allows the creation of a new node."
+            ],
+            "tag": "MyNodeTag",
+            "operation": {
+                "type": "CREATE",
+                "include": ["a_numeric_field", "a_string_field"]
+            }
         },
         {
             "id": 1,
             "description": "Another entry action",
-            "applies_to": "Party 2",
-            "tag": "MyNodeTag"
+            "party": "party:{Party 2}",
+            "supporting_info": [
+                "This action permits the creation of a new node, with no fields excluded (all fields are settable)."
+            ],
+            "tag": "MyNodeTag",
+            "operation": {
+                "type": "CREATE",
+                "exclude": null
+            }
         },
         {
             "id": 2,
             "description": "An action that depends on a checkpoint",
-            "applies_to": "Party 1",
+            "party": "party:{Party 1}",
+            "supporting_info": [
+                "This action permits the creation of a new node, with no fields included (none of the fields are settable by this action)."
+            ],
             "tag": "MyNodeTag",
-            "depends_on": "Example checkpoint#0000"
+            "operation": {
+                "type": "CREATE",
+                "include": null
+            },
+            "depends_on": "checkpoint:{Example checkpoint#0000}"
         },
         {
             "id": 3,
             "description": "An action with multiple dependencies",
-            "applies_to": "Party 1",
+            "party": "party:{Party 1}",
+            "supporting_info": [
+                "This action permits the editing of only the included fields on the existing node created by the referenced action."
+            ],
             "tag": "MyNodeTag",
-            "depends_on": "Example dependency set#0000"
+            "operation": {
+                "type": "EDIT",
+                "ref": "action:{0}",
+                "include": ["a_string_list_field", "a_numeric_list_field"]
+            },
+            "depends_on": "checkpoint:{Example dependency set#0000}"
         },
         {
             "id": 4,
             "description": "An action with mixed dependencies",
-            "applies_to": "Party 2",
+            "party": "party:{Party 2}",
+            "supporting_info": [
+                "This action permits the creation of a new node, with all fields settable except 'a_boolean_field'."
+            ],
             "tag": "MyNodeTag",
-            "depends_on": "A mixed checkpoint#0000"
+            "operation": {
+                "type": "CREATE",
+                "exclude": ["a_boolean_field"]
+            },
+            "depends_on": "checkpoint:{A mixed checkpoint#0000}"
         },
         {
             "id": 5,
             "description": "An action that is marked by a Milestone. When its dependencies are met, the Milestone is reached.",
             "milestones": ["CLEAR_OWNERSHIP"],
-            "applies_to": "Party 1",
+            "party": "party:{Party 1}",
             "tag": "MyNodeTag",
-            "depends_on": "Clear ownership achieved#0000"
+            "operation": {
+                "type": "CREATE",
+                "exclude": null
+            },
+            "depends_on": "checkpoint:{Clear ownership achieved#0000}"
         }
     ],
     "checkpoints": [
         {
+            "id": 0,
             "alias": "Example checkpoint#0000",
             "description": "This is an example checkpoint containing a single dependency.",
             "dependencies": [
                 {
-                    "node": {
-                        "description": "An example of a dependency",
-                        "action_id": 0,
-                        "field_name": "a_boolean_field",
-                        "comparison_value_type": "BOOLEAN",
-                        "comparison_operator": "EQUALS",
-                        "boolean_comparison_value": true
+                    "compare": {
+                        "left": {
+                            "ref": "action:{0}",
+                            "field": "a_boolean_field"
+                        },
+                        "right": {
+                            "value": true
+                        },
+                        "operator": "EQUALS"
                     }
                 }
             ]
         },
         {
+            "id": 1,
             "alias": "Example dependency set#0000",
             "description": "This is an example checkpoint containing a set of dependencies.",
             "gate_type": "AND",
             "dependencies": [
                 {
-                    "node": {
-                        "action_id": 0,
-                        "field_name": "a_numeric_field",
-                        "comparison_value_type": "NUMERIC",
-                        "comparison_operator": "GREATER_THAN",
-                        "numeric_comparison_value": 9000
+                    "compare": {
+                        "left": {
+                            "ref": "action:{0}",
+                            "field": "a_numeric_field"
+                        },
+                        "right": {
+                            "value": 9000
+                        },
+                        "operator": "GREATER_THAN"
                     }
                 },
                 {
-                    "node": {
-                        "action_id": 1,
-                        "field_name": "a_string_list_field",
-                        "comparison_value_type": "STRING_LIST",
-                        "comparison_operator": "CONTAINS",
-                        "string_list_comparison_value": "bar"
+                    "compare": {
+                        "left": {
+                            "ref": "action:{1}",
+                            "field": "a_string_list_field"
+                        },
+                        "right": {
+                            "value": "bar"
+                        },
+                        "operator": "CONTAINS"
                     }
                 }
             ]
         },
         {
+            "id": 2,
             "alias": "A referenced checkpoint#0000",
             "description": "This checkpoint is not directly referenced by any actions, but is referenced by another checkpoint.",
             "gate_type": "OR",
             "dependencies": [
                 {
-                    "node": {
-                        "action_id": 0,
-                        "field_name": "a_boolean_field",
-                        "comparison_value_type": "BOOLEAN",
-                        "comparison_operator": "EQUALS",
-                        "boolean_comparison_value": true
+                    "compare": {
+                        "left": {
+                            "ref": "action:{0}",
+                            "field": "a_boolean_field"
+                        },
+                        "right": {
+                            "value": true
+                        },
+                        "operator": "EQUALS"
                     }
                     
                 },
                 {
-                    "node": {
-                        "action_id": 1,
-                        "field_name": "a_string_field",
-                        "comparison_value_type": "STRING",
-                        "comparison_operator": "DOES_NOT_EQUAL",
-                        "string_comparison_value": "foo"
+                    "compare": {
+                        "left": {
+                            "ref": "action:{1}",
+                            "field": "a_string_field"
+                        },
+                        "right": {
+                            "value": "foo"
+                        },
+                        "operator": "DOES_NOT_EQUAL"
                     }
                 }
             ]
         },
         {
+            "id": 3,
             "alias": "A mixed checkpoint#0000",
             "description": "The referenced checkpoint AND another dependency",
             "gate_type": "AND",
             "dependencies": [
                 {
-                    "checkpoint": "A referenced checkpoint#0000"
+                    "checkpoint": "checkpoint:{A referenced checkpoint#0000}"
                 },
                 {
-                    "node": {
-                        "action_id": 3,
-                        "field_name": "a_numeric_list_field",
-                        "comparison_value_type": "NUMERIC_LIST",
-                        "comparison_operator": "DOES_NOT_CONTAIN",
-                        "numeric_list_comparison_value": 13
+                    "compare": {
+                        "left": {
+                            "ref": "action:{3}",
+                            "field": "a_numeric_list_field"
+                        },
+                        "right": {
+                            "value": 13
+                        },
+                        "operator": "DOES_NOT_CONTAIN"
                     }
                 }
             ]
         },
         {
+            "id": 4,
             "alias": "Clear ownership achieved#0000",
             "description": "A Milestone depends on this checkpoint.",
             "dependencies": [
                 {
-                    "node": {
-                        "action_id": 4,
-                        "field_name": "a_boolean_field",
-                        "comparison_value_type": "BOOLEAN",
-                        "comparison_operator": "EQUALS",
-                        "boolean_comparison_value": true
+                    "compare": {
+                        "left": {
+                            "ref": "action:{4}",
+                            "field": "a_boolean_field"
+                        },
+                        "right": {
+                            "value": true
+                        },
+                        "operator": "EQUALS"
                     }
                 }
             ]

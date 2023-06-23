@@ -1,6 +1,15 @@
-from enums import gate_types, field_types, milestones
+from enums import gate_types, field_types, milestones, comparison_operators
 
-RESERVED_KEYWORDS = ["root", "keys", "values", "ERROR"]
+RESERVED_KEYWORDS = [
+    "root",
+    "keys",
+    "values",
+    "_this",
+    "_parent",
+    "_item",
+    "_corresponding_key",
+    "ERROR",
+]
 
 root_object = {
     "type": "object",
@@ -20,10 +29,18 @@ root_object = {
                         },
                     },
                 },
-                "optional": ["attributes"],
+                "constraints": {
+                    "optional": ["attributes"],
+                },
             },
         },
-        "parties": {"type": "array", "values": {"type": "object", "template": "party"}},
+        "parties": {
+            "type": "array",
+            "values": {"type": "object", "template": "party"},
+            "constraints": {
+                "unique": ["id", "name"],
+            },
+        },
         "nodes": {
             "type": "object",
             "keys": {
@@ -40,7 +57,9 @@ root_object = {
                 "type": "object",
                 "template": "action",
             },
-            "unique": ["id", "milestones"],
+            "constraints": {
+                "unique": ["id", "milestones"],
+            },
         },
         "checkpoints": {
             "type": "array",
@@ -48,10 +67,12 @@ root_object = {
                 "type": "object",
                 "template": "checkpoint",
             },
-            "unique": [
-                "alias",
-                ["gate_type", "dependencies"]
-            ],
+            "constraints": {
+                "unique": ["id", "alias"],
+                "unique_composites": [
+                    ["gate_type", "dependencies"],
+                ],
+            },
         },
     },
 }
@@ -66,23 +87,27 @@ node_definition = {
         "properties": {
             "field_type": {
                 "type": "enum",
-                "values": list(field_types) + ["EDGE", "EDGE_COLLECTION"]
+                "values": list(field_types) + ["EDGE", "EDGE_COLLECTION"],
             },
             "description": {"type": "string"},
         },
-        "optional": ["description"],
+        "constraints": {
+            "optional": ["description"],
+        },
         "if": [
             {
                 "property": "field_type",
                 "operator": "ONE_OF",
                 "value": ["EDGE", "EDGE_COLLECTION"],
                 "then": {
-                    "property_modifiers": {
+                    "add_properties": {
                         "tag": {
-                            "type": "reference",
-                            "references_any": {
-                                "from": "root.nodes",
-                                "property": "keys",
+                            "type": "string",
+                            "expected_value": {
+                                "one_of": {
+                                    "from": "root.nodes",
+                                    "extract": "keys",
+                                },
                             },
                         },
                     },
@@ -96,290 +121,117 @@ checkpoint_reference = {
     "type": "object",
     "properties": {
         "checkpoint": {
-            "type": "reference",
-            "references_any": {
-                "from": "root.checkpoints",
-                "property": "alias",
+            "type": "ref",
+            "ref_types": ["checkpoint"],
+        },
+    },
+}
+
+referenced_operand = {
+    "type": "object",
+    "properties": {
+        "ref": {
+            "type": "ref",
+            "ref_types": ["action"],
+        },
+        "field": {
+            "type": "string",
+            "expected_value": {
+                "one_of": {
+                    "from": "root.nodes.{$tag}",
+                    "extract": "keys",
+                },
             },
-        }
+        },
+    },
+    "resolvers": {
+        "$tag": {
+            "from": "root.actions",
+            "where": {
+                "property": "id",
+                "operator": "IS_REFERENCED_BY",
+                "value": {
+                    "from": "{_this}",
+                    "extract": "ref",
+                },
+            },
+            "extract": "tag",
+        },
+    },
+}
+
+literal_operand = {
+    "type": "object",
+    "properties": {
+        "value": {"type": "scalar"},
+    },
+}
+
+runtime_operand = {
+    "type": "object",
+    "properties": {
+        "ref": {
+            "type": "ref",
+            "ref_types": ["party", "action"],
+        },
+        "field": {
+            "type": "string",
+            "expected_value": {
+                "one_of": {
+                    "from": "_runtime_fields",
+                    "extract": "{ref}._ref_type",
+                },
+            },
+        },
+        "context": {
+            "type": "enum",
+            "values": ["RUNTIME"],
+        },
     },
 }
 
 dependency = {
     "type": "object",
     "properties": {
-        "node": {
+        "compare": {
             "type": "object",
             "properties": {
-                "action_id": {
-                    "type": "reference",
-                    "references_any": {
-                        "from": "root.actions",
-                        "property": "id",
-                    },
+                "left": {
+                    "type": "object",
+                    "any_of_templates": ["literal_operand", "referenced_operand"],
                 },
-                "field_name": {
-                    "type": "reference",
-                    "references_any": {
-                        "from": "root.nodes.{$tag}",
-                        "property": "keys",
-                    },
+                "right": {
+                    "type": "object",
+                    "any_of_templates": ["literal_operand", "referenced_operand"],
                 },
-                "comparison_operator": {
+                "operator": {
                     "type": "enum",
-                    "values": [
-                        "EQUALS",
-                        "DOES_NOT_EQUAL",
-                        "GREATER_THAN",
-                        "LESS_THAN",
-                        "GREATER_THAN_OR_EQUAL_TO",
-                        "LESS_THAN_OR_EQUAL_TO",
-                        "ONE_OF",
-                        "NONE_OF",
-                        "CONTAINS",
-                        "DOES_NOT_CONTAIN",
-                        "CONTAINS_ANY_OF",
-                        "CONTAINS_ALL_OF",
-                        "CONTAINS_NONE_OF",
-                    ],
-                },
-                "comparison_value_type": {
-                    "type": "reference",
-                    "referenced_value": "root.nodes.{$tag}.{field_name}.field_type",
-                },
-                "string_comparison_value": {"type": "string"},
-                "numeric_comparison_value": {"type": "decimal"},
-                "boolean_comparison_value": {"type": "boolean"},
-                "string_list_comparison_value": {
-                    "types": [
-                        {
-                            "type": "array",
-                            "values": {"type": "string"},
-                        },
-                        {"type": "string"}
-                    ]
-                },
-                "numeric_list_comparison_value": {
-                    "types": [
-                        {
-                            "type": "array",
-                            "values": {"type": "decimal"},
-                        },
-                        {"type": "decimal"}
-                    ],
-                },
-                "description": {"type": "string"},
-            },
-            "optional": ["description"],
-            "resolvers": {
-                "$tag": {
-                    "from": "root.actions",
-                    "where": {
-                        "property": "id",
-                        "operator": "EQUALS",
-                        "value": {"from": "{this}", "extract": "action_id"},
-                    },
-                    "extract": "tag",
+                    "values": comparison_operators,
                 },
             },
-            "switch": {
-                "property": "comparison_value_type",
-                "cases": [
+            "constraints": {
+                "validation_functions": [
                     {
-                        "equals": "STRING",
-                        "then": {
-                            "forbidden": {
-                                "properties": [
-                                    "numeric_comparison_value",
-                                    "boolean_comparison_value",
-                                    "string_list_comparison_value",
-                                    "numeric_list_comparison_value",
-                                ],
-                                "reason": "comparison_value_type is STRING"
-                            },
-                            "property_modifiers": {
-                                "comparison_operator": {
-                                    "type": "enum",
-                                    "values": [
-                                        "EQUALS",
-                                        "DOES_NOT_EQUAL",
-                                        "CONTAINS",
-                                        "DOES_NOT_CONTAIN",
-                                        "ONE_OF",
-                                        "NONE_OF",
-                                    ],
-                                },
-                            },
-                        },
-                        "break": True,
-                    },
-                    {
-                        "equals": "NUMERIC",
-                        "then": {
-                            "forbidden": {
-                                "properties": [
-                                    "string_comparison_value",
-                                    "boolean_comparison_value",
-                                    "string_list_comparison_value",
-                                    "numeric_list_comparison_value",
-                                ],
-                                "reason": "comparison_value_type is NUMERIC"
-                            },
-                            "property_modifiers": {
-                                "comparison_operator": {
-                                    "type": "enum",
-                                    "values": [
-                                        "EQUALS",
-                                        "DOES_NOT_EQUAL",
-                                        "GREATER_THAN",
-                                        "LESS_THAN",
-                                        "GREATER_THAN_OR_EQUAL_TO",
-                                        "LESS_THAN_OR_EQUAL_TO",
-                                        "ONE_OF",
-                                        "NONE_OF",
-                                    ],
-                                },
-                            },
-                        },
-                        "break": True,
-                    },
-                    {
-                        "equals": "BOOLEAN",
-                        "then": {
-                            "forbidden": {
-                                "properties": [
-                                    "string_comparison_value",
-                                    "numeric_comparison_value",
-                                    "string_list_comparison_value",
-                                    "numeric_list_comparison_value",
-                                ],
-                                "reason": "comparison_value_type is BOOLEAN"
-                            },
-                            "property_modifiers": {
-                                "comparison_operator": {
-                                    "type": "enum",
-                                    "values": ["EQUALS"],
-                                },
-                            },
-                        },
-                        "break": True,
-                    },
-                    {
-                        "equals": "STRING_LIST",
-                        "then": {
-                            "forbidden": {
-                                "properties": [
-                                    "string_comparison_value",
-                                    "numeric_comparison_value",
-                                    "boolean_comparison_value",
-                                    "numeric_list_comparison_value",
-                                ],
-                                "reason": "comparison_value_type is STRING_LIST"
-                            },
-                            "add_conditionals": {
-                                "if": [
-                                    {
-                                        "property": "string_list_comparison_value",
-                                        "attribute": "type",
-                                        "operator": "EQUALS",
-                                        "value": "STRING",
-                                        "then": {
-                                            "property_modifiers": {
-                                                "comparison_operator": {
-                                                    "type": "enum",
-                                                    "values": [
-                                                        "CONTAINS",
-                                                        "DOES_NOT_CONTAIN",
-                                                    ],
-                                                },
-                                            },
-                                        },
-                                        "else": {
-                                            "property_modifiers": {
-                                                "comparison_operator": {
-                                                    "type": "enum",
-                                                    "values": [
-                                                        "EQUALS",
-                                                        "DOES_NOT_EQUAL",
-                                                        "CONTAINS_ANY_OF",
-                                                        "CONTAINS_ALL_OF",
-                                                        "CONTAINS_NONE_OF",
-                                                    ],
-                                                },
-                                            },
-                                        }
-                                    }
-                                ]
-                            }
-                        },
-                        "break": True,
-                    },
-                    {
-                        "equals": "NUMERIC_LIST",
-                        "then": {
-                            "forbidden": {
-                                "properties": [
-                                    "string_comparison_value",
-                                    "numeric_comparison_value",
-                                    "boolean_comparison_value",
-                                    "string_list_comparison_value",
-                                ],
-                                "reason": "comparison_value_type is NUMERIC_LIST",
-                            },
-                            "add_conditionals": {
-                                "if": [
-                                    {
-                                        "property": "numeric_list_comparison_value",
-                                        "attribute": "type",
-                                        "operator": "EQUALS",
-                                        "value": "NUMERIC",
-                                        "then": {
-                                            "property_modifiers": {
-                                                "comparison_operator": {
-                                                    "type": "enum",
-                                                    "values": [
-                                                        "CONTAINS",
-                                                        "DOES_NOT_CONTAIN",
-                                                    ],
-                                                },
-                                            },
-                                        },
-                                        "else": {
-                                            "property_modifiers": {
-                                                "comparison_operator": {
-                                                    "type": "enum",
-                                                    "values": [
-                                                        "EQUALS",
-                                                        "DOES_NOT_EQUAL",
-                                                        "CONTAINS_ANY_OF",
-                                                        "CONTAINS_ALL_OF",
-                                                        "CONTAINS_NONE_OF",
-                                                    ],
-                                                },
-                                            },
-                                        }
-                                    }
-                                ]
-                            }
-                        },
-                        "break": True,
+                        "function": "validate_comparison",
+                        "args": ["{left}", "{right}", "{operator}"],
                     },
                 ],
             },
-        }
-    }
+        },
+    },
+    "constraints": {
+        "optional": ["description"],
+    },
 }
 
 checkpoint = {
     "type": "object",
     "properties": {
+        "id": {"type": "integer"},
         "alias": {"type": "string"},
         "description": {"type": "string"},
         "abbreviated_description": {"type": "string"},
-        "supporting_info": {
-            "type": "array",
-            "values": {"type": "string"}
-        },
+        "supporting_info": {"type": "array", "values": {"type": "string"}},
         "gate_type": {"type": "enum", "values": gate_types},
         "dependencies": {
             "type": "array",
@@ -390,7 +242,9 @@ checkpoint = {
             "min_length": 1,
         },
     },
-    "optional": ["abbreviated_description", "supporting_info"],
+    "constraints": {
+        "optional": ["abbreviated_description", "supporting_info"],
+    },
     "if": [
         {
             "property": "dependencies",
@@ -398,23 +252,31 @@ checkpoint = {
             "operator": "LESS_THAN",
             "value": 2,
             "then": {
-                "forbidden": {
-                    "properties": ["gate_type"],
-                    "reason": "gate_type is irrelevant when a checkpoint has fewer than 2 dependencies.",
+                "add_constraints": {
+                    "forbidden": {
+                        "properties": ["gate_type"],
+                        "reason": "gate_type is irrelevant when a checkpoint has fewer than 2 dependencies.",
+                    },
                 },
-                "property_modifiers": {
+                "override_properties": {
                     "dependencies": {
                         "type": "array",
                         "values": {
                             "type": "object",
                             "template": "dependency",
                         },
-                        "min_length": 1,
+                        "constraints": {
+                            "min_length": 1,
+                        },
                     },
-                }
+                },
             },
         },
     ],
+    "ref_config": {
+        "fields": ["id", "alias"],
+        "collection": "root.checkpoints",
+    },
 }
 
 action = {
@@ -423,20 +285,11 @@ action = {
         "id": {"type": "integer"},
         "tag": {"type": "string"},
         "description": {"type": "string"},
-        "applies_to": {
-            "type": "reference",
-            "references_any": {
-                "from": "root.parties",
-                "property": "name",
-            },
+        "party": {
+            "type": "ref",
+            "ref_types": ["party"],
         },
-        "depends_on": {
-            "type": "reference",
-            "references_any": {
-                "from": "root.checkpoints",
-                "property": "alias",
-            },
-        },
+        "depends_on": {"type": "ref", "ref_types": ["checkpoint"]},
         "steps": {
             "type": "array",
             "values": {
@@ -447,24 +300,133 @@ action = {
                 },
             },
         },
+        "operation": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "enum",
+                    "values": ["CREATE", "EDIT"],
+                },
+                "include": {
+                    "type": "array",
+                    "nullable": True,
+                    "values": {
+                        "type": "string",
+                        "one_of": {
+                            "from": "root.nodes.{tag}",
+                            "extract": "keys",
+                        },
+                    },
+                },
+                "exclude": {
+                    "type": "array",
+                    "nullable": True,
+                    "values": {
+                        "type": "string",
+                        "one_of": {
+                            "from": "root.nodes.{tag}",
+                            "extract": "keys",
+                        },
+                    },
+                },
+            },
+            "mutually_exclusive": ["include", "exclude"],
+            "if": [
+                {
+                    "property": "type",
+                    "operator": "EQUALS",
+                    "value": "CREATE",
+                    "then": {
+                        "add_properties": {
+                            "default_values": {
+                                "type": "object",
+                                "keys": {
+                                    "type": "string",
+                                    "expected_value": {
+                                        "one_of": {
+                                            "from": "root.nodes.{tag}",
+                                            "where": {
+                                                "property": "root.nodes.{tag}.{_item}.field_type",
+                                                "operator": "NOT_IN",
+                                                "value": ["EDGE", "EDGE_COLLECTION"],
+                                            },
+                                            "extract": "keys",
+                                        },
+                                    },
+                                },
+                                "values": {
+                                    "type": "root.nodes.{tag}.{_corresponding_key}.field_type",
+                                },
+                            },
+                            "default_edges": {
+                                "type": "object",
+                                "keys": {
+                                    "type": "string",
+                                    "expected_value": {
+                                        "one_of": {
+                                            "from": "root.nodes.{tag}",
+                                            "property": "keys",
+                                            "where": {
+                                                "property": "root.nodes.{tag}.{_item}.field_type",
+                                                "operator": "IN",
+                                                "value": ["EDGE", "EDGE_COLLECTION"],
+                                            },
+                                        },
+                                    },
+                                },
+                                "values": {
+                                    "type": "ref",
+                                    "ref_types": ["action"],
+                                },
+                            },
+                        },
+                        "add_constraints": {
+                            "optional": ["default_values", "default_edges"],
+                        },
+                    },
+                    "else_if": {
+                        "property": "type",
+                        "operator": "EQUALS",
+                        "value": "EDIT",
+                        "then": {
+                            "add_properties": {
+                                "action_id": {
+                                    "type": "ref",
+                                    "ref_types": ["action"],
+                                },
+                            },
+                            "add_constraints": {
+                                "validation_functions": [
+                                    {
+                                        "function": "has_ancestor",
+                                        "args": ["{_parent}.id", "{action_id}"],
+                                    }
+                                ],
+                            },
+                        },
+                    },
+                },
+            ],
+        },
         "milestones": {
             "type": "array",
-            "values": {
-                "type": "enum",
-                "values": milestones
-            },
+            "values": {"type": "enum", "values": milestones},
         },
-        "supporting_info": {
-            "type": "array",
-            "values": {"type": "string"}
-        },
+        "supporting_info": {"type": "array", "values": {"type": "string"}},
     },
-    "optional": ["depends_on", "steps", "milestones", "supporting_info"],
+    "constraints": {
+        "optional": ["depends_on", "steps", "milestones", "supporting_info"],
+    },
+    "ref_config": {
+        "fields": ["id"],
+        "collection": "root.actions",
+    },
 }
 
 party = {
     "type": "object",
     "properties": {
+        "id": {"type": "integer"},
         "name": {"type": "string"},
         "hex_code": {
             "type": "string",
@@ -472,5 +434,11 @@ party = {
             "pattern_description": "hex color code",
         },
     },
-    "optional": ["hex_code"],
+    "constraints": {
+        "optional": ["hex_code"],
+    },
+    "ref_config": {
+        "fields": ["id", "name"],
+        "collection": "root.parties",
+    },
 }

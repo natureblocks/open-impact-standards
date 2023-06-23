@@ -8,7 +8,7 @@
         },
         {
             "id": 2,
-            "depends_on": "0 and 1"
+            "depends_on": "checkpoint:{0 and 1}"
         }
     ],
     "checkpoints": [
@@ -16,8 +16,8 @@
             "alias": "0 and 1",
             "gate_type": "AND",
             "dependencies": [
-                {"node": {"action_id": 0}},
-                {"node": {"action_id": 1}}
+                {"compare": {"left": {"ref": "action:{0}"}}},
+                {"compare": {"left": {"ref": "action:{1}"}}}
             ]
         }
     ]

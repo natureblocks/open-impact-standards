@@ -1,6 +1,6 @@
 def basic_schema_with_actions(num_actions):
     schema = basic_schema()
-    schema["parties"].append({"name": "Project"})
+    schema["parties"].append({"id": 0, "name": "Project"})
 
     for i in range(num_actions):
         schema["actions"].append(action(i))
@@ -27,19 +27,23 @@ def basic_schema():
 def action(action_id=None):
     return {
         "id": action_id if action_id is not None else 0,
-        "description": "test action",
-        "applies_to": "Project",
         "tag": "Placeholder",
-        "data": {"completed": {"field_type": "BOOLEAN"}},
+        "description": "test action",
+        "party": "party:{Project}",
+        "operation": {
+            "type": "CREATE",
+            "include": ["name"],
+        },
     }
 
 
-def checkpoint(alias, gate_type="AND", num_dependencies=2):
+def checkpoint(id, alias, gate_type="AND", num_dependencies=2):
     dependencies = []
     for i in range(num_dependencies):
-        dependencies.append(dependency(action_id=i))
+        dependencies.append(dependency(ref="action:{" + str(i) + "}"))
 
     checkpoint = {
+        "id": id,
         "alias": alias,
         "description": "test dependency set",
         "dependencies": dependencies,
@@ -52,18 +56,15 @@ def checkpoint(alias, gate_type="AND", num_dependencies=2):
 
 
 def dependency(
-    action_id,
-    field_name="completed",
-    comparison_operator="EQUALS",
-    comparison_value_type="BOOLEAN",
-    boolean_comparison_value=True,
+    ref,
+    field="completed",
+    operator="EQUALS",
+    comparison_value=True,
 ):
     return {
-        "node": {
-            "action_id": action_id,
-            "field_name": field_name,
-            "comparison_operator": comparison_operator,
-            "comparison_value_type": comparison_value_type,
-            "boolean_comparison_value": boolean_comparison_value,
-        }
+        "compare": {
+            "left": {"ref": ref, "field": field},
+            "right": {"value": comparison_value},
+            "operator": operator,
+        },
     }

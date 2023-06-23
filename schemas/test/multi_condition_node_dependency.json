@@ -3,52 +3,65 @@
     "term_definitions": [],
     "parties": [
         {
+            "id": 0,
             "name": "Land Representative",
             "hex_code": "#fdeeb7"
         },
         {
+            "id": 1,
             "name": "Project",
             "hex_code": "#dfb7e6"
         },
         {
+            "id": 2,
             "name": "Project Developer",
             "hex_code": "#c0e1fa"
         },
         {
+            "id": 3,
             "name": "Financiers / Bankers / Investors",
             "hex_code": "#b7f0f2"
         },
         {
+            "id": 4,
             "name": "Government Representatives",
             "hex_code": "#c6c9e8"
         },
         {
+            "id": 5,
             "name": "Carbon Auditor",
             "hex_code": "#fffcc7"
         }
     ],
     "checkpoints": [
         {
+            "id": 0,
             "alias": "a#0000",
             "description": "placeholder description",
             "gate_type": "AND",
             "dependencies": [
                 {
-                    "node": {
-                        "action_id": 0,
-                        "field_name": "completed",
-                        "comparison_operator": "EQUALS",
-                        "comparison_value_type": "BOOLEAN",
-                        "boolean_comparison_value": true
+                    "compare": {
+                        "left": {
+                            "ref": "action:{0}",
+                            "field": "completed"
+                        },
+                        "right": {
+                            "value": true
+                        },
+                        "operator": "EQUALS"
                     }
                 },
                 {
-                    "node": {
-                        "action_id": 0,
-                        "field_name": "did_the_thing",
-                        "comparison_operator": "EQUALS",
-                        "comparison_value_type": "BOOLEAN",
-                        "boolean_comparison_value": true
+                    "compare": {
+                        "left": {
+                            "ref": "action:{0}",
+                            "field": "did_the_thing"
+                        },
+                        "right": {
+                            "value": true
+                        },
+                        "operator": "EQUALS"
                     }
                 }
             ]
@@ -64,15 +77,23 @@
         {
             "id": 0,
             "description": "Node 0",
-            "applies_to": "Project Developer",
-            "tag": "Placeholder"
+            "party": "party:{Project Developer}",
+            "tag": "Placeholder",
+            "operation": {
+                "type": "CREATE",
+                "fields": ["completed", "did_the_thing"]
+            }
         },
         {
             "id": 1,
             "description": "Node 1",
-            "applies_to": "Project Developer",
+            "party": "party:{Project Developer}",
             "tag": "Placeholder",
-            "depends_on": "a#0000"
+            "operation": {
+                "type": "CREATE",
+                "fields": ["completed", "did_the_thing"]
+            },
+            "depends_on": "checkpoint:{a#0000}"
         }
     ]
 }

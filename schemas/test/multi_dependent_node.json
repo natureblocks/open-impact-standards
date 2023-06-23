@@ -8,56 +8,56 @@
         },
         {
             "id": 0,
-            "depends_on": "6 or 7"
+            "depends_on": "checkpoint:{6 or 7}"
         },
         {
             "id": 1,
-            "depends_on": "0"
+            "depends_on": "checkpoint:{0}"
         },
         {
             "id": 2,
-            "depends_on": "1"
+            "depends_on": "checkpoint:{1}"
         },
         {
             "id": 3,
-            "depends_on": "1"
+            "depends_on": "checkpoint:{1}"
         },
         {
             "id": 4,
-            "depends_on": "1"
+            "depends_on": "checkpoint:{1}"
         },
         {
             "id": 5,
-            "depends_on": "3 and 4"
+            "depends_on": "checkpoint:{3 and 4}"
         }
     ],
     "checkpoints": [
         {
             "alias": "0",
             "dependencies": [
-                {"node": {"action_id": 0}}
+                {"compare": {"left": {"ref": "action:{0}"}}}
             ]
         },
         {
             "alias": "1",
             "dependencies": [
-                {"node": {"action_id": 1}}
+                {"compare": {"left": {"ref": "action:{1}"}}}
             ]
         },
         {
             "alias": "3 and 4",
             "gate_type": "AND",
             "dependencies": [
-                {"node": {"action_id": 3}},
-                {"node": {"action_id": 4}}
+                {"compare": {"left": {"ref": "action:{3}"}}},
+                {"compare": {"left": {"ref": "action:{4}"}}}
             ]
         },
         {
             "alias": "6 or 7",
             "gate_type": "OR",
             "dependencies": [
-                {"node": {"action_id": 6}},
-                {"node": {"action_id": 7}}
+                {"compare": {"left": {"ref": "action:{6}"}}},
+                {"compare": {"left": {"ref": "action:{7}"}}}
             ]
         }
     ]

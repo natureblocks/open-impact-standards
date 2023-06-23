@@ -44,11 +44,11 @@ class TestDependencyGraph:
         )
 
         expected_node_depths = {
-            0: -3,
-            1: -2,
-            2: -2,
+            "0": -3,
+            "1": -2,
+            "2": -2,
             "1 and 2": -1,
-            3: 0,
+            "3": 0,
         }
         assert {
             action_id: coords[0] for action_id, coords in graph.node_coordinates.items()
@@ -63,42 +63,42 @@ class TestDependencyGraph:
         # If a node lists more than one dependency for the same node id, a gate should be created
         assert len(graph.gates) == 1
         expected_edge_dict = {
-            1: ["a#0000"],
-            "a#0000": [0, 0],
+            "1": ["a#0000"],
+            "a#0000": ["0", "0"],
         }
         assert graph.edge_dict == expected_edge_dict
 
     def test_multi_entrance_node_layouts(self):
         expected_node_depths = {
             "schemas/test/multi_entrance_node_layout_1.json": {
-                0: -2,
-                1: -2,
+                "0": -2,
+                "1": -2,
                 "0 and 1": -1,
-                2: 0,
+                "2": 0,
             },
             "schemas/test/multi_entrance_node_layout_2.json": {
-                0: -3,
-                1: -2,
-                2: -2,
+                "0": -3,
+                "1": -2,
+                "2": -2,
                 "1 and 2": -1,
-                3: 0,
+                "3": 0,
             },
             "schemas/test/multi_entrance_node_layout_3.json": {
-                10: 0,
+                "10": 0,
                 "8 and 9": -1,
-                9: -2,
-                8: -2,
+                "9": -2,
+                "8": -2,
                 "6 and 7": -3,
                 "4 and 5": -3,
-                7: -4,
-                6: -4,
-                5: -4,
-                4: -4,
+                "7": -4,
+                "6": -4,
+                "5": -4,
+                "4": -4,
                 "1 and 2": -5,
-                3: -5,
-                2: -6,
-                1: -6,
-                0: -7,
+                "3": -5,
+                "2": -6,
+                "1": -6,
+                "0": -7,
             },
         }
 
@@ -120,38 +120,38 @@ class TestDependencyGraph:
     def test_multi_exit_node_layouts(self):
         expected_node_depths = {
             "schemas/test/multi_exit_node_layout_1.json": {
-                0: -1,
-                1: 0,
-                2: 0,
+                "0": -1,
+                "1": 0,
+                "2": 0,
             },
             "schemas/test/multi_exit_node_layout_2.json": {
-                3: 0,
-                2: 0,
-                1: -1,
-                0: -2,
+                "3": 0,
+                "2": 0,
+                "1": -1,
+                "0": -2,
             },
             "schemas/test/multi_exit_node_layout_3.json": {
-                3: 0,
-                2: 0,
-                1: -1,
-                0: -2,
+                "3": 0,
+                "2": 0,
+                "1": -1,
+                "0": -2,
             },
             "schemas/test/multi_exit_node_layout_4.json": {
-                6: 0,
-                13: 0,
-                10: 0,
-                9: 0,
-                5: -1,
-                12: -1,
+                "6": 0,
+                "13": 0,
+                "10": 0,
+                "9": 0,
+                "5": -1,
+                "12": -1,
                 "4 and 7": -2,
-                11: -2,
-                7: -3,
-                4: -3,
-                8: -3,
-                3: -4,
-                2: -5,
-                1: -6,
-                0: -7,
+                "11": -2,
+                "7": -3,
+                "4": -3,
+                "8": -3,
+                "3": -4,
+                "2": -5,
+                "1": -6,
+                "0": -7,
             },
         }
 
@@ -176,8 +176,8 @@ class TestDependencyGraph:
 
     def test_edge_overlap_prevention(self):
         possible_overlaps = {
-            "schemas/test/edge_overlap_simple.json": {(1, 2, 5)},
-            "schemas/test/edge_overlap_double_span.json": {(1, 2, 7)},
+            "schemas/test/edge_overlap_simple.json": {("1", "2", "5")},
+            "schemas/test/edge_overlap_double_span.json": {("1", "2", "7")},
         }
 
         i = 1
@@ -206,21 +206,21 @@ class TestDependencyGraph:
         # graph.generate_miro_board(board_name="Test Result (test_gate_combinations)")
 
         expected_node_depths = {
-            7: 0,
+            "7": 0,
             "e#0000": -1,
             "d#0000": -2,
             "c#0000": -2,
-            6: -3,
-            5: -3,
+            "6": -3,
+            "5": -3,
             "b#0000": -3,
             "a#0000": -3,
-            8: -3,
-            9: -3,
-            4: -4,
-            3: -4,
-            2: -4,
-            1: -4,
-            0: -4,
+            "8": -3,
+            "9": -3,
+            "4": -4,
+            "3": -4,
+            "2": -4,
+            "1": -4,
+            "0": -4,
         }
         actual_depths = {
             action_id: coords[0] for action_id, coords in graph.node_coordinates.items()
@@ -235,15 +235,15 @@ class TestDependencyGraph:
         # graph.generate_miro_board(board_name="Test Result (test_multi_dependent_node)")
 
         expected_edge_tuples = [
-            (0, "6 or 7"),
-            ("6 or 7", 6),
-            ("6 or 7", 7),
-            (1, 0),
-            (2, 1),
-            (3, 1),
-            (4, 1),
-            (5, "3 and 4"),
-            ("3 and 4", 3),
-            ("3 and 4", 4),
+            ("0", "6 or 7"),
+            ("6 or 7", "6"),
+            ("6 or 7", "7"),
+            ("1", "0"),
+            ("2", "1"),
+            ("3", "1"),
+            ("4", "1"),
+            ("5", "3 and 4"),
+            ("3 and 4", "3"),
+            ("3 and 4", "4"),
         ]
         assert graph.edge_tuples == expected_edge_tuples

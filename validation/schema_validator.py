@@ -62,18 +62,33 @@ class SchemaValidator:
 
         return [action["id"] for action in self.schema["actions"]]
 
-    def _validate_field(
-        self, path, field, template, parent_object_template=None, parent_object=None
-    ):
+    def _validate_field(self, path, field, template, parent_object_template=None):
         if "types" in template:
-            return self._validate_multi_type_field(path, field, template["types"])
+            return self._validate_multi_type_field(
+                path, field, template["types"], parent_object_template
+            )
+
+        if "nullable" in template and template["nullable"] and field is None:
+            return []
 
         expected_type = template["type"]
 
-        if expected_type == "reference":
-            return self._validate_reference(
-                path, field, template, parent_object_template, parent_object
-            )
+        if expected_type == "ref":
+            return self._validate_ref(path, field, template)
+
+        if utils.is_path(expected_type):
+            if "{_corresponding_key}" in expected_type:
+                corresponding_key = path.split(".")[-1]
+                path_to_expected_type = expected_type.replace(
+                    "{_corresponding_key}", corresponding_key
+                )
+
+            dynamic_type = self._get_field(path_to_expected_type)
+
+            if not isinstance(dynamic_type, str):
+                raise Exception(f"Invalid template type: {expected_type}")
+
+            expected_type = dynamic_type.lower()
 
         type_validator = getattr(self, "_validate_" + expected_type, None)
 
@@ -82,9 +97,11 @@ class SchemaValidator:
                 "no validation method exists for type: " + expected_type
             )
 
-        return type_validator(path, field, template)
+        return type_validator(path, field, template, parent_object_template)
 
-    def _validate_multi_type_field(self, path, field, allowed_types):
+    def _validate_multi_type_field(
+        self, path, field, allowed_types, parent_object_template
+    ):
         for allowed_type in allowed_types:
             if isinstance(allowed_type, dict):
                 errors = self._validate_field(path, field, allowed_type)
@@ -96,7 +113,9 @@ class SchemaValidator:
                         "no validation method exists for type: " + allowed_type
                     )
 
-                errors = type_validator(path, field, {"type": allowed_type})
+                errors = type_validator(
+                    path, field, {"type": allowed_type}, parent_object_template
+                )
 
             if len(errors) == 0:
                 return []
@@ -105,14 +124,16 @@ class SchemaValidator:
             f"{self._context(path)}: expected one of {allowed_types}, got {str(type(field))}"
         ]
 
-    def _validate_object(self, path, field, template):
+    def _validate_object(self, path, field, template, parent_object_template=None):
         self._object_context = path
 
         if not isinstance(field, dict):
             return [f"{self._context(path)}: expected object, got {str(type(field))}"]
 
         if "any_of_templates" in template:
-            return self._validate_multi_template_object(path, field, template)
+            return self._validate_multi_template_object(
+                path, field, template, parent_object_template
+            )
 
         template = self._resolve_template(field, template)
 
@@ -130,12 +151,10 @@ class SchemaValidator:
                         f"{self._context(path)}: missing required property: {key}"
                     ]
 
-            if "forbidden" in template:
-                for key in template["forbidden"]["properties"]:
-                    if key in field:
-                        errors += [
-                            f"{self._context(path)}: forbidden property specified: {key}; reason: {template['forbidden']['reason']}"
-                        ]
+            if "constraints" in template:
+                errors += self._validate_constraints(
+                    path, field, template["constraints"]
+                )
 
             for key in field:
                 if key in template["properties"]:
@@ -144,7 +163,6 @@ class SchemaValidator:
                         field=field[key],
                         template=template["properties"][key],
                         parent_object_template=template,
-                        parent_object=field,
                     )
                 elif key in templates.RESERVED_KEYWORDS:
                     errors += [
@@ -153,32 +171,29 @@ class SchemaValidator:
 
         # For certain objects, the keys are not known ahead of time:
         elif "keys" in template and "values" in template:
-            if template["keys"]["type"] == "reference":
-                for key in field.keys():
-                    errors += self._validate_reference(path, key, template["keys"])
-            else:
-                for key in field.keys():
-                    errors += self._validate_string(
-                        path=f"{path}.keys", field=key, template=template["keys"]
-                    )
-
             for key in field.keys():
+                errors += self._validate_string(
+                    path=f"{path}.keys", field=key, template=template["keys"]
+                )
+
                 errors += self._validate_field(
                     path=f"{path}.{key}", field=field[key], template=template["values"]
                 )
 
-        if "unique" in template or "unique_if_not_null" in template:
-            errors += self._validate_unique(path, field, template)
-
         return errors
 
-    def _validate_multi_template_object(self, path, field, template):
+    def _validate_multi_template_object(
+        self, path, field, template, parent_object_template
+    ):
         if "any_of_templates" in template:
             allowed_templates = template["any_of_templates"]
             template_errors = []
             for template_name in allowed_templates:
                 errors = self._validate_object(
-                    path, field, utils.get_template(template_name)
+                    path,
+                    field,
+                    utils.get_template(template_name),
+                    parent_object_template,
                 )
                 if not errors:
                     return []
@@ -193,7 +208,7 @@ class SchemaValidator:
                 f"{self._context(path)}: object does not conform to any of the allowed template specifications: {str(allowed_templates)}"
             ] + template_errors
 
-    def _validate_array(self, path, field, template):
+    def _validate_array(self, path, field, template, parent_object_template):
         if not isinstance(field, list):
             return [f"{self._context(path)}: expected array, got {str(type(field))}"]
 
@@ -206,18 +221,25 @@ class SchemaValidator:
             )
             i += 1
 
-        if "distinct" in template and template["distinct"]:
-            if len(field) != len(set(field)):
-                errors += [
-                    f"{self._context(path)}: contains duplicate item(s) (values must be distinct)"
-                ]
+        if not errors and "constraints" in template:
+            if (
+                "distinct" in template["constraints"]
+                and template["constraints"]["distinct"]
+            ):
+                if len(field) != len(set(field)):
+                    errors += [
+                        f"{self._context(path)}: contains duplicate item(s) (values must be distinct)"
+                    ]
 
-        if "unique" in template or "unique_if_not_null" in template:
-            errors += self._validate_unique(path, field, template)
+            if (
+                "unique" in template["constraints"]
+                or "unique_if_not_null" in template["constraints"]
+            ):
+                errors += self._validate_unique(path, field, template["constraints"])
 
         return errors
 
-    def _validate_enum(self, path, field, template):
+    def _validate_enum(self, path, field, template, parent_object_template):
         if field in template["values"]:
             return []
 
@@ -225,9 +247,166 @@ class SchemaValidator:
             f"{self._context(path)}: invalid enum value: expected one of {str(template['values'])}, got {json.dumps(field)}"
         ]
 
-    def _validate_reference(
-        self, path, field, template, parent_object_template=None, parent_object=None
-    ):
+    def _validate_constraints(self, path, field, constraints):
+        errors = []
+
+        if "forbidden" in constraints:
+            for key in constraints["forbidden"]["properties"]:
+                if key in field:
+                    errors += [
+                        f"{self._context(path)}: forbidden property specified: {key}; reason: {constraints['forbidden']['reason']}"
+                    ]
+
+        if "unique" in constraints or "unique_if_not_null" in constraints:
+            errors += self._validate_unique(path, field, constraints)
+
+        if "validation_functions" in constraints:
+            for function_call in constraints["validation_functions"]:
+                fn = getattr(self, function_call["function"], None)
+                if callable(fn):
+                    parent_object = self._get_parent_object(path)
+                    arguments = []
+                    for a in function_call["args"]:
+                        split_arg_path = a.split(".")
+                        resolved_path_or_obj = self._resolve_path_variables(
+                            path, a.split("."), parent_object=parent_object
+                        )
+                        if len(split_arg_path) == 1:
+                            arguments.append(resolved_path_or_obj[0])
+                        else:
+                            arguments.append(
+                                self._get_field(resolved_path_or_obj, field)
+                            )
+
+                    errors += fn(path, *arguments)
+
+        return errors
+
+    def has_ancestor(self, action_id, ancestor_id):
+        def action_id_from_dependency_ref(dependency, left_or_right):
+            if "ref" not in dependency[left_or_right]:
+                return None
+            return utils.parse_ref_id(dependency[left_or_right]["ref"])
+
+        def has_ancestor_recursive(checkpoint_alias, visited_checkpoints):
+            if checkpoint_alias in visited_checkpoints:
+                return False
+
+            visited_checkpoints.append(checkpoint_alias)
+
+            checkpoint = self._checkpoints[checkpoint_alias]
+            for dependency in checkpoint["dependencies"]:
+                if "compare" in dependency:
+                    if (
+                        action_id_from_dependency_ref(dependency, "left") == ancestor_id
+                        or action_id_from_dependency_ref(dependency, "right")
+                        == ancestor_id
+                        == ancestor_id
+                    ):
+                        return True
+
+                elif "checkpoint" in dependency:
+                    if has_ancestor_recursive(
+                        dependency["checkpoint"], visited_checkpoints
+                    ):
+                        return True
+
+        return has_ancestor_recursive(self._action_checkpoints[action_id], [])
+
+    def validate_comparison(self, path, left, right, operator):
+        def extract_field_type(operand_object):
+            if "ref" in operand_object:
+                referenced_obj = self._resolve_ref(operand_object["ref"])
+                if referenced_obj is None:
+                    raise Exception("Failed to resolve ref: " + operand_object["ref"])
+
+                ref_type = operand_object["ref"].split(":")[0]
+                if ref_type != "action":
+                    raise NotImplementedError(
+                        "comparison validation not implemented for ref type: "
+                        + ref_type
+                    )
+
+                node_definition = self._get_field(f"nodes.{referenced_obj['tag']}")
+                return node_definition[operand_object["field"]]["field_type"]
+            else:
+                field_type = utils.field_type_from_python_type_name(
+                    type(operand_object["value"]).__name__
+                )
+                if field_type == "OBJECT":
+                    raise NotImplementedError(
+                        "comparison validation not implemented for type: " + field_type
+                    )
+                elif field_type == "LIST":
+                    if self._validate_string_list("", right) == []:
+                        return "STRING_LIST"
+                    if self._validate_numeric_list("", right) == []:
+                        return "NUMERIC_LIST"
+
+                return field_type
+
+        left_type = extract_field_type(left)
+        right_type = extract_field_type(right)
+
+        # recurring operator subsets
+        scalar_with_list = ["ONE_OF", "NONE_OF"]
+        list_with_scalar = ["CONTAINS", "DOES_NOT_CONTAIN"]
+        list_with_list = [
+            "EQUALS",
+            "DOES_NOT_EQUAL",
+            "CONTAINS_ANY_OF",
+            "IS_SUBSET_OF",
+            "IS_SUPERSET_OF",
+            "CONTAINS_NONE_OF",
+        ]
+
+        if left_type == "STRING":
+            if right_type == "STRING":
+                if operator in [
+                    "EQUALS",
+                    "DOES_NOT_EQUAL",
+                    "CONTAINS",
+                    "DOES_NOT_CONTAIN",
+                ]:
+                    return []
+            elif right_type == "STRING_LIST":
+                if operator in scalar_with_list:
+                    return []
+        elif left_type == "NUMERIC":
+            if right_type == "NUMERIC":
+                if operator in [
+                    "EQUALS",
+                    "DOES_NOT_EQUAL",
+                    "GREATER_THAN",
+                    "LESS_THAN",
+                    "GREATER_THAN_OR_EQUAL_TO",
+                    "LESS_THAN_OR_EQUAL_TO",
+                ]:
+                    return []
+            elif right_type == "NUMERIC_LIST":
+                if operator in scalar_with_list:
+                    return []
+        elif left_type == "BOOLEAN":
+            if right_type == "BOOLEAN" and operator == "EQUALS":
+                return []
+        elif left_type == "STRING_LIST":
+            if right_type == "STRING":
+                if operator in list_with_scalar:
+                    return []
+            elif right_type == "STRING_LIST":
+                if operator in list_with_list:
+                    return []
+        elif left_type == "NUMERIC_LIST":
+            if right_type == "NUMERIC":
+                if operator in list_with_scalar:
+                    return []
+            elif right_type == "NUMERIC_LIST":
+                if operator in list_with_list:
+                    return []
+
+        return [f"{self._context(path)}: invalid comparison: {left} {operator} {right}"]
+
+    def _validate_expected_value(self, path, field, template, parent_object_template):
         template_vars = (
             parent_object_template["template_vars"]
             if parent_object_template and "template_vars" in parent_object_template
@@ -237,13 +416,11 @@ class SchemaValidator:
         if "referenced_value" in template:
             # looking for a specific value
             reference_path = self._resolve_path_variables(
-                template["referenced_value"].split("."), template_vars, parent_object
+                path, template["referenced_value"].split("."), template_vars
             )
             sub_path = ".".join(reference_path[1:])
 
-            if reference_path[0] == "{corresponding_value}":
-                expected_value = self._get_field(f"{path}.{field}.{sub_path}")
-            elif reference_path[0] == "root":
+            if reference_path[0] == "root":
                 expected_value = self._get_field(sub_path)
             else:
                 raise NotImplementedError(
@@ -257,21 +434,75 @@ class SchemaValidator:
                     f"{self._context(path)}: expected {expected_value} ({'.'.join(reference_path)}), got {json.dumps(field)}"
                 ]
 
-        elif "references_any" in template:
+        elif "one_of" in template["expected_value"]:
             # looking for any matching value
-            references_any = copy.deepcopy(template["references_any"])
-            references_any["from"] = ".".join(
+            one_of = copy.deepcopy(template["expected_value"]["one_of"])
+            one_of["from"] = ".".join(
                 self._resolve_path_variables(
-                    references_any["from"].split("."), template_vars
+                    path, one_of["from"].split("."), template_vars
                 )
             )
 
-            return self._object_or_array_contains(path, field, references_any)
+            return self._object_or_array_contains(path, field, one_of)
 
         else:
-            raise NotImplementedError("unexpected reference template: " + str(template))
+            raise NotImplementedError(
+                "expected_value template not implemented: " + str(template)
+            )
 
-    def _validate_decimal(self, path, field, template=None):
+    def _validate_ref(self, path, field, template, parent_object_template=None):
+        if not utils.is_ref(field):
+            return [f"{self._context(path)}: expected ref, got {json.dumps(field)}"]
+
+        ref_type = field.split(":")[0]
+        if ref_type not in template["ref_types"]:
+            return [
+                f"{self._context(path)}: invalid ref type: expected one of {template['ref_types']}, got {ref_type}"
+            ]
+
+        referenced_object = self._resolve_ref(field)
+
+        return (
+            [
+                f"{self._context(path)}: invalid ref: object not found: {json.dumps(field)}"
+            ]
+            if referenced_object is None
+            else []
+        )
+
+    def _resolve_ref(self, ref):
+        ref_id = utils.parse_ref_id(ref)
+        ref_type = ref.split(":")[0]
+        ref_config = getattr(templates, ref_type)["ref_config"]
+        collection = self._get_field(ref_config["collection"])
+
+        for ref_field in ref_config["fields"]:
+            for item in collection:
+                if ref_field not in item:
+                    continue
+
+                if str(item[ref_field]) == ref_id:
+                    return item
+
+        return None
+
+    def _validate_scalar(self, path, field, template=None, parent_object_template=None):
+        valid_types = ["string", "decimal", "boolean", "string_list", "numeric_list"]
+
+        for scalar_type in valid_types:
+            if (
+                getattr(self, "_validate_" + scalar_type)(
+                    path, field, template, parent_object_template
+                )
+                == []
+            ):
+                return []
+
+        return [f"{self._context(path)}: expected scalar, got {str(type(field))}"]
+
+    def _validate_decimal(
+        self, path, field, template=None, parent_object_template=None
+    ):
         if (isinstance(field, float) or isinstance(field, int)) and not isinstance(
             field, bool
         ):
@@ -279,13 +510,15 @@ class SchemaValidator:
 
         return [f"{self._context(path)}: expected decimal, got {str(type(field))}"]
 
-    def _validate_integer(self, path, field, template=None):
+    def _validate_integer(
+        self, path, field, template=None, parent_object_template=None
+    ):
         if isinstance(field, int) and not isinstance(field, bool):
             return []
 
         return [f"{self._context(path)}: expected integer, got {str(type(field))}"]
 
-    def _validate_string(self, path, field, template=None):
+    def _validate_string(self, path, field, template=None, parent_object_template=None):
         if not isinstance(field, str):
             return [f"{self._context(path)}: expected string, got {str(type(field))}"]
 
@@ -299,9 +532,16 @@ class SchemaValidator:
                 f"{self._context(path)}: string does not match {pattern_description}pattern: {template['pattern']}"
             ]
 
+        if "expected_value" in template:
+            return self._validate_expected_value(
+                path, field, template, parent_object_template
+            )
+
         return []
 
-    def _validate_integer_string(self, path, field, template=None):
+    def _validate_integer_string(
+        self, path, field, template=None, parent_object_template=None
+    ):
         # Allow string representations of negative integers, e.g. "-1"
         if str(field)[0] == "-":
             field = str(field)[1:]
@@ -313,15 +553,52 @@ class SchemaValidator:
 
         return []
 
-    def _validate_boolean(self, path, field, template=None):
+    def _validate_boolean(
+        self, path, field, template=None, parent_object_template=None
+    ):
         if isinstance(field, bool):
             return []
 
         return [f"{self._context(path)}: expected boolean, got {str(type(field))}"]
 
+    def _validate_string_list(
+        self, path, field, template=None, parent_object_template=None
+    ):
+        if not isinstance(field, list):
+            return [f"{self._context(path)}: expected list, got {str(type(field))}"]
+
+        for item in field:
+            if not isinstance(item, str):
+                return [
+                    f"{self._context(path)}: expected list of strings, found {str(type(item))}"
+                ]
+
+        return []
+
+    def _validate_numeric_list(
+        self, path, field, template=None, parent_object_template=None
+    ):
+        if not isinstance(field, list):
+            return [f"{self._context(path)}: expected list, got {str(type(field))}"]
+
+        for item in field:
+            if self._validate_decimal("", item) != []:
+                return [
+                    f"{self._context(path)}: expected list of numbers, found {str(type(item))}"
+                ]
+
+        return []
+
     def _field_is_required(self, key, template):
-        if ("optional" in template and key in template["optional"]) or (
-            "forbidden" in template and key in template["forbidden"]["properties"]
+        if "constraints" not in template:
+            return True  # default to required
+
+        if (
+            "optional" in template["constraints"]
+            and key in template["constraints"]["optional"]
+        ) or (
+            "forbidden" in template["constraints"]
+            and key in template["constraints"]["forbidden"]["properties"]
         ):
             return False
 
@@ -331,23 +608,32 @@ class SchemaValidator:
         return "forbidden" in template and key in template["forbidden"]
 
     def _validate_min_length(self, path, field, template):
-        if "min_length" in template and len(field) < template["min_length"]:
+        if "constraints" not in template or "min_length" not in template["constraints"]:
+            return []
+
+        if len(field) < template["constraints"]["min_length"]:
             return [
-                f"{self._context(path)}: must contain at least {template['min_length']} item(s), got {len(field)}"
+                f"{self._context(path)}: must contain at least {template['constraints']['min_length']} item(s), got {len(field)}"
             ]
 
         return []
 
-    def _validate_unique(self, path, field, template):
+    def _validate_unique(self, path, field, constraints):
         if not isinstance(field, list) and not isinstance(field, dict):
             raise NotImplementedError(
                 "unique validation not implemented for type " + str(type(field))
             )
 
+        unique_fields = constraints["unique"] if "unique" in constraints else []
+        unique_composites = (
+            constraints["unique_composites"]
+            if "unique_composites" in constraints
+            else []
+        )
         constraint_map = {
-            "unique": template["unique"] if "unique" in template else [],
-            "unique_if_not_null": template["unique_if_not_null"]
-            if "unique_if_not_null" in template
+            "unique": unique_fields + unique_composites,
+            "unique_if_not_null": constraints["unique_if_not_null"]
+            if "unique_if_not_null" in constraints
             else [],
         }
 
@@ -394,7 +680,7 @@ class SchemaValidator:
                             unique_values[item[field_name]] = (
                                 item[field_name] not in unique_values
                             )
-                    elif "." in field_name:
+                    elif utils.is_path(field_name):
                         val = self._get_field(field_name, obj=item)
                         unique_values[val] = val not in unique_values
 
@@ -463,7 +749,7 @@ class SchemaValidator:
 
     def _object_or_array_contains(self, path, referenced_value, reference_template):
         referenced_path = reference_template["from"]
-        referenced_prop = reference_template["property"]
+        referenced_prop = reference_template["extract"]
 
         objectOrArray = self._get_field(referenced_path)
 
@@ -497,7 +783,7 @@ class SchemaValidator:
                 ]
 
         elif isinstance(objectOrArray, list):
-            if "." in referenced_prop:
+            if utils.is_path(referenced_prop):
                 referenced_prop_path = referenced_prop.split(".")
                 referenced_prop_name = (
                     referenced_prop_path.pop()
@@ -564,11 +850,16 @@ class SchemaValidator:
                 included_props.append(prop)
 
         modified_template = copy.deepcopy(template)
-        modified_template["optional"] = [
-            prop
-            for prop in modified_template["mutually_exclusive"]
-            if prop not in included_props
-        ]
+
+        if "constraints" not in modified_template:
+            modified_template["constraints"] = {}
+
+        if "forbidden" not in modified_template["constraints"]:
+            modified_template["constraints"]["forbidden"] = {"properties": []}
+
+        for prop in modified_template["mutually_exclusive"]:
+            if prop not in included_props:
+                modified_template["constraints"]["forbidden"]["properties"].append(prop)
 
         if len(included_props) > 1:
             return (
@@ -595,7 +886,6 @@ class SchemaValidator:
                 and template_name in template["template_modifiers"]
             ):
                 template = self._apply_template_modifiers(
-                    field,
                     referenced_template,
                     template["template_modifiers"][template_name],
                 )
@@ -607,29 +897,43 @@ class SchemaValidator:
 
         return self._evaluate_template_conditionals(field, template)
 
-    def _resolve_path_variables(self, path_segments, template_vars, parent_object=None):
-        if not isinstance(path_segments, list):
+    def _resolve_path_variables(
+        self, path, path_segments_to_resolve, template_vars={}, parent_object=None
+    ):
+        if not isinstance(path_segments_to_resolve, list):
             raise Exception("path_segments must be a list")
 
-        for i in range(len(path_segments)):
-            var = path_segments[i]
+        if path_segments_to_resolve[0] == "{_parent}":
+            # Replace "{_parent}" with the parent object's path
+            path_segments_to_resolve = (
+                path.split(".")[:-1] + path_segments_to_resolve[1:]
+            )
+
+        for i in range(len(path_segments_to_resolve)):
+            var = path_segments_to_resolve[i]
             if isinstance(var, list):
                 continue
 
             # template variable?
             if re.match(r"^\{\$\w+\}$", var):
-                path_segments[i] = template_vars[var[1:-1]]
+                path_segments_to_resolve[i] = template_vars[var[1:-1]]
 
             # referenced field from parent object?
             if re.match(r"^\{\w+\}$", var) and var not in [
-                "{this}",
-                "{corresponding_value}",
+                "{_this}",
+                "{_corresponding_key}",
+                "{_item}",
             ]:
-                path_segments[i] = self._get_field(var[1:-1], parent_object)
+                path_segments_to_resolve[i] = self._get_field(
+                    var[1:-1], self._get_field(path)
+                )
 
-        return path_segments
+        return path_segments_to_resolve
 
-    def _apply_template_modifiers(self, field, referenced_template, template_modifiers):
+    def _get_parent_object(self, path):
+        return self._get_field(path.split(".")[:-1])
+
+    def _apply_template_modifiers(self, referenced_template, template_modifiers):
         modified_template = copy.deepcopy(referenced_template)
 
         for prop, prop_modifiers in template_modifiers.items():
@@ -672,6 +976,10 @@ class SchemaValidator:
                     )
 
         if "switch" in template:
+            raise NotImplementedError(
+                "unit tests are needed for template switch statements"
+            )
+
             for case in modified_template["switch"]["cases"]:
                 if (
                     template["switch"]["property"] in field
@@ -723,7 +1031,11 @@ class SchemaValidator:
                 prop = utils.field_type_from_python_type_name(type(prop).__name__)
 
         operator = condition["operator"]
-        value = condition["value"]
+        value = (
+            self._get_field(condition["value"], field)
+            if utils.is_path(condition["value"])
+            else condition["value"]
+        )
 
         if operator == "EQUALS":
             return prop == value
@@ -749,23 +1061,36 @@ class SchemaValidator:
         if operator == "ONE_OF":
             return prop in value
 
+        if operator == "IS_REFERENCED_BY":
+            return utils.is_ref(value) and utils.parse_ref_id(value) == prop
+
         raise NotImplementedError(
             "template operator not yet supported: " + str(operator)
         )
 
     def _apply_template_conditionals(self, conditional_modifiers, to_template):
         for key in conditional_modifiers:
-            if key == "property_modifiers":
+            if key == "override_properties" or key == "add_properties":
                 for prop, prop_modifier in conditional_modifiers[key].items():
                     to_template["properties"][prop] = prop_modifier
+            elif key == "add_constraints":
+                if "constraints" not in to_template:
+                    to_template["constraints"] = {}
+
+                for constraint_name, constraint in conditional_modifiers[key].items():
+                    to_template["constraints"][constraint_name] = constraint
             else:
-                to_template[key] = conditional_modifiers[key]
+                raise NotImplementedError(
+                    "Unexpected key in conditional modifiers: " + key
+                )
 
         return to_template
 
     def _collect_action_checkpoint(self, action):
         if "id" in action and "depends_on" in action:
-            self._action_checkpoints[action["id"]] = action["depends_on"]
+            self._action_checkpoints[str(action["id"])] = utils.parse_ref_id(
+                action["depends_on"]
+            )
 
     def _collect_checkpoint(self, checkpoint):
         if "alias" in checkpoint:
@@ -775,21 +1100,27 @@ class SchemaValidator:
         def _explore_checkpoint_recursive(checkpoint, visited, dependency_path):
             for dependency in checkpoint["dependencies"]:
                 # Could be a Dependency or a CheckpointReference
-                if "node" in dependency:
+                if "compare" in dependency:
                     # Dependency
-                    errors = _explore_recursive(
-                        dependency["node"]["action_id"],
-                        visited,
-                        dependency_path,
-                    )
+                    for operand in ["left", "right"]:
+                        if "ref" in dependency["compare"][operand]:
+                            errors = _explore_recursive(
+                                utils.parse_ref_id(
+                                    dependency["compare"][operand]["ref"]
+                                ),
+                                visited,
+                                dependency_path,
+                            )
 
-                    if errors:
-                        return errors
+                            if errors:
+                                return errors
 
                 elif "checkpoint" in dependency:
                     # CheckpointReference
                     errors = _explore_checkpoint_recursive(
-                        checkpoint=self._checkpoints[dependency["checkpoint"]],
+                        checkpoint=self._checkpoints[
+                            utils.parse_ref_id(dependency["checkpoint"])
+                        ],
                         visited=visited,
                         dependency_path=dependency_path,
                     )
@@ -802,6 +1133,7 @@ class SchemaValidator:
         def _explore_recursive(action_id, visited, dependency_path):
             if action_id in dependency_path:
                 if len(dependency_path) > 1:
+                    dependency_path = json.dumps(dependency_path).replace('"', "")
                     return [
                         f"Circular dependency detected (dependency path: {dependency_path})"
                     ]
@@ -831,7 +1163,7 @@ class SchemaValidator:
 
         visited = set()
         for action_id in self._action_checkpoints.keys():
-            errors = _explore_recursive(action_id, visited, dependency_path=[])
+            errors = _explore_recursive(str(action_id), visited, dependency_path=[])
             # It's simpler to return immediately when a circular dependency is found
             if errors:
                 return errors
@@ -846,7 +1178,7 @@ class SchemaValidator:
         # add the path and context resolver here.
         context_resolvers = {
             "root.actions": lambda path: "node id: "
-            + str(self._resolve_action_id(path))
+            + str(self._action_id_from_path(path))
             if path != "root.actions"
             else ""
         }
@@ -866,7 +1198,7 @@ class SchemaValidator:
             f" ({','.join(self._path_context)})" if self._path_context else ""
         )
 
-    def _resolve_action_id(self, path):
+    def _action_id_from_path(self, path):
         ex = Exception(
             f"Cannot resolve node id: path does not lead to a node object ({path})"
         )
@@ -890,7 +1222,7 @@ class SchemaValidator:
 
         "from" is a schema property or path to be resolved as the query source.
             - Must begin with one of the following:
-                - "{this}" (obj argument)
+                - "{_this}" (obj argument)
                 - "root" (the root schema object)
 
         "where" is a filter clause to be applied to the "from" clause.
@@ -902,7 +1234,7 @@ class SchemaValidator:
             raise Exception(f"Invalid query: {query}")
 
         from_path = query["from"].split(".")
-        if from_path[0] == "{this}":
+        if from_path[0] == "{_this}":
             from_collection = self._get_field(".".join(from_path[1:]), obj)
         elif from_path[0] == "root":
             from_collection = self._get_field(".".join(from_path[1:]))
@@ -941,7 +1273,12 @@ class SchemaValidator:
             raise Exception(f"Invalid 'where' clause in query: {where_clause}")
 
     def _evaluate_query_condition(self, condition, item, parent_obj):
-        left_operand = self._get_field(condition["property"], item)
+        prop = (
+            condition["property"].replace("{_item}", item)
+            if isinstance(item, str)
+            else condition["property"]
+        )
+        left_operand = self._get_field(prop, item)
 
         if self._matches_meta_template("query", condition["value"]):
             right_operand = self._resolve_query(parent_obj, condition["value"])
@@ -953,6 +1290,10 @@ class SchemaValidator:
             return left_operand == right_operand
         elif condition["operator"] == "IN":
             return left_operand in right_operand
+        elif condition["operator"] == "IS_REFERENCED_BY":
+            if right_operand is None:
+                print("...")
+            return str(left_operand) == utils.parse_ref_id(right_operand)
         else:
             raise Exception(
                 f"Query 'where' clause operator not implemented: {condition['operator']}"

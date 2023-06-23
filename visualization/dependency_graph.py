@@ -2,7 +2,7 @@ import hashlib
 import networkx as nx
 import json
 from validation.schema_validator import SchemaValidator
-from validation.utils import recursive_sort
+from validation.utils import recursive_sort, parse_ref_id
 from visualization.dependency_chart_layout import DependencyChartLayout
 from services.miro import MiroBoard
 
@@ -35,7 +35,7 @@ class DependencyGraph:
         self.edge_captions = {}
         self.dependency_hashes = (
             {}
-        )  # used to prevent duplicate dependencies from being added to a gate
+        )  # this is used to prevent duplicate dependencies from being added to a gate
 
         self.layout_algorithm = "dependency_chart"
         self.node_height = 2
@@ -68,7 +68,7 @@ class DependencyGraph:
     def _json_schema_to_graph(self):
         self.graph = nx.DiGraph()
 
-        self.actions = {n["id"]: n for n in self.schema["actions"]}
+        self.actions = {str(n["id"]): n for n in self.schema["actions"]}
         self.checkpoints = {c["alias"]: c for c in self.schema["checkpoints"]}
 
         self.edge_tuples = []
@@ -80,7 +80,7 @@ class DependencyGraph:
                 continue
 
             self._explore_edges_recursive(
-                action_id, checkpoint_alias=action["depends_on"]
+                action_id, checkpoint_alias=parse_ref_id(action["depends_on"])
             )
 
         self._set_node_coordinates()
@@ -120,17 +120,27 @@ class DependencyGraph:
             # connect the gate to the nodes it depends on
             for dep in checkpoint["dependencies"]:
                 # checkpoints can contain standalone dependencies and checkpoint references
-                if "node" in dep:
+                if "compare" in dep:
                     if is_duplicate_dependency(checkpoint_alias, dep):
                         continue
 
-                    self._add_edge(
-                        checkpoint_alias,
-                        dep["node"]["action_id"],
-                        action_dependency=dep["node"],
-                    )
+                    for operand in ["left", "right"]:
+                        if (
+                            operand not in dep["compare"]
+                            or "ref" not in dep["compare"][operand]
+                        ):
+                            continue
+
+                        if "ref" in dep["compare"][operand]:
+                            self._add_edge(
+                                checkpoint_alias,
+                                parse_ref_id(dep["compare"][operand]["ref"]),
+                                action_dependency=dep["compare"],
+                            )
                 elif "checkpoint" in dep:
-                    self._explore_edges_recursive(checkpoint_alias, dep["checkpoint"])
+                    self._explore_edges_recursive(
+                        checkpoint_alias, parse_ref_id(dep["checkpoint"])
+                    )
 
         elif num_dependencies == 1:
             # standalone dependency
@@ -140,14 +150,25 @@ class DependencyGraph:
             if is_duplicate_dependency(dependent_id, dependency):
                 return
 
-            to_action_id = dependency["node"]["action_id"]
-            self._add_edge(
-                dependent_id, to_action_id, action_dependency=dependency["node"]
-            )
+            for operand in ["left", "right"]:
+                if (
+                    operand not in dependency["compare"]
+                    or "ref" not in dependency["compare"][operand]
+                ):
+                    continue
 
-            action = self.actions[to_action_id]
-            if "depends_on" in action:
-                return self._explore_edges_recursive(to_action_id, action["depends_on"])
+                if "ref" in dependency["compare"][operand]:
+                    to_action_id = parse_ref_id(dependency["compare"][operand]["ref"])
+
+                self._add_edge(
+                    dependent_id, to_action_id, action_dependency=dependency["compare"]
+                )
+
+                action = self.actions[to_action_id]
+                if "depends_on" in action:
+                    self._explore_edges_recursive(
+                        to_action_id, parse_ref_id(action["depends_on"])
+                    )
 
     def generate_miro_board(self, board_id=None, board_name=None):
         mb = MiroBoard(board_id)
@@ -183,8 +204,8 @@ class DependencyGraph:
             shape_dict[action_id] = mb.create_shape(
                 shape_type=shape_types["ACTION"],
                 content=node["description"] if "description" in node else node["id"],
-                fill_color=self.party_colors[node["applies_to"]]
-                if "applies_to" in node
+                fill_color=self.party_colors[parse_ref_id(node["party"])]
+                if "party" in node
                 else self._default_node_color,
                 x=x,
                 y=y,
@@ -293,20 +314,23 @@ class DependencyGraph:
 
         if (
             action_dependency
-            and "field_name" in action_dependency
-            and "comparison_operator" in action_dependency
-            and "comparison_value_type" in action_dependency
+            and "left" in action_dependency
+            and "right" in action_dependency
+            and "operator" in action_dependency
         ):
             self.edge_captions[edge_tuple].append(
-                action_dependency["field_name"]
+                (
+                    action_dependency["left"]["field"]
+                    if "field" in action_dependency["left"]
+                    else action_dependency["left"]["value"]
+                )
                 + " "
-                + _comparison_operator_map[action_dependency["comparison_operator"]]
+                + _comparison_operator_map[action_dependency["operator"]]
                 + " "
-                + str(
-                    action_dependency[
-                        action_dependency["comparison_value_type"].lower()
-                        + "_comparison_value"
-                    ]
+                + (
+                    str(action_dependency["right"]["value"])
+                    if "value" in action_dependency["right"]
+                    else action_dependency["right"]["field"]
                 )
             )
         elif checkpoint_dependency and "description" in checkpoint_dependency:
@@ -365,6 +389,7 @@ _comparison_operator_map = {
     "CONTAINS": "CONTAINS",
     "DOES_NOT_CONTAIN": "DOES NOT CONTAIN",
     "CONTAINS_ANY_OF": "CONTAINS ANY OF",
-    "CONTAINS_ALL_OF": "CONTAINS ALL OF",
     "CONTAINS_NONE_OF": "CONTAINS NONE OF",
+    "IS_SUPERSET_OF": "IS SUPERSET OF",
+    "IS_SUBSET_OF": "IS SUBSET OF",
 }

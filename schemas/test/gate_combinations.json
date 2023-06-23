@@ -4,43 +4,43 @@
             "alias": "a#0000",
             "gate_type": "AND",
             "dependencies": [
-                {"node": {"action_id": 0}},
-                {"node": {"action_id": 1}},
-                {"node": {"action_id": 2}}
+                {"compare": {"left": {"ref": "action:{0}"}}},
+                {"compare": {"left": {"ref": "action:{1}"}}},
+                {"compare": {"left": {"ref": "action:{2}"}}}
             ]
         },
         {
             "alias": "b#0000",
             "gate_type": "OR",
             "dependencies": [
-                {"node": {"action_id": 3}},
-                {"node": {"action_id": 4}}
+                {"compare": {"left": {"ref": "action:{3}"}}},
+                {"compare": {"left": {"ref": "action:{4}"}}}
             ]
         },
         {
             "alias": "c#0000",
             "gate_type": "AND",
             "dependencies": [
-                {"node": {"action_id": 5}},
-                {"node": {"action_id": 6}}
+                {"compare": {"left": {"ref": "action:{5}"}}},
+                {"compare": {"left": {"ref": "action:{6}"}}}
             ]
         },
         {
             "alias": "d#0000",
             "gate_type": "AND",
             "dependencies": [
-                {"checkpoint": "a#0000"},
-                {"checkpoint": "b#0000"},
-                {"node": {"action_id": 8}},
-                {"node": {"action_id": 9}}
+                {"checkpoint": "checkpoint:{a#0000}"},
+                {"checkpoint": "checkpoint:{b#0000}"},
+                {"compare": {"left": {"ref": "action:{8}"}}},
+                {"compare": {"left": {"ref": "action:{9}"}}}
             ]
         },
         {
             "alias": "e#0000",
             "gate_type": "OR",
             "dependencies": [
-                {"checkpoint": "c#0000"},
-                {"checkpoint": "d#0000"}
+                {"checkpoint": "checkpoint:{c#0000}"},
+                {"checkpoint": "checkpoint:{d#0000}"}
             ]
         }
     ],
@@ -68,7 +68,7 @@
         },
         {
             "id": 7,
-            "depends_on": "e#0000"
+            "depends_on": "checkpoint:{e#0000}"
         },
         {
             "id": 8

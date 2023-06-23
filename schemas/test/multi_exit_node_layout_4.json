@@ -5,112 +5,112 @@
         },
         {
             "id": 1,
-            "depends_on": "0"
+            "depends_on": "checkpoint:{0}"
         },
         {
             "id": 2,
-            "depends_on": "1"
+            "depends_on": "checkpoint:{1}"
         },
         {
             "id": 3,
-            "depends_on": "2"
+            "depends_on": "checkpoint:{2}"
         },
         {
             "id": 4,
-            "depends_on": "3"
+            "depends_on": "checkpoint:{3}"
         },
         {
             "id": 5,
-            "depends_on": "4 and 7"
+            "depends_on": "checkpoint:{4 and 7}"
         },
         {
             "id": 6,
-            "depends_on": "5"
+            "depends_on": "checkpoint:{5}"
         },
         {
             "id": 8,
-            "depends_on": "1"
+            "depends_on": "checkpoint:{1}"
         },
         {
             "id": 9,
-            "depends_on": "8"
+            "depends_on": "checkpoint:{8}"
         },
         {
             "id": 11,
-            "depends_on": "8"
+            "depends_on": "checkpoint:{8}"
         },
         {
             "id": 10,
-            "depends_on": "11"
+            "depends_on": "checkpoint:{11}"
         },
         {
             "id": 12,
-            "depends_on": "11"
+            "depends_on": "checkpoint:{11}"
         },
         {
             "id": 13,
-            "depends_on": "12"
+            "depends_on": "checkpoint:{12}"
         },
         {
             "id": 7,
-            "depends_on": "2"
+            "depends_on": "checkpoint:{2}"
         }
     ],
     "checkpoints": [
         {
             "alias": "0",
             "dependencies": [
-                {"node": {"action_id": 0}}
+                {"compare": {"left": {"ref": "action:{0}"}}}
             ]
         },
         {
             "alias": "1",
             "dependencies": [
-                {"node": {"action_id": 1}}
+                {"compare": {"left": {"ref": "action:{1}"}}}
             ]
         },
         {
             "alias": "2",
             "dependencies": [
-                {"node": {"action_id": 2}}
+                {"compare": {"left": {"ref": "action:{2}"}}}
             ]
         },
         {
             "alias": "3",
             "dependencies": [
-                {"node": {"action_id": 3}}
+                {"compare": {"left": {"ref": "action:{3}"}}}
             ]
         },
         {
             "alias": "4 and 7",
             "gate_type": "AND",
             "dependencies": [
-                {"node": {"action_id": 4}},
-                {"node": {"action_id": 7}}
+                {"compare": {"left": {"ref": "action:{4}"}}},
+                {"compare": {"left": {"ref": "action:{7}"}}}
             ]
         },
         {
             "alias": "5",
             "dependencies": [
-                {"node": {"action_id": 5}}
+                {"compare": {"left": {"ref": "action:{5}"}}}
             ]
         },
         {
             "alias": "8",
             "dependencies": [
-                {"node": {"action_id": 8}}
+                {"compare": {"left": {"ref": "action:{8}"}}}
             ]
         },
         {
             "alias": "11",
             "dependencies": [
-                {"node": {"action_id": 11}}
+                {"compare": {"left": {"ref": "action:{11}"}}}
             ]
         },
         {
             "alias": "12",
             "dependencies": [
-                {"node": {"action_id": 12}}
+                {"compare": {"left": {"ref": "action:{12}"}}}
             ]
         }
     ]

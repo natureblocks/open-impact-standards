@@ -5,28 +5,28 @@
         },
         {
             "id": 1,
-            "depends_on": "0"
+            "depends_on": "checkpoint:{0}"
         },
         {
             "id": 2,
-            "depends_on": "0"
+            "depends_on": "checkpoint:{0}"
         },
         {
             "id": 3,
-            "depends_on": "1"
+            "depends_on": "checkpoint:{1}"
         }
     ],
     "checkpoints": [
         {
             "alias": "0",
             "dependencies": [
-                {"node": {"action_id": 0}}
+                {"compare": {"left": {"ref": "action:{0}"}}}
             ]
         },
         {
             "alias": "1",
             "dependencies": [
-                {"node": {"action_id": 1}}
+                {"compare": {"left": {"ref": "action:{1}"}}}
             ]
         }
     ]

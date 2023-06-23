@@ -5,30 +5,30 @@
         },
         {
             "id": 1,
-            "depends_on": "0"
+            "depends_on": "checkpoint:{0}"
         },
         {
             "id": 2,
-            "depends_on": "0"
+            "depends_on": "checkpoint:{0}"
         },
         {
             "id": 3,
-            "depends_on": "1 and 2"
+            "depends_on": "checkpoint:{1 and 2}"
         }
     ],
     "checkpoints": [
         {
             "alias": "0",
             "dependencies": [
-                {"node": {"action_id": 0}}
+                {"compare": {"left": {"ref": "action:{0}"}}}
             ]
         },
         {
             "alias": "1 and 2",
             "gate_type": "AND",
             "dependencies": [
-                {"node": {"action_id": 1}},
-                {"node": {"action_id": 2}}
+                {"compare": {"left": {"ref": "action:{1}"}}},
+                {"compare": {"left": {"ref": "action:{2}"}}}
             ]
         }
     ]
