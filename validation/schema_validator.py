@@ -31,6 +31,8 @@ class SchemaValidator:
                 "must provide an argument for schema, json_file_path, or json_string"
             )
 
+        self._collect_actions_and_checkpoints()
+
         self.errors = (
             self._validate_object("root", self.schema, templates.root_object)
             + self._detect_circular_dependencies()
@@ -282,15 +284,24 @@ class SchemaValidator:
 
         return errors
 
-    def has_ancestor(self, action_id, ancestor_id):
+    def has_ancestor(self, path, action_id, ancestor_ref, ancestor_source):
+        error = [
+            f"{self._context(path)}: the value of property {json.dumps(ancestor_source)} must be an ancestor of action id {json.dumps(action_id)}, got {json.dumps(ancestor_ref)}"
+        ]
+
+        if ancestor_ref is None:
+            return error
+
+        ancestor_id = utils.parse_ref_id(ancestor_ref)
+
         def action_id_from_dependency_ref(dependency, left_or_right):
-            if "ref" not in dependency[left_or_right]:
+            if "ref" not in dependency["compare"][left_or_right]:
                 return None
-            return utils.parse_ref_id(dependency[left_or_right]["ref"])
+            return utils.parse_ref_id(dependency["compare"][left_or_right]["ref"])
 
         def has_ancestor_recursive(checkpoint_alias, visited_checkpoints):
-            if checkpoint_alias in visited_checkpoints:
-                return False
+            if checkpoint_alias is None or checkpoint_alias in visited_checkpoints:
+                return error
 
             visited_checkpoints.append(checkpoint_alias)
 
@@ -301,17 +312,18 @@ class SchemaValidator:
                         action_id_from_dependency_ref(dependency, "left") == ancestor_id
                         or action_id_from_dependency_ref(dependency, "right")
                         == ancestor_id
-                        == ancestor_id
                     ):
-                        return True
+                        return []
 
                 elif "checkpoint" in dependency:
                     if has_ancestor_recursive(
                         dependency["checkpoint"], visited_checkpoints
                     ):
-                        return True
+                        return []
 
-        return has_ancestor_recursive(self._action_checkpoints[action_id], [])
+            return error
+
+        return has_ancestor_recursive(self._action_checkpoints[str(action_id)], [])
 
     def validate_comparison(self, path, left, right, operator):
         def extract_field_type(operand_object):
@@ -716,6 +728,7 @@ class SchemaValidator:
 
         for key in path if isinstance(path, list) else path.split("."):
             if key == "root":
+                obj = self.schema
                 continue
 
             if isinstance(obj, dict):
@@ -875,11 +888,6 @@ class SchemaValidator:
         if "template" in template:
             template_name = template["template"]
             referenced_template = utils.get_template(template_name)
-
-            if template_name == "action":
-                self._collect_action_checkpoint(field)
-            elif template_name == "checkpoint":
-                self._collect_checkpoint(field)
 
             if (
                 "template_modifiers" in template
@@ -1086,15 +1094,24 @@ class SchemaValidator:
 
         return to_template
 
-    def _collect_action_checkpoint(self, action):
-        if "id" in action and "depends_on" in action:
-            self._action_checkpoints[str(action["id"])] = utils.parse_ref_id(
-                action["depends_on"]
-            )
+    def _collect_actions_and_checkpoints(self):
+        if "actions" not in self.schema or not isinstance(self.schema["actions"], list):
+            return
 
-    def _collect_checkpoint(self, checkpoint):
-        if "alias" in checkpoint:
-            self._checkpoints[checkpoint["alias"]] = checkpoint
+        self._action_checkpoints = {}
+        self._checkpoints = {}
+
+        for action in self.schema["actions"]:
+            if "id" in action:
+                self._action_checkpoints[str(action["id"])] = (
+                    utils.parse_ref_id(action["depends_on"])
+                    if "depends_on" in action
+                    else None
+                )
+
+        for checkpoint in self.schema["checkpoints"]:
+            if "alias" in checkpoint:
+                self._checkpoints[checkpoint["alias"]] = checkpoint
 
     def _detect_circular_dependencies(self):
         def _explore_checkpoint_recursive(checkpoint, visited, dependency_path):
@@ -1109,7 +1126,7 @@ class SchemaValidator:
                                     dependency["compare"][operand]["ref"]
                                 ),
                                 visited,
-                                dependency_path,
+                                dependency_path.copy(),
                             )
 
                             if errors:
@@ -1122,7 +1139,7 @@ class SchemaValidator:
                             utils.parse_ref_id(dependency["checkpoint"])
                         ],
                         visited=visited,
-                        dependency_path=dependency_path,
+                        dependency_path=dependency_path.copy(),
                     )
 
                     if errors:
@@ -1177,7 +1194,7 @@ class SchemaValidator:
         # For paths that should include some sort of context,
         # add the path and context resolver here.
         context_resolvers = {
-            "root.actions": lambda path: "node id: "
+            "root.actions": lambda path: "action id: "
             + str(self._action_id_from_path(path))
             if path != "root.actions"
             else ""

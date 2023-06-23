@@ -239,7 +239,6 @@ checkpoint = {
                 "type": "object",
                 "any_of_templates": ["dependency", "checkpoint_reference"],
             },
-            "min_length": 1,
         },
     },
     "constraints": {
@@ -384,25 +383,20 @@ action = {
                             "optional": ["default_values", "default_edges"],
                         },
                     },
-                    "else_if": {
-                        "property": "type",
-                        "operator": "EQUALS",
-                        "value": "EDIT",
-                        "then": {
-                            "add_properties": {
-                                "action_id": {
-                                    "type": "ref",
-                                    "ref_types": ["action"],
-                                },
+                    "else": {
+                        "add_properties": {
+                            "ref": {
+                                "type": "ref",
+                                "ref_types": ["action"],
                             },
-                            "add_constraints": {
-                                "validation_functions": [
-                                    {
-                                        "function": "has_ancestor",
-                                        "args": ["{_parent}.id", "{action_id}"],
-                                    }
-                                ],
-                            },
+                        },
+                        "add_constraints": {
+                            "validation_functions": [
+                                {
+                                    "function": "has_ancestor",
+                                    "args": ["{_parent}.id", "{ref}", "ref"],
+                                }
+                            ],
                         },
                     },
                 },

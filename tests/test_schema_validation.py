@@ -80,7 +80,7 @@ class TestSchemaValidation:
 
         errors = validator.validate(json_string=json.dumps(schema))
         assert len(errors) == 1
-        assert f'root.actions[0].milestones (node id: 0): invalid enum value: expected one of {json.dumps(milestones)}, got "FAKE"'
+        assert f'root.actions[0].milestones (action id: 0): invalid enum value: expected one of {json.dumps(milestones)}, got "FAKE"'
 
         # A single Action should not list the same milestone twice
         schema["actions"][0]["milestones"] = ["REAL", "REAL"]
@@ -155,11 +155,11 @@ class TestSchemaValidation:
         checkpoint_4["dependencies"][0]["compare"]["left"]["ref"] = "action:{3}"
         schema["checkpoints"].append(checkpoint_4)
         schema["actions"][2]["depends_on"] = "checkpoint:{depends_on_3}"
-        checkpoint_5 = fixtures.checkpoint(4, "depends_on_4", num_dependencies=1)
+        checkpoint_5 = fixtures.checkpoint(4, "depends_on_4_and_0", num_dependencies=1)
         checkpoint_5["dependencies"][0]["compare"]["left"]["ref"] = "action:{4}"
         checkpoint_5["dependencies"].append({"checkpoint": "checkpoint:{depends_on_0}"})
         schema["checkpoints"].append(checkpoint_5)
-        schema["actions"][3]["depends_on"] = "checkpoint:{depends_on_4}"
+        schema["actions"][3]["depends_on"] = "checkpoint:{depends_on_4_and_0}"
 
         errors = validator.validate(json_string=json.dumps(schema))
         assert "Circular dependency detected (dependency path: [0, 1, 2, 3])" in errors
@@ -212,7 +212,7 @@ class TestSchemaValidation:
         errors = validator.validate(json_string=json.dumps(schema))
         assert len(errors) == 1
         assert (
-            f'root.actions[0].party (node id: {action_ids[action_idx]}): invalid ref: object not found: "party:'
+            f'root.actions[0].party (action id: {action_ids[action_idx]}): invalid ref: object not found: "party:'
             + "{Vandelay Industries}"
             + '"'
             in errors
@@ -340,8 +340,60 @@ class TestSchemaValidation:
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
-    def test_template_modifier(self):
-        return  # The schema spec does not currently include template modifiers
+    def test_add_properties(self):
+        validator = SchemaValidator()
+
+        schema = fixtures.basic_schema_with_actions(2)
+        schema["checkpoints"].append(fixtures.checkpoint(0, "test_ds", "AND", 1))
+        schema["actions"][1]["depends_on"] = "checkpoint:{test_ds}"
+
+        schema["actions"][1]["operation"]["type"] = "EDIT"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.actions[1].operation (action id: 1): missing required property: ref"
+            in errors
+        )
+        assert (
+            'root.actions[1].operation (action id: 1): the value of property "ref" must be an ancestor of action id 1, got null'
+            in errors
+        )
+
+        schema["actions"][1]["operation"]["ref"] = "action:{3}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.actions[1].operation (action id: 1): the value of property "ref" must be an ancestor of action id 1, got "action:{3}"'
+            in errors
+        )
+
+        schema["actions"][1]["operation"]["ref"] = "action:{0}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+    def test_override_properties(self):
+        validator = SchemaValidator()
+
+        schema = fixtures.basic_schema_with_actions(3)
+
+        checkpoint_a = fixtures.checkpoint(0, "a", num_dependencies=1)
+        assert len(checkpoint_a["dependencies"]) == 1
+        assert "compare" in checkpoint_a["dependencies"][0]
+
+        # If a Checkpoint contains a single item,
+        # the item must be a Dependency object (not a CheckpointReference)
+        checkpoint_b = fixtures.checkpoint(1, "b", num_dependencies=0)
+        checkpoint_b["dependencies"].append({"checkpoint": "checkpoint:{a}"})
+        checkpoint_b["gate_type"] = "OR"
+        schema["checkpoints"] = [checkpoint_a, checkpoint_b]
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert errors
+
+        # If another item is added to the Checkpoint, the CheckpointReference is allowed
+        checkpoint_c = fixtures.checkpoint(2, "c", num_dependencies=1)
+        checkpoint_c["dependencies"][0]["compare"]["left"]["ref"] = "action:{1}"
+        schema["checkpoints"].append(checkpoint_c)
+        checkpoint_b["dependencies"].append({"checkpoint": "checkpoint:{c}"})
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
 
     def test_template_conditionals(self):
         validator = SchemaValidator()
@@ -382,7 +434,7 @@ class TestSchemaValidation:
         assert len(errors) == 1
         assert (
             errors[0]
-            == 'root.actions[0].party (node id: 0): invalid ref: object not found: "party:{something else}"'
+            == 'root.actions[0].party (action id: 0): invalid ref: object not found: "party:{something else}"'
         )
 
         schema["actions"][0]["party"] = "party:{Project}"
@@ -577,7 +629,7 @@ class TestSchemaValidation:
         validator = SchemaValidator()
         schema = fixtures.basic_schema_with_actions(1)
 
-        expected_error = "root.actions[0].operation (node id: 0): more than one mutually exclusive property specified: ['include', 'exclude']"
+        expected_error = "root.actions[0].operation (action id: 0): more than one mutually exclusive property specified: ['include', 'exclude']"
 
         # Should not be able to specify more than one mutually exclusive property
         schema["actions"][0]["operation"]["exclude"] = ["completed"]
