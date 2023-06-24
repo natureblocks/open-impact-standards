@@ -187,6 +187,42 @@ class TestSchemaValidation:
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
+    def test_dependency_operand_rules(self):
+        validator = SchemaValidator()
+
+        schema = fixtures.basic_schema_with_actions(2)
+        checkpoint = fixtures.checkpoint(0, "test_ds", num_dependencies=0)
+
+        # Both operands cannot be LiteralOperand objects
+        checkpoint["dependencies"].append(
+            {
+                "compare": {
+                    "left": {"value": True},
+                    "right": {"value": False},
+                    "operator": "EQUALS",
+                },
+            },
+        )
+        schema["checkpoints"].append(checkpoint)
+        schema["actions"][1]["depends_on"] = "checkpoint:{test_ds}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.checkpoints[0].dependencies[0].compare: invalid comparison: {'value': True} EQUALS {'value': False}: both operands cannot be literals"
+            in errors
+        )
+
+        # Operands cannot be identical
+        identical_operand = {"ref": "action:{0}", "field": "completed"}
+        schema["checkpoints"][0]["dependencies"][0] = {
+            "compare": {
+                "left": identical_operand,
+                "right": identical_operand,
+                "operator": "EQUALS",
+            },
+        }
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert errors
+
     def test_unordered_action_ids(self):
         validator = SchemaValidator()
 

@@ -326,6 +326,22 @@ class SchemaValidator:
         return has_ancestor_recursive(self._action_checkpoints[str(action_id)], [])
 
     def validate_comparison(self, path, left, right, operator):
+        if (
+            self._validate_object("", left, templates.literal_operand) == []
+            and self._validate_object("", right, templates.literal_operand) == []
+        ):
+            return [
+                f"{self._context(path)}: invalid comparison: {left} {operator} {right}: both operands cannot be literals"
+            ]
+
+        def hash_sorted_object(obj):
+            return hashlib.sha1(json.dumps(utils.recursive_sort(obj)).encode()).digest()
+
+        if hash_sorted_object(left) == hash_sorted_object(right):
+            return [
+                f"{self._context(path)}: invalid comparison: {left} {operator} {right}: operands are identical"
+            ]
+
         def extract_field_type(operand_object):
             if "ref" in operand_object:
                 referenced_obj = self._resolve_ref(operand_object["ref"])
