@@ -218,6 +218,7 @@ dependency = {
                 ],
             },
         },
+        "description": {"type": "string"},
     },
     "constraints": {
         "optional": ["description"],

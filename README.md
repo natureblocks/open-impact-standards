@@ -8,8 +8,9 @@ The below psuedocode blocks describe the structure of valid json objects within 
 __Notes for psuedocode interpretation:__
 - Capitalized value types indicate object types or enumeration types that are defined by this specification (e.g. `parties: [Party]` indicates that the `parties` array can only contain objects of type `Party`).
 - Some field types indicate a specific field from another object that must exist within the schema (e.g. `action_id: Action.id` indicates that the `action_id` field must reference the `id` field of an existing `Action` object).
-- `?` indicates an optional field.
-- `?*` indicates that a field is optional only under certain conditions.
+- `?` at the end of an object key indicates that the key is optional.
+- `?` at the end of a value type indicates that the value is nullable.
+- `?*` indicates optional/nullable as above, but only under certain conditions.
 - `|` can be read as "or", and is used to indicate that a field, array, or json object can contain a more than one type of object or value.
 - `//` indicates an inline code comment.
 
@@ -17,7 +18,7 @@ __Top-level json object:__
 - `standard` is the name of the open standard.
 - `parties` is the list of parties relevant to the open standard.
 - The keys of the `nodes` object (denoted as `<node_tag>` below) define the node tags that the schema requires. `Action.tag` must reference a defined node tag.
-- `actions` is a list containing the `Action` objects that comprise the standard's dependency chart.
+- `actions` and `checkpoints` are lists containing the `Action` and `Checkpoint` objects that comprise the standard's dependency chart.
 ````
 {
     standard: string,
@@ -36,13 +37,15 @@ __NodeDefinition object type:__
 type NodeDefinition {
     <field_name>: {
         field_type: FieldType | "EDGE" | "EDGE_COLLECTION",
-        tag: string?*,
-        description: string?
+        tag?*: string,
+        description?: string
     }
 }
 ````
 __Action object type:__
-- `tag` must be a key of the top-level (root) object's `nodes` object. A `Action`'s `tag` affects some aspects of `Dependency` validation within the `Action.depends_on` `Checkpoint` (see the `Dependency` object type for more details).
+- `tag` must be a key of the top-level (root) object's `nodes` object.
+- `operation` allows the operation type to be specified, as well as the fields that can be set when completing the action.
+- `depends_on` references the `Checkpoint` that must be satisfied before the action can be taken.
 - A `Action` may specify 0 or more `Milestone` values, but a given `Milestone` value may not appear on `Action` objects more than once per schema.
 ````
 type Action {
@@ -52,11 +55,39 @@ type Action {
         title: string,
         description: string
     },
-    applies_to: Party.name,
+    party: reference(Party),
     tag: root.nodes.key,
-    depends_on: Checkpoint?,
-    milestones: [Milestone]?,
-    supporting_info: [string]?
+    operation: Operation,
+    depends_on?: reference(Checkpoint),
+    milestones?: [Milestone],
+    supporting_info?: [string]
+}
+````
+__Operation object type:__
+- `include` is for specifying the fields that can be set on the node that is to be created or editied by the parent `Action`. Specifying `null` for this field indicates that no fields are included, or in other words, that all fields are excluded.
+- `exclude` is for specifying the fields that cannot be set on the node that is to be created or editied. Specifying `null` for this field indicates that no fields are excluded, or in other words, that all fields are included.
+- `include` and `exclude` are mutually exclusive.
+- An `Action` may specify 0 or more `Milestone` values, but a given `Milestone` value may not appear on `Action` objects more than once per schema.
+- If `type` is `"CREATE"`, then `default_values` and `default_edges` can optionally be specified.
+- If `type` is `"EDIT"`, then `ref` is required to indicate the `Action` whence the node to be edited came.
+````
+type Operation {
+    type: "CREATE" | "EDIT",
+    
+    // Mutually exclusive:
+    include: [<field_name>]?,
+    exclude: [<field_name>]?,
+
+    // If type is "CREATE":
+    default_values?: {
+        <field_name>: scalar
+    },
+    default_edges?: {
+        <field_name>: reference(Action)
+    },
+
+    // If type is "EDIT":
+    ref?*: reference(Action)
 }
 ````
 __FieldType enumeration:__
@@ -80,15 +111,17 @@ enum Milestone {
 }
 ````
 __Checkpoint object type:__
-- `alias` should be a human-readable name followed by a 4-digit hashtag to ensure uniqueness. E.g. "humanReadableName#0000"
+- `alias` should be a unique, human-readable name.
 - The `description` should provide more information about the significance of the `Checkpoint`.
 - The `dependencies` array can include `Dependency` objects and/or `CheckpointReference` objects.
-- `gate_type` is not required when the number of items in the `dependencies` array is 1.
+- To prevent redundancies, a lone `CheckpointReference` cannot be the only item in `Checkpoint.dependencies`.
+- `gate_type` should not be specified when the number of items in the `dependencies` array is 1.
 ````
 type Checkpoint {
+    id: integer,
     alias: string,
     description: string,
-    gate_type: GateType,
+    gate_type?*: GateType,
     dependencies: [Dependency | CheckpointReference],
 }
 ````
@@ -105,38 +138,43 @@ enum GateType {
 }
 ````
 __CheckpointReference object type:__
-- The `checkpoint` field references the alias (unique identifier) of a `Checkpoint` object that has been added to the top-level object's `checkpoints` array.
-- `CheckpointReference`s can be used to achieve complex logic gate combinations. A simple example would be `dependency_1` OR (`dependency_2` AND `dependency_3`).
+- The `checkpoint` field references the id or alias of a `Checkpoint` object that has been added to the top-level object's `checkpoints` array.
+- `CheckpointReference`s can be used to achieve complex logic gate combinations. A basic example would be `dependency_1` AND (`dependency_2` OR `dependency_3`).
 ````
 type CheckpointReference {
-    checkpoint: Checkpoint.alias
+    checkpoint: reference(Checkpoint)
 }
 ````
 __Dependency object type:__
-- Represents a dependency of the parent `Action` object.
-- `Dependency.node.action_id` references a `Action` object from the top-level object's `actions` array.
-- `field_name` references a key of the `NodeDefinition` that's indicated by the referenced `Action`'s `tag`.
-- `comparison_value_type` must match the `field_type` of the referenced `field_name`.
-- A dependency is satisfied when applying the `comparison_operator` to the applicable comparison value field and the specified field on the referenced `Action` evaluates to `true`.
-- `comparison_value_type` indicates the applicable comparison value field for the dependency. Only the indicated comparison value field is required. Values of non-applicable comparison value fields are ignored during dependency evaluation.
+- Represents a dependency of the parent `Checkpoint` object.
+- `left` and `right` are the operands to be compared using the `operator`.
 - `description` can be used to provide more detail about the `Dependency`.
 ````
 type Dependency {
-    node: {
-        action_id: Action.id,
-        field_name: NodeDefinition.key,
-        comparison_operator: ComparisonOperator,
-        comparison_value_type: FieldType,
-
-        // Comparison value fields
-        string_comparison_value: string,
-        numeric_comparison_value: number,
-        boolean_comparison_value: boolean,
-        string_list_comparison_value: [string],
-        numeric_list_comparison_value: [number],
-
-        description: string?
+    compare: {
+        left: ReferencedOperand | LiteralOperand,
+        right: ReferencedOperand | LiteralOperand,
+        operator: ComparisonOperator,
+        description?: string
     }
+}
+````
+__ReferencedOperand object type:__
+- A reference to a `field` that must exist in the `NodeDefinition` that corresponds to the `tag` of the referenced `Action` (`ref`).
+- A `ReferencedOperand` evaluates to the value of the referenced field.
+- The `field_type` of the referenced field is checked against the other-side operand of the parent `Dependency` and the `Dependency.compare.operator` to determine whether the comparison is valid.
+````
+type ReferencedOperand {
+    ref: reference(Action),
+    field: string
+}
+````
+__LiteralOperand object type:__
+- A literal value of any type to be used as an operand in `Dependency.compare`.
+- `LiteralOperand` types are checked against the other-side operand of the parent `Dependency` and the `Dependency.compare.operator` to determine whether the comparison is valid.
+````
+type LiteralOperand {
+    value: scalar
 }
 ````
 __ComparisonOperator enumeration:__
@@ -153,7 +191,8 @@ enum ComparisonOperator {
     "CONTAINS",
     "DOES_NOT_CONTAIN",
     "CONTAINS_ANY_OF",
-    "CONTAINS_ALL_OF",
+    "IS_SUBSET_OF",
+    "IS_SUPERSET_OF",
     "CONTAINS_NONE_OF"
 }
 ````
@@ -164,19 +203,18 @@ __TermDefinition object:__
 type TermDefinition {
     name: string,
     description: string,
-    attributes: [string]?
+    attributes?: [string]
 }
 ````
 __Party object:__
-````
 - Defines a relevant party for the schema.
 - Example party `name`s: "Project Developer", "Carbon Auditor", "Government Representatives"
 - `hex_code` sets the color of the applicable Miro shapes in state map visualizations (see the Schema Visualization) section below. If `hex_code` is not specified, the default `#ffffff` is used.
 ````
 type Party {
+    id: integer,
     name: string,
-    hex_code: string?
-    // Additional properties TBD...
+    hex_code?: string
 }
 ````
 
