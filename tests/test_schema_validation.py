@@ -1,4 +1,3 @@
-import copy
 import json
 import logging
 
@@ -290,30 +289,30 @@ class TestSchemaValidation:
         field_names = ["some_edge", "some_edge_collection"]
 
         for i in range(len(field_types)):
-            schema["nodes"]["Placeholder"][field_names[i]] = {
+            schema["objects"]["Placeholder"][field_names[i]] = {
                 "field_type": field_types[i]
             }
 
             errors = validator.validate(json_string=json.dumps(schema))
             assert (
-                f"root.nodes.Placeholder.{field_names[i]}: missing required property: tag"
+                f"root.objects.Placeholder.{field_names[i]}: missing required property: object"
                 in errors
             )
 
-            schema["nodes"]["Placeholder"][field_names[i]] = {
+            schema["objects"]["Placeholder"][field_names[i]] = {
                 "field_type": field_types[i],
-                "tag": "NotATag",
+                "object": "NotAnObject",
             }
 
             errors = validator.validate(json_string=json.dumps(schema))
             assert (
-                f'root.nodes.Placeholder.{field_names[i]}.tag: expected any key from root.nodes, got "NotATag"'
+                f'root.objects.Placeholder.{field_names[i]}.object: expected any key from root.objects, got "NotAnObject"'
                 in errors
             )
 
-            schema["nodes"]["Placeholder"][field_names[i]] = {
+            schema["objects"]["Placeholder"][field_names[i]] = {
                 "field_type": field_types[i],
-                "tag": "Placeholder",
+                "object": "Placeholder",
             }
 
             errors = validator.validate(json_string=json.dumps(schema))

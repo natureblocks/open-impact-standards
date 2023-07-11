@@ -1,4 +1,5 @@
 from enums import gate_types, field_types, milestones, comparison_operators
+from validation import patterns
 
 RESERVED_KEYWORDS = [
     "root",
@@ -41,14 +42,14 @@ root_object = {
                 "unique": ["id", "name"],
             },
         },
-        "nodes": {
+        "objects": {
             "type": "object",
             "keys": {
                 "type": "string",
             },
             "values": {
                 "type": "object",
-                "template": "node_definition",
+                "template": "object_definition",
             },
         },
         "actions": {
@@ -77,7 +78,7 @@ root_object = {
     },
 }
 
-node_definition = {
+object_definition = {
     "type": "object",
     "keys": {
         "type": "string",
@@ -101,11 +102,11 @@ node_definition = {
                 "value": ["EDGE", "EDGE_COLLECTION"],
                 "then": {
                     "add_properties": {
-                        "tag": {
+                        "object": {
                             "type": "string",
                             "expected_value": {
                                 "one_of": {
-                                    "from": "root.nodes",
+                                    "from": "root.objects",
                                     "extract": "keys",
                                 },
                             },
@@ -134,29 +135,13 @@ referenced_operand = {
             "type": "ref",
             "ref_types": ["action"],
         },
-        "field": {
-            "type": "string",
-            "expected_value": {
-                "one_of": {
-                    "from": "root.nodes.{$tag}",
-                    "extract": "keys",
-                },
-            },
+        "context": {
+            "type": "enum",
+            "values": ["RUNTIME"],
         },
     },
-    "resolvers": {
-        "$tag": {
-            "from": "root.actions",
-            "where": {
-                "property": "id",
-                "operator": "IS_REFERENCED_BY",
-                "value": {
-                    "from": "{_this}",
-                    "extract": "ref",
-                },
-            },
-            "extract": "tag",
-        },
+    "constraints": {
+        "optional": ["context"],
     },
 }
 
@@ -164,29 +149,6 @@ literal_operand = {
     "type": "object",
     "properties": {
         "value": {"type": "scalar"},
-    },
-}
-
-runtime_operand = {
-    "type": "object",
-    "properties": {
-        "ref": {
-            "type": "ref",
-            "ref_types": ["party", "action"],
-        },
-        "field": {
-            "type": "string",
-            "expected_value": {
-                "one_of": {
-                    "from": "_runtime_fields",
-                    "extract": "{ref}._ref_type",
-                },
-            },
-        },
-        "context": {
-            "type": "enum",
-            "values": ["RUNTIME"],
-        },
     },
 }
 
@@ -283,7 +245,7 @@ action = {
     "type": "object",
     "properties": {
         "id": {"type": "integer"},
-        "tag": {"type": "string"},
+        "object": {"type": "string"},
         "description": {"type": "string"},
         "party": {
             "type": "ref",
@@ -313,7 +275,7 @@ action = {
                     "values": {
                         "type": "string",
                         "one_of": {
-                            "from": "root.nodes.{tag}",
+                            "from": "root.objects.{object}",
                             "extract": "keys",
                         },
                     },
@@ -324,7 +286,7 @@ action = {
                     "values": {
                         "type": "string",
                         "one_of": {
-                            "from": "root.nodes.{tag}",
+                            "from": "root.objects.{object}",
                             "extract": "keys",
                         },
                     },
@@ -344,9 +306,9 @@ action = {
                                     "type": "string",
                                     "expected_value": {
                                         "one_of": {
-                                            "from": "root.nodes.{tag}",
+                                            "from": "root.objects.{object}",
                                             "where": {
-                                                "property": "root.nodes.{tag}.{_item}.field_type",
+                                                "property": "root.objects.{object}.{_item}.field_type",
                                                 "operator": "NOT_IN",
                                                 "value": ["EDGE", "EDGE_COLLECTION"],
                                             },
@@ -355,7 +317,7 @@ action = {
                                     },
                                 },
                                 "values": {
-                                    "type": "root.nodes.{tag}.{_corresponding_key}.field_type",
+                                    "type": "root.objects.{object}.{_corresponding_key}.field_type",
                                 },
                             },
                             "default_edges": {
@@ -364,10 +326,10 @@ action = {
                                     "type": "string",
                                     "expected_value": {
                                         "one_of": {
-                                            "from": "root.nodes.{tag}",
+                                            "from": "root.objects.{object}",
                                             "property": "keys",
                                             "where": {
-                                                "property": "root.nodes.{tag}.{_item}.field_type",
+                                                "property": "root.objects.{object}.{_item}.field_type",
                                                 "operator": "IN",
                                                 "value": ["EDGE", "EDGE_COLLECTION"],
                                             },
@@ -394,7 +356,7 @@ action = {
                         "add_constraints": {
                             "validation_functions": [
                                 {
-                                    "function": "has_ancestor",
+                                    "function": "validate_has_ancestor",
                                     "args": ["{_parent}.id", "{ref}", "ref"],
                                 }
                             ],
@@ -408,9 +370,19 @@ action = {
             "values": {"type": "enum", "values": milestones},
         },
         "supporting_info": {"type": "array", "values": {"type": "string"}},
+        "pipeline": {
+            "type": "object",
+            "template": "pipeline",  # see aggregation_pipeline.py
+        },
     },
     "constraints": {
-        "optional": ["depends_on", "steps", "milestones", "supporting_info"],
+        "optional": [
+            "depends_on",
+            "steps",
+            "milestones",
+            "supporting_info",
+            "pipeline",
+        ],
     },
     "ref_config": {
         "fields": ["id"],
@@ -425,7 +397,7 @@ party = {
         "name": {"type": "string"},
         "hex_code": {
             "type": "string",
-            "pattern": "^#(?:[0-9a-fA-F]{3}){1,2}$",
+            "pattern": patterns.hex_code,
             "pattern_description": "hex color code",
         },
     },

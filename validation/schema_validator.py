@@ -2,8 +2,9 @@ import copy
 import hashlib
 import json
 import re
+from validation.field_type_details import FieldTypeDetails
 
-from validation import templates, oisql, utils
+from validation import templates, oisql, utils, patterns, pipeline_utils
 
 
 class SchemaValidator:
@@ -33,6 +34,7 @@ class SchemaValidator:
 
         self._collect_actions_and_checkpoints()
 
+        self.warnings = []
         self.errors = (
             self._validate_object("root", self.schema, templates.root_object)
             + self._detect_circular_dependencies()
@@ -40,8 +42,11 @@ class SchemaValidator:
 
         return self.errors
 
-    def print_errors(self):
-        print("\n".join(self.errors))
+    def print_errors(self, include_warnings=True):
+        print(
+            "\n".join(self.errors)
+            + ("\nWARNINGS:\n".join(self.warnings) if include_warnings else "")
+        )
 
     def get_next_action_id(self, json_file_path):
         if self.validate(json_file_path=json_file_path):
@@ -268,23 +273,26 @@ class SchemaValidator:
                 if callable(fn):
                     parent_object = self._get_parent_object(path)
                     arguments = []
-                    for a in function_call["args"]:
-                        split_arg_path = a.split(".")
-                        resolved_path_or_obj = self._resolve_path_variables(
-                            path, a.split("."), parent_object=parent_object
-                        )
-                        if len(split_arg_path) == 1:
-                            arguments.append(resolved_path_or_obj[0])
-                        else:
-                            arguments.append(
-                                self._get_field(resolved_path_or_obj, field)
+                    if "args" in function_call:
+                        for a in function_call["args"]:
+                            split_arg_path = a.split(".")
+                            resolved_path_or_obj = self._resolve_path_variables(
+                                path, a.split("."), parent_object=parent_object
                             )
+                            if len(split_arg_path) == 1:
+                                arguments.append(resolved_path_or_obj[0])
+                            else:
+                                arguments.append(
+                                    self._get_field(resolved_path_or_obj, field)
+                                )
 
-                    errors += fn(path, *arguments)
+                        errors += fn(path, *arguments)
+                    else:
+                        errors += fn(path, field)
 
         return errors
 
-    def has_ancestor(self, path, action_id, ancestor_ref, ancestor_source):
+    def validate_has_ancestor(self, path, action_id, ancestor_ref, ancestor_source):
         error = [
             f"{self._context(path)}: the value of property {json.dumps(ancestor_source)} must be an ancestor of action id {json.dumps(action_id)}, got {json.dumps(ancestor_ref)}"
         ]
@@ -299,7 +307,7 @@ class SchemaValidator:
                 return None
             return utils.parse_ref_id(dependency["compare"][left_or_right]["ref"])
 
-        def has_ancestor_recursive(checkpoint_alias, visited_checkpoints):
+        def validate_has_ancestor_recursive(checkpoint_alias, visited_checkpoints):
             if checkpoint_alias is None or checkpoint_alias in visited_checkpoints:
                 return error
 
@@ -316,14 +324,16 @@ class SchemaValidator:
                         return []
 
                 elif "checkpoint" in dependency:
-                    if has_ancestor_recursive(
+                    if validate_has_ancestor_recursive(
                         dependency["checkpoint"], visited_checkpoints
                     ):
                         return []
 
             return error
 
-        return has_ancestor_recursive(self._action_checkpoints[str(action_id)], [])
+        return validate_has_ancestor_recursive(
+            self._action_checkpoints[str(action_id)], []
+        )
 
     def validate_comparison(self, path, left, right, operator):
         if (
@@ -344,7 +354,7 @@ class SchemaValidator:
 
         def extract_field_type(operand_object):
             if "ref" in operand_object:
-                referenced_obj = self._resolve_ref(operand_object["ref"])
+                referenced_obj = self._resolve_global_ref(operand_object["ref"])
                 if referenced_obj is None:
                     raise Exception("Failed to resolve ref: " + operand_object["ref"])
 
@@ -355,7 +365,19 @@ class SchemaValidator:
                         + ref_type
                     )
 
-                node_definition = self._get_field(f"nodes.{referenced_obj['tag']}")
+                if "object" not in referenced_obj:
+                    raise Exception(
+                        "Referenced action does not have an 'object' property: "
+                        + operand_object["ref"]
+                    )
+
+                node_definition = self._get_field(f"objects.{referenced_obj['object']}")
+                if node_definition is None:
+                    raise Exception(
+                        "'object' not found for referenced action: "
+                        + operand_object["ref"]
+                    )
+
                 return node_definition[operand_object["field"]]["field_type"]
             else:
                 field_type = utils.field_type_from_python_type_name(
@@ -434,6 +456,320 @@ class SchemaValidator:
 
         return [f"{self._context(path)}: invalid comparison: {left} {operator} {right}"]
 
+    def validate_pipeline(self, path, field):
+        errors = []
+
+        # {variable name: {"type_details": FieldTypeDetails, "scope": scope}}
+        # dict may include "initial" to validate null initial values
+        pipeline_vars = {}
+        scope = "0"
+
+        if "variables" in field and isinstance(field["variables"], list):
+            for i in range(len(field["variables"])):
+                var = field["variables"][i]
+
+                if var["name"] in pipeline_vars:
+                    errors += [
+                        f"{self._context(path)}: variables[{str(i)}].name: variable already defined: {json.dumps(var['name'])}"
+                    ]
+                    continue
+
+                try:
+                    initial_type_details = (
+                        pipeline_utils.field_type_details_from_initial_value(var)
+                    )
+                except Exception as e:
+                    errors += [
+                        f"{self._context(path)}: variables[{str(i)}].initial: {str(e)}"
+                    ]
+                    continue
+
+                if not pipeline_utils.initial_matches_type(
+                    initial_type_details, var["type"]
+                ):
+                    errors += [
+                        f"{self._context(path)}: variables[{str(i)}].initial: does not match expected type {json.dumps(var['type'])}"
+                    ]
+                    continue
+
+                pipeline_vars[var["name"]] = {
+                    "type_details": initial_type_details,
+                    "scope": scope,
+                    "initial": var["initial"],
+                    "assigned": False,
+                }
+
+        if "traverse" in field and isinstance(field["traverse"], list):
+            for i in range(len(field["traverse"])):
+                errors += self._validate_pipeline_traversal_recursive(
+                    path, pipeline_vars, field["traverse"][i], scope=f"{scope}.{i}"
+                )
+
+        if "apply" in field and isinstance(field["apply"], list):
+            for i in range(len(field["apply"])):
+                errors += self._validate_pipeline_application(
+                    path, pipeline_vars, field["apply"][i], scope
+                )
+
+        return errors
+
+    def _validate_pipeline_traversal_recursive(
+        self, path, pipeline_vars, traversal, scope
+    ):
+        if "ref" not in traversal or "foreach" not in traversal:
+            # there will already be validation errors for the missing fields,
+            # and we cannot validate further without them.
+            return []
+
+        errors = []
+
+        # resolve the ref type
+        ref = traversal["ref"]
+        if re.match(patterns.variable, ref):
+            # variable must have been defined in a previous stage
+            if ref not in pipeline_vars:
+                return [
+                    f"{self._context(path)}.ref: variable not found: {json.dumps(ref)}"
+                ]
+
+            # variable must be in scope
+            if not scope.startswith(pipeline_vars[ref]["scope"]):
+                return [
+                    f"{self._context(path)}.ref: variable {json.dumps(ref)} is not in scope"
+                ]
+
+            ref_type_details = copy.deepcopy(pipeline_vars[ref]["type_details"])
+        else:  # ref is not a variable, so it's a global or local ref
+            parent_action = self._get_parent_object(path)
+            if utils.is_global_ref(ref):
+                errors += self.validate_has_ancestor(
+                    path,
+                    action_id=parent_action["id"],
+                    ancestor_ref=ref,
+                    ancestor_source="ref",
+                )
+
+                global_ref = re.search(patterns.global_ref, ref).group()
+                ref_type_details = self._resolve_type_from_object_path(
+                    object_tag=self._resolve_global_ref(global_ref),
+                    path=ref[len(global_ref) :],
+                )
+            elif utils.is_local_variable(ref):
+                ref_type_details = self._resolve_type_from_local_ref(
+                    local_ref=ref, obj=parent_action
+                )
+            else:
+                return [
+                    f"{self._context(path)}.ref: "
+                    + f"expected global reference, local reference, or variable, got {json.dumps(ref)}"
+                ]
+
+        item_name = traversal["foreach"]["as"]
+        if item_name in pipeline_vars:
+            return [
+                f"{self._context(path)}.foreach.as: variable already defined: {item_name}"
+            ]
+
+        ref_type_details.is_list = (
+            False  # de-listify, because we're iterating over the items
+        )
+        pipeline_vars[item_name] = {
+            "type_details": ref_type_details,
+            "scope": scope,
+            "assigned": True,  # loop variables are automatically assigned
+        }
+
+        if "variables" in traversal["foreach"]:
+            for i in range(len(traversal["foreach"]["variables"])):
+                var = traversal["foreach"]["variables"][i]
+
+                if var["name"] in pipeline_vars:
+                    return [
+                        f"{self._context(path)}.foreach.variables[{str(i)}].name: variable already defined: {var['name']}"
+                    ]
+
+                initial_type_details = (
+                    pipeline_utils.field_type_details_from_initial_value(var)
+                )
+
+                if not pipeline_utils.initial_matches_type(
+                    initial_type_details, var["type"]
+                ):
+                    return [
+                        f"{self._context(path)}.foreach.variables[{str(i)}].initial: does not match expected type {var['type']}"
+                    ]
+
+                pipeline_vars[var["name"]] = {
+                    "type_details": initial_type_details,
+                    "scope": scope,
+                    "initial": var["initial"],
+                    "assigned": False,
+                }
+
+        if "traverse" in traversal["foreach"]:
+            for i in range(len(traversal["foreach"]["traverse"])):
+                errors += self._validate_pipeline_traversal_recursive(
+                    path,
+                    pipeline_vars,
+                    traversal["foreach"]["traverse"][i],
+                    scope=f"{scope}.{i}",
+                )
+
+        if "apply" in traversal["foreach"]:
+            for i in range(len(traversal["foreach"]["apply"])):
+                errors += self._validate_pipeline_application(
+                    path, pipeline_vars, traversal["foreach"]["apply"][i], scope
+                )
+
+        return errors
+
+    def _validate_pipeline_application(self, path, pipeline_vars, apply, scope):
+        if re.match(patterns.variable, apply["from"]):
+            if apply["from"] not in pipeline_vars:
+                return [
+                    f"{self._context(path)}.from: variable not found: {json.dumps(apply['from'])}"
+                ]
+            elif not pipeline_vars[apply["from"]]["assigned"]:
+                self.warnings.append(
+                    f"{self._context(path)}.from: variable used before assignment: {json.dumps(apply['from'])}"
+                )
+
+            if not scope.startswith(pipeline_vars[apply["from"]]["scope"]):
+                return [
+                    f"{self._context(path)}.from: variable {json.dumps(apply['from'])} is not in scope"
+                ]
+
+            ref_type_details = pipeline_vars[apply["from"]]["type_details"]
+        elif re.match(patterns.local_variable, apply["from"]):
+            ref_type_details = self._resolve_type_from_local_ref(
+                apply["from"], path=path
+            )
+        elif (
+            self._validate_ref("", apply["from"], {"ref_types": ["action", "thread"]})
+            == []
+        ):
+            # global ref
+            ref_type_details = self._resolve_type_from_object_path(
+                object_tag=self._resolve_global_ref(apply["from"]),
+                path=apply["from"][len(self._resolve_global_ref(apply["from"])) :],
+            )
+        else:
+            # pattern validation will have already caught this
+            return []
+
+        if not re.match(patterns.variable, apply["to"]):
+            # pattern validation will have already caught this
+            return []
+
+        if apply["to"] not in pipeline_vars:
+            return [
+                f"{self._context(path)}.to: variable not found: {json.dumps(apply['to'])}"
+            ]
+
+        if not scope.startswith(pipeline_vars[apply["to"]]["scope"]):
+            return [
+                f"{self._context(path)}.to: variable {json.dumps(apply['to'])} is not in scope"
+            ]
+
+        pipeline_vars[apply["to"]]["assigned"] = True
+
+        left_operand_type = pipeline_vars[apply["to"]]["type_details"]
+        left_operand_is_null = (
+            "initial" in pipeline_vars[apply["to"]]
+            and pipeline_vars[apply["to"]]["initial"] is None
+        )
+        right_operand_type = pipeline_utils.determine_right_operand_type(
+            apply, ref_type_details, self
+        )
+
+        try:
+            pipeline_utils.validate_operation(
+                left_operand_type,
+                apply["method"],
+                right_operand_type,
+                left_operand_is_null,
+            )
+        except Exception as e:
+            return [f"{self._context(path)}: apply: {str(e)}"]
+
+        return []
+
+    def _resolve_type_from_local_ref(self, local_ref, obj=None, path=None):
+        if obj is None:
+            if path is None:
+                raise Exception("Must provide either obj or path")
+
+            obj = self._get_field(path.split(".")[:2])  # root.action[idx]
+
+        # what are the possible types of local_ref?
+        split_ref = local_ref.split(".")
+        if split_ref[0] == "$_object":
+            return self._resolve_type_from_object_path(obj["object"], split_ref[1:])
+            # follow the path to resolve edges/edge collections until the last item
+        elif split_ref[0] == "$_party":
+            # obj = self._resolve_party(obj["object"])
+            raise NotImplementedError("local ref type not implemented: " + split_ref[0])
+        else:
+            raise NotImplementedError("local ref type not implemented: " + split_ref[0])
+
+    def _resolve_type_from_object_path(self, object_tag, path):
+        object_definition = self._get_field("root.objects." + object_tag)
+
+        if object_definition is None:
+            return None
+
+        type_details = FieldTypeDetails(
+            is_list=False,
+            item_type="OBJECT",
+            item_tag=object_tag,
+        )
+
+        if path:
+            for segment in path if isinstance(path, list) else path.split("."):
+                if segment not in object_definition:
+                    return None
+
+                # get the next field
+                field_definition = object_definition[segment]
+                if field_definition["field_type"][:4] == "EDGE":
+                    object_definition = self._get_field(
+                        "root.objects." + field_definition["object"]
+                    )
+
+                    if field_definition["field_type"] == "EDGE_COLLECTION":
+                        if type_details.is_list:
+                            raise Exception("nested lists not supported")
+
+                        type_details = FieldTypeDetails(
+                            is_list=True,
+                            item_type="OBJECT",
+                            item_tag=field_definition["object"],
+                        )
+                    elif field_definition["field_type"] == "EDGE":
+                        type_details = FieldTypeDetails(
+                            is_list=type_details.is_list,
+                            item_type="OBJECT",
+                            item_tag=field_definition["object"],
+                        )
+                elif "_LIST" in field_definition["field_type"]:
+                    if type_details.is_list:
+                        raise Exception("nested lists not supported")
+
+                    return FieldTypeDetails(
+                        is_list=True,
+                        item_type=field_definition["field_type"].split("_")[0],
+                        item_tag=None,
+                    )
+                else:
+                    return FieldTypeDetails(
+                        is_list=type_details.is_list,
+                        item_type=field_definition["field_type"].split("_")[0],
+                        item_tag=None,
+                    )
+
+        # resolving some object type
+        return type_details
+
     def _validate_expected_value(self, path, field, template, parent_object_template):
         template_vars = (
             parent_object_template["template_vars"]
@@ -479,16 +815,21 @@ class SchemaValidator:
             )
 
     def _validate_ref(self, path, field, template, parent_object_template=None):
-        if not utils.is_ref(field):
-            return [f"{self._context(path)}: expected ref, got {json.dumps(field)}"]
+        if "local_ref" in template["ref_types"] and utils.is_local_variable(field):
+            referenced_object = self._resolve_type_from_local_ref(
+                local_ref=field, path=path
+            )
+        else:
+            if not utils.is_global_ref(field) and not ():
+                return [f"{self._context(path)}: expected ref, got {json.dumps(field)}"]
 
-        ref_type = field.split(":")[0]
-        if ref_type not in template["ref_types"]:
-            return [
-                f"{self._context(path)}: invalid ref type: expected one of {template['ref_types']}, got {ref_type}"
-            ]
+            ref_type = field.split(":")[0]
+            if ref_type not in template["ref_types"]:
+                return [
+                    f"{self._context(path)}: invalid ref type: expected one of {template['ref_types']}, got {ref_type}"
+                ]
 
-        referenced_object = self._resolve_ref(field)
+            referenced_object = self._resolve_global_ref(field)
 
         return (
             [
@@ -498,7 +839,7 @@ class SchemaValidator:
             else []
         )
 
-    def _resolve_ref(self, ref):
+    def _resolve_global_ref(self, ref):
         ref_id = utils.parse_ref_id(ref)
         ref_type = ref.split(":")[0]
         ref_config = getattr(templates, ref_type)["ref_config"]
@@ -514,7 +855,15 @@ class SchemaValidator:
 
         return None
 
+    def _resolve_party(self, party_name):
+        for party in self.schema["parties"]:
+            if party["name"] == party_name:
+                return party
+
     def _validate_scalar(self, path, field, template=None, parent_object_template=None):
+        if field is None:
+            return []
+
         valid_types = ["string", "decimal", "boolean", "string_list", "numeric_list"]
 
         for scalar_type in valid_types:
@@ -741,6 +1090,8 @@ class SchemaValidator:
 
         if obj is None:
             obj = self.schema
+        elif utils.is_local_variable(path[0]):
+            path[0] = path[0][2:]  # remove "$_" prefix
 
         for key in path if isinstance(path, list) else path.split("."):
             if key == "root":
@@ -1086,7 +1437,7 @@ class SchemaValidator:
             return prop in value
 
         if operator == "IS_REFERENCED_BY":
-            return utils.is_ref(value) and utils.parse_ref_id(value) == prop
+            return utils.is_global_ref(value) and utils.parse_ref_id(value) == prop
 
         raise NotImplementedError(
             "template operator not yet supported: " + str(operator)

@@ -15,10 +15,13 @@ def basic_schema():
         "parties": [],
         "actions": [],
         "checkpoints": [],
-        "nodes": {
+        "objects": {
             "Placeholder": {
                 "completed": {"field_type": "BOOLEAN"},
                 "name": {"field_type": "STRING"},
+                "number": {"field_type": "NUMERIC"},
+                "numbers": {"field_type": "NUMERIC_LIST"},
+                "objects": {"field_type": "EDGE_COLLECTION", "object": "Placeholder"},
             }
         },
     }
@@ -27,7 +30,7 @@ def basic_schema():
 def action(action_id=None):
     return {
         "id": action_id if action_id is not None else 0,
-        "tag": "Placeholder",
+        "object": "Placeholder",
         "description": "test action",
         "party": "party:{Project}",
         "operation": {

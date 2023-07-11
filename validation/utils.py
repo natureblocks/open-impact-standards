@@ -1,5 +1,5 @@
 import re
-from validation import templates, oisql
+from validation import templates, oisql, aggregation_pipeline, patterns
 from enums import ref_types
 
 
@@ -9,7 +9,7 @@ def is_path(value):
     )
 
 
-def is_ref(value):
+def is_global_ref(value):
     if not isinstance(value, str):
         return False
 
@@ -20,8 +20,12 @@ def is_ref(value):
     return ref_type in ref_types and re.match("^{.+}$", ref_id)
 
 
+def is_local_variable(value):
+    return isinstance(value, str) and re.match(patterns.local_variable, value)
+
+
 def parse_ref_id(value):
-    if not is_ref(value):
+    if not is_global_ref(value):
         raise Exception(f"Invalid ref: {value}")
 
     framed_ref_id = ":".join(value.split(":")[1:])  # "{ref_id}"
@@ -33,6 +37,8 @@ def get_template(template_name):
         return getattr(templates, template_name)
     elif hasattr(oisql, template_name):
         return getattr(oisql, template_name)
+    elif hasattr(aggregation_pipeline, template_name):
+        return getattr(aggregation_pipeline, template_name)
 
     raise Exception(f"Template not found: {template_name}")
 
