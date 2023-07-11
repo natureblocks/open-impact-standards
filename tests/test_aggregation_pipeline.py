@@ -2,7 +2,6 @@ import json
 
 import pytest
 from validation.schema_validator import SchemaValidator
-from validation import utils
 from tests import fixtures
 from enums import valid_list_item_types
 
@@ -101,7 +100,7 @@ class TestAggregationPipeline:
             in errors
         )
 
-    def test_assign(self):
+    def test_apply(self):
         schema_validator = SchemaValidator()
         schema = fixtures.basic_schema_with_actions(1)
         schema["actions"][0]["pipeline"] = {
@@ -155,6 +154,27 @@ class TestAggregationPipeline:
         errors = schema_validator.validate(json_string=json.dumps(schema))
         assert not errors
 
+        # "SET" can only be used for the first operation on a variable
+        schema["actions"][0]["pipeline"]["variables"].append(
+            {
+                "name": "$another_var",
+                "type": "STRING",
+                "initial": "nope",
+            }
+        )
+        schema["actions"][0]["pipeline"]["apply"].append(
+            {
+                "from": "$another_var",
+                "method": "SET",
+                "to": "$some_var",  # already set!
+            }
+        )
+        errors = schema_validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.actions[0].pipeline (action id: 0): apply: the "SET" method can only be used for the first operation on a variable'
+            in errors
+        )
+
         # if null is the initial value, the first assignment must be "SET"
         set_pipeline_value("apply", "method", "CONCAT")
         errors = schema_validator.validate(json_string=json.dumps(schema))
@@ -169,11 +189,13 @@ class TestAggregationPipeline:
             "type": "STRING_LIST",
             "initial": [],
         }
-        schema["actions"][0]["pipeline"]["apply"][0] = {
-            "from": "$_object.name",
-            "method": "ADD",
-            "to": "$some_var",
-        }
+        schema["actions"][0]["pipeline"]["apply"] = [
+            {
+                "from": "$_object.name",
+                "method": "ADD",
+                "to": "$some_var",
+            }
+        ]
         errors = schema_validator.validate(json_string=json.dumps(schema))
         assert errors
 

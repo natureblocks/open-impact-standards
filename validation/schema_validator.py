@@ -671,11 +671,10 @@ class SchemaValidator:
                 f"{self._context(path)}.to: variable {json.dumps(apply['to'])} is not in scope"
             ]
 
-        pipeline_vars[apply["to"]]["assigned"] = True
-
         left_operand_type = pipeline_vars[apply["to"]]["type_details"]
         left_operand_is_null = (
-            "initial" in pipeline_vars[apply["to"]]
+            not pipeline_vars[apply["to"]]["assigned"]
+            and "initial" in pipeline_vars[apply["to"]]
             and pipeline_vars[apply["to"]]["initial"] is None
         )
         right_operand_type = pipeline_utils.determine_right_operand_type(
@@ -689,6 +688,8 @@ class SchemaValidator:
                 right_operand_type,
                 left_operand_is_null,
             )
+
+            pipeline_vars[apply["to"]]["assigned"] = True
         except Exception as e:
             return [f"{self._context(path)}: apply: {str(e)}"]
 

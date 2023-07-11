@@ -22,6 +22,10 @@ def validate_operation(
             )
 
         return
+    elif method == "SET":
+        raise Exception(
+            'the "SET" method can only be used for the first operation on a variable'
+        )
 
     # {left_operand_type: {right_operand_type: [methods]}}
     valid_methods = {
