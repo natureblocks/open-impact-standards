@@ -148,7 +148,7 @@ traverse = {
                 },
             },
             "constraints": {
-                "optional": ["traverse", "apply"],
+                "optional": ["traverse", "variables"],
             },
         },
     },

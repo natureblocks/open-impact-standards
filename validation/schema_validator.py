@@ -525,20 +525,31 @@ class SchemaValidator:
 
         # resolve the ref type
         ref = traversal["ref"]
-        if re.match(patterns.variable, ref):
+        ref_path = ref.split(".")
+        if re.match(patterns.variable, ref_path[0]):
+            var = ref_path[0]
             # variable must have been defined in a previous stage
-            if ref not in pipeline_vars:
+            if var not in pipeline_vars:
                 return [
-                    f"{self._context(path)}.ref: variable not found: {json.dumps(ref)}"
+                    f"{self._context(path)}.ref: variable not found: {json.dumps(var)}"
                 ]
 
             # variable must be in scope
-            if not scope.startswith(pipeline_vars[ref]["scope"]):
+            if not scope.startswith(pipeline_vars[var]["scope"]):
                 return [
-                    f"{self._context(path)}.ref: variable {json.dumps(ref)} is not in scope"
+                    f"{self._context(path)}.ref: variable {json.dumps(var)} is not in scope"
                 ]
 
-            ref_type_details = copy.deepcopy(pipeline_vars[ref]["type_details"])
+            if len(ref_path) > 1:
+                try:
+                    ref_type_details = self._resolve_type_from_variable_path(
+                        var_type_details=pipeline_vars[var]["type_details"],
+                        path=ref_path,
+                    )
+                except Exception as e:
+                    return [f"{self._context(path)}.ref: {str(e)}"]
+            else:
+                ref_type_details = copy.deepcopy(pipeline_vars[ref]["type_details"])
         else:  # ref is not a variable, so it's a global or local ref
             parent_action = self._get_parent_object(path)
             if utils.is_global_ref(ref):
@@ -549,11 +560,51 @@ class SchemaValidator:
                     ancestor_source="ref",
                 )
 
-                global_ref = re.search(patterns.global_ref, ref).group()
-                ref_type_details = self._resolve_type_from_object_path(
-                    object_tag=self._resolve_global_ref(global_ref),
-                    path=ref[len(global_ref) :],
-                )
+                matches = re.findall(patterns.global_ref, ref)
+                if len(matches) and len(matches[0]):
+                    global_ref = matches[0][0]
+                    referenced_object = self._resolve_global_ref(global_ref)
+                    if len(matches[0][2]):
+                        if matches[0][1] == "action":
+                            split_path = matches[0][2].split(".")
+                            if split_path[0] == "object":
+                                ref_type_details = self._resolve_type_from_object_path(
+                                    object_tag=referenced_object["object"],
+                                    path=split_path[1:],
+                                )
+                            else:
+                                raise NotImplementedError(
+                                    "global ref resolution not implemented for action properties"
+                                )
+                        else:
+                            raise NotImplementedError(
+                                "global ref resolution not implemented for ref type: "
+                                + matches[0][1]
+                            )
+                    else:
+                        if matches[0][1] != "action":
+                            raise NotImplementedError(
+                                "iteration not implemented for ref type: "
+                                + matches[0][1]
+                            )
+
+                        # action must be threaded -- infer the context
+                        action = self._resolve_global_ref(global_ref)
+                        if "context" not in action:
+                            return [
+                                f"{self._context(path)}.ref: cannot traverse non-threaded action: {json.dumps(ref)}"
+                            ]
+
+                        # list of threaded actions
+                        ref_type_details = FieldTypeDetails(
+                            is_list=True,
+                            item_type=global_ref,
+                            item_tag=None,
+                        )
+                else:
+                    return [
+                        f"{self._context(path)}.ref: invalid global ref: {json.dumps(ref)}"
+                    ]
             elif utils.is_local_variable(ref):
                 ref_type_details = self._resolve_type_from_local_ref(
                     local_ref=ref, obj=parent_action
@@ -577,6 +628,7 @@ class SchemaValidator:
             "type_details": ref_type_details,
             "scope": scope,
             "assigned": True,  # loop variables are automatically assigned
+            "is_loop_variable": True,
         }
 
         if "variables" in traversal["foreach"]:
@@ -624,22 +676,33 @@ class SchemaValidator:
         return errors
 
     def _validate_pipeline_application(self, path, pipeline_vars, apply, scope):
-        if re.match(patterns.variable, apply["from"]):
-            if apply["from"] not in pipeline_vars:
+        from_path = apply["from"].split(".")
+        if re.match(patterns.variable, from_path[0]):
+            var = from_path[0]
+            if var not in pipeline_vars:
                 return [
-                    f"{self._context(path)}.from: variable not found: {json.dumps(apply['from'])}"
+                    f"{self._context(path)}.from: variable not found: {json.dumps(var)}"
                 ]
-            elif not pipeline_vars[apply["from"]]["assigned"]:
+            elif not pipeline_vars[var]["assigned"]:
                 self.warnings.append(
-                    f"{self._context(path)}.from: variable used before assignment: {json.dumps(apply['from'])}"
+                    f"{self._context(path)}.from: variable used before assignment: {json.dumps(var)}"
                 )
 
-            if not scope.startswith(pipeline_vars[apply["from"]]["scope"]):
+            if not scope.startswith(pipeline_vars[var]["scope"]):
                 return [
-                    f"{self._context(path)}.from: variable {json.dumps(apply['from'])} is not in scope"
+                    f"{self._context(path)}.from: variable {json.dumps(var)} is not in scope"
                 ]
 
-            ref_type_details = pipeline_vars[apply["from"]]["type_details"]
+            if len(from_path) > 1:
+                try:
+                    ref_type_details = self._resolve_type_from_variable_path(
+                        var_type_details=pipeline_vars[var]["type_details"],
+                        path=from_path,
+                    )
+                except Exception as e:
+                    return [f"{self._context(path)}.ref: {str(e)}"]
+            else:
+                ref_type_details = pipeline_vars[apply["from"]]["type_details"]
         elif re.match(patterns.local_variable, apply["from"]):
             ref_type_details = self._resolve_type_from_local_ref(
                 apply["from"], path=path
@@ -671,6 +734,14 @@ class SchemaValidator:
                 f"{self._context(path)}.to: variable {json.dumps(apply['to'])} is not in scope"
             ]
 
+        if (
+            "is_loop_variable" in pipeline_vars[apply["to"]]
+            and pipeline_vars[apply["to"]]["is_loop_variable"]
+        ):
+            return [
+                f"{self._context(path)}.to: cannot assign to loop variable: {json.dumps(apply['to'])}"
+            ]
+
         left_operand_type = pipeline_vars[apply["to"]]["type_details"]
         left_operand_is_null = (
             not pipeline_vars[apply["to"]]["assigned"]
@@ -694,6 +765,29 @@ class SchemaValidator:
             return [f"{self._context(path)}: apply: {str(e)}"]
 
         return []
+
+    def _resolve_type_from_variable_path(self, var_type_details, path):
+        if var_type_details.item_type == "OBJECT":
+            # resolve the type on the object definition
+            return self._resolve_type_from_object_path(
+                object_tag=var_type_details.item_tag,
+                path=path[1:],
+            )
+        elif re.match(patterns.global_ref, var_type_details.item_type):
+            referenced_object = self._resolve_global_ref(var_type_details.item_type)
+            if path[1] != "object":
+                raise NotImplementedError(
+                    "global ref resolution not implemented for action properties"
+                )
+
+            return self._resolve_type_from_object_path(
+                object_tag=referenced_object["object"],
+                path=path[2:],
+            )
+        else:
+            raise Exception(
+                f"invalid loop variable type: {var_type_details.to_string()}"
+            )
 
     def _resolve_type_from_local_ref(self, local_ref, obj=None, path=None):
         if obj is None:

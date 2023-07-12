@@ -7,6 +7,174 @@ from enums import valid_list_item_types
 
 
 class TestAggregationPipeline:
+    def test_traverse(self):
+        schema_validator = SchemaValidator()
+        schema = fixtures.basic_schema_with_actions(3)
+        schema["actions"][1]["pipeline"] = {
+            "context": "TEMPLATE",
+            "variables": [
+                {
+                    "name": "$some_var",
+                    "type": "NUMERIC",
+                    "initial": 0,
+                },
+            ],
+            "traverse": [
+                {
+                    "ref": None,
+                    "foreach": {
+                        "as": "$edge",
+                        "variables": [
+                            {
+                                "name": "$average",
+                                "type": "NUMERIC",
+                                "initial": 0,
+                            },
+                        ],
+                        "apply": [
+                            {
+                                "from": "$edge",
+                                "method": "ADD",
+                                "to": "$average",
+                                "aggregate": {
+                                    "field": "numbers",
+                                    "operator": "AVERAGE",
+                                },
+                            },
+                        ],
+                    },
+                },
+            ],
+            "output": [],
+        }
+
+        def set_pipeline_value(key1, key2, val):
+            schema["actions"][1]["pipeline"][key1][0][key2] = val
+
+        # ref must refer to an ancestor
+        schema["checkpoints"].append(
+            fixtures.checkpoint(0, "depends_on_0", num_dependencies=1)
+        )
+        assert (
+            schema["checkpoints"][0]["dependencies"][0]["compare"]["left"]["ref"]
+            == "action:{0}"
+        )
+        schema["actions"][1]["depends_on"] = "checkpoint:{depends_on_0}"
+
+        set_pipeline_value("traverse", "ref", "action:{2}.object.objects")
+        errors = schema_validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.actions[1].pipeline (action id: 1): the value of property "ref" must be an ancestor of action id 1, got "action:{2}.object.objects"'
+            in errors
+        )
+
+        set_pipeline_value("traverse", "ref", "action:{0}.object.objects")
+        errors = schema_validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # foreach.as cannot be explicitly assigned a value
+        schema["actions"][1]["pipeline"]["traverse"][0]["foreach"]["variables"].append(
+            {
+                "name": "$an_object",
+                "type": "EDGE",
+                "initial": None,
+            }
+        )
+        schema["actions"][1]["pipeline"]["traverse"][0]["foreach"]["apply"].append(
+            {
+                "from": "$an_object",
+                "method": "SET",
+                "to": "$edge",  # loop variable
+            }
+        )
+        errors = schema_validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.actions[1].pipeline (action id: 1).to: cannot assign to loop variable: "$edge"'
+            in errors
+        )
+
+        # should be able to traverse threads...
+        schema["threads"] = [
+            {
+                "id": 0,
+                "description": "",
+                "depends_on": "checkpoint:{depends_on_0}",
+                "party": "party:{0}",
+                "spawn": {
+                    "from": "party:{0}",
+                    "foreach": "member_ids",
+                    "as": "$obj",
+                },
+            }
+        ]
+        schema["actions"][0]["context"] = "thread:{0}"  # action:{0} is now threaded
+        set_pipeline_value("traverse", "ref", "action:{0}")
+        set_pipeline_value(
+            "traverse",
+            "foreach",
+            {
+                "as": "$action",
+                "variables": [
+                    {
+                        "name": "$minimums",
+                        "type": "NUMERIC_LIST",
+                        "initial": [],
+                    },
+                    {
+                        "name": "$average_minimum",
+                        "type": "NUMERIC",
+                        "initial": 0,
+                    },
+                ],
+                "traverse": [  # nested traversal
+                    {
+                        "ref": "$action.object.objects",
+                        "foreach": {
+                            "as": "$edge",
+                            "apply": [
+                                {
+                                    "from": "$edge.numbers",
+                                    "aggregate": {
+                                        "field": "$_item",
+                                        "operator": "MIN",
+                                    },
+                                    "method": "APPEND",
+                                    "to": "$minimums",
+                                },
+                            ],
+                        },
+                    },
+                ],
+                "apply": [
+                    {
+                        "from": "$minimums",
+                        "aggregate": {
+                            "field": "$_item",
+                            "operator": "AVERAGE",
+                        },
+                        "method": "ADD",
+                        "to": "$average_minimum",
+                    }
+                ],
+                "output": [
+                    {
+                        "from": "$average_minimum",
+                        "to": "number",
+                    },
+                ],
+            },
+        )
+        errors = schema_validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # should not be able to traverse non-threaded actions
+        set_pipeline_value("traverse", "ref", "action:{1}")
+        errors = schema_validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.actions[1].pipeline (action id: 1).ref: cannot traverse non-threaded action: "action:{1}"'
+            in errors
+        )
+
     def test_variable_scope(self):
         schema_validator = SchemaValidator()
         schema = fixtures.basic_schema_with_actions(1)
@@ -159,7 +327,7 @@ class TestAggregationPipeline:
             {
                 "name": "$another_var",
                 "type": "STRING",
-                "initial": "nope",
+                "initial": "",
             }
         )
         schema["actions"][0]["pipeline"]["apply"].append(

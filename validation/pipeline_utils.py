@@ -48,6 +48,7 @@ def validate_operation(
             "STRING_LIST": ["SET"],
             "NUMERIC_LIST": ["SET"],
         },
+        "OBJECT": {"OBJECT": ["SET"]},
     }
 
     if (

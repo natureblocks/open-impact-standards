@@ -1,3 +1,7 @@
+import re
+from validation import patterns
+
+
 class FieldTypeDetails:
     def __init__(self, is_list, item_type, item_tag):
         self.is_list = is_list
@@ -13,6 +17,8 @@ class FieldTypeDetails:
         if self.is_list:
             if item_type_string == "EDGE":
                 return "EDGE_COLLECTION"
+            elif re.match(patterns.global_ref, item_type_string):
+                return f"[{item_type_string}]"
 
             return (
                 f"{item_type_string}_LIST" if item_type_string is not "NULL" else "LIST"
