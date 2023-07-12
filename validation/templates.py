@@ -245,6 +245,7 @@ action = {
     "type": "object",
     "properties": {
         "id": {"type": "integer"},
+        "context": {"type": "ref", "ref_types": ["thread"]},
         "object": {"type": "string"},
         "description": {"type": "string"},
         "party": {
@@ -377,6 +378,7 @@ action = {
     },
     "constraints": {
         "optional": [
+            "context",
             "depends_on",
             "steps",
             "milestones",
@@ -407,5 +409,31 @@ party = {
     "ref_config": {
         "fields": ["id", "name"],
         "collection": "root.parties",
+    },
+}
+
+thread = {
+    "type": "object",
+    "properties": {
+        "id": {"type": "integer"},
+        "description": {"type": "string"},
+        "depends_on": {"type": "ref", "ref_types": ["checkpoint"]},
+        "party": {"type": "ref", "ref_types": ["party"]},
+        "spawn": {
+            "type": "object",
+            "properties": {
+                "from": {"type": "ref", "ref_types": ["action"]},
+                "foreach": {"type": "string"},
+                "as": {
+                    "type": "string",
+                    "pattern": patterns.variable,
+                    "pattern_description": "variable name"
+                },
+            },
+        },
+    },
+    "ref_config": {
+        "fields": ["id"],
+        "collection": "root.threads",
     },
 }
