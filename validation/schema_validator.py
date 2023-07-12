@@ -3,6 +3,7 @@ import hashlib
 import json
 import re
 from validation.field_type_details import FieldTypeDetails
+from validation.pipeline_variable import PipelineVariable
 
 from validation import templates, oisql, utils, patterns, pipeline_utils
 
@@ -459,8 +460,7 @@ class SchemaValidator:
     def validate_pipeline(self, path, field):
         errors = []
 
-        # {variable name: {"type_details": FieldTypeDetails, "scope": scope}}
-        # dict may include "initial" to validate null initial values
+        # {variable name: PipelineVariable}
         pipeline_vars = {}
         scope = "0"
 
@@ -492,12 +492,12 @@ class SchemaValidator:
                     ]
                     continue
 
-                pipeline_vars[var["name"]] = {
-                    "type_details": initial_type_details,
-                    "scope": scope,
-                    "initial": var["initial"],
-                    "assigned": False,
-                }
+                pipeline_vars[var["name"]] = PipelineVariable(
+                    type_details=initial_type_details,
+                    scope=scope,
+                    initial=var["initial"],
+                    assigned=False,
+                )
 
         if "traverse" in field and isinstance(field["traverse"], list):
             for i in range(len(field["traverse"])):
@@ -527,29 +527,30 @@ class SchemaValidator:
         ref = traversal["ref"]
         ref_path = ref.split(".")
         if re.match(patterns.variable, ref_path[0]):
-            var = ref_path[0]
+            var_name = ref_path[0]
             # variable must have been defined in a previous stage
-            if var not in pipeline_vars:
+            if var_name not in pipeline_vars:
                 return [
-                    f"{self._context(path)}.ref: variable not found: {json.dumps(var)}"
+                    f"{self._context(path)}.ref: variable not found: {json.dumps(var_name)}"
                 ]
 
+            pipeline_var = pipeline_vars[var_name]
             # variable must be in scope
-            if not scope.startswith(pipeline_vars[var]["scope"]):
+            if not scope.startswith(pipeline_var.scope):
                 return [
-                    f"{self._context(path)}.ref: variable {json.dumps(var)} is not in scope"
+                    f"{self._context(path)}.ref: variable {json.dumps(var_name)} is not in scope"
                 ]
 
             if len(ref_path) > 1:
                 try:
                     ref_type_details = self._resolve_type_from_variable_path(
-                        var_type_details=pipeline_vars[var]["type_details"],
+                        var_type_details=pipeline_var.type_details,
                         path=ref_path,
                     )
                 except Exception as e:
                     return [f"{self._context(path)}.ref: {str(e)}"]
             else:
-                ref_type_details = copy.deepcopy(pipeline_vars[ref]["type_details"])
+                ref_type_details = copy.deepcopy(pipeline_var.type_details)
         else:  # ref is not a variable, so it's a global or local ref
             parent_action = self._get_parent_object(path)
             if utils.is_global_ref(ref):
@@ -624,12 +625,12 @@ class SchemaValidator:
         ref_type_details.is_list = (
             False  # de-listify, because we're iterating over the items
         )
-        pipeline_vars[item_name] = {
-            "type_details": ref_type_details,
-            "scope": scope,
-            "assigned": True,  # loop variables are automatically assigned
-            "is_loop_variable": True,
-        }
+        pipeline_vars[item_name] = PipelineVariable(
+            type_details=ref_type_details,
+            scope=scope,
+            assigned=True,  # loop variables are automatically assigned
+            is_loop_variable=True,
+        )
 
         if "variables" in traversal["foreach"]:
             for i in range(len(traversal["foreach"]["variables"])):
@@ -651,12 +652,12 @@ class SchemaValidator:
                         f"{self._context(path)}.foreach.variables[{str(i)}].initial: does not match expected type {var['type']}"
                     ]
 
-                pipeline_vars[var["name"]] = {
-                    "type_details": initial_type_details,
-                    "scope": scope,
-                    "initial": var["initial"],
-                    "assigned": False,
-                }
+                pipeline_vars[var["name"]] = PipelineVariable(
+                    type_details=initial_type_details,
+                    scope=scope,
+                    initial=var["initial"],
+                    assigned=False,
+                )
 
         if "traverse" in traversal["foreach"]:
             for i in range(len(traversal["foreach"]["traverse"])):
@@ -678,31 +679,33 @@ class SchemaValidator:
     def _validate_pipeline_application(self, path, pipeline_vars, apply, scope):
         from_path = apply["from"].split(".")
         if re.match(patterns.variable, from_path[0]):
-            var = from_path[0]
-            if var not in pipeline_vars:
+            var_name = from_path[0]
+            if var_name not in pipeline_vars:
                 return [
-                    f"{self._context(path)}.from: variable not found: {json.dumps(var)}"
+                    f"{self._context(path)}.from: variable not found: {json.dumps(var_name)}"
                 ]
-            elif not pipeline_vars[var]["assigned"]:
+
+            pipeline_var = pipeline_vars[var_name]
+            if not pipeline_var.assigned:
                 self.warnings.append(
-                    f"{self._context(path)}.from: variable used before assignment: {json.dumps(var)}"
+                    f"{self._context(path)}.from: variable used before assignment: {json.dumps(var_name)}"
                 )
 
-            if not scope.startswith(pipeline_vars[var]["scope"]):
+            if not scope.startswith(pipeline_var.scope):
                 return [
-                    f"{self._context(path)}.from: variable {json.dumps(var)} is not in scope"
+                    f"{self._context(path)}.from: variable {json.dumps(var_name)} is not in scope"
                 ]
 
             if len(from_path) > 1:
                 try:
                     ref_type_details = self._resolve_type_from_variable_path(
-                        var_type_details=pipeline_vars[var]["type_details"],
+                        var_type_details=pipeline_var.type_details,
                         path=from_path,
                     )
                 except Exception as e:
                     return [f"{self._context(path)}.ref: {str(e)}"]
             else:
-                ref_type_details = pipeline_vars[apply["from"]]["type_details"]
+                ref_type_details = pipeline_var.type_details
         elif re.match(patterns.local_variable, apply["from"]):
             ref_type_details = self._resolve_type_from_local_ref(
                 apply["from"], path=path
@@ -720,33 +723,31 @@ class SchemaValidator:
             # pattern validation will have already caught this
             return []
 
-        if not re.match(patterns.variable, apply["to"]):
+        to_var_name = apply["to"]
+        if not re.match(patterns.variable, to_var_name):
             # pattern validation will have already caught this
             return []
 
-        if apply["to"] not in pipeline_vars:
+        if to_var_name not in pipeline_vars:
             return [
-                f"{self._context(path)}.to: variable not found: {json.dumps(apply['to'])}"
+                f"{self._context(path)}.to: variable not found: {json.dumps(to_var_name)}"
             ]
 
-        if not scope.startswith(pipeline_vars[apply["to"]]["scope"]):
+        to_pipeline_var = pipeline_vars[to_var_name]
+        
+        if not scope.startswith(to_pipeline_var.scope):
             return [
-                f"{self._context(path)}.to: variable {json.dumps(apply['to'])} is not in scope"
+                f"{self._context(path)}.to: variable {json.dumps(to_var_name)} is not in scope"
             ]
 
-        if (
-            "is_loop_variable" in pipeline_vars[apply["to"]]
-            and pipeline_vars[apply["to"]]["is_loop_variable"]
-        ):
+        if to_pipeline_var.is_loop_variable:
             return [
-                f"{self._context(path)}.to: cannot assign to loop variable: {json.dumps(apply['to'])}"
+                f"{self._context(path)}.to: cannot assign to loop variable: {json.dumps(to_var_name)}"
             ]
 
-        left_operand_type = pipeline_vars[apply["to"]]["type_details"]
+        left_operand_type = to_pipeline_var.type_details
         left_operand_is_null = (
-            not pipeline_vars[apply["to"]]["assigned"]
-            and "initial" in pipeline_vars[apply["to"]]
-            and pipeline_vars[apply["to"]]["initial"] is None
+            not to_pipeline_var.assigned and to_pipeline_var.initial is None
         )
         right_operand_type = pipeline_utils.determine_right_operand_type(
             apply, ref_type_details, self
@@ -760,7 +761,7 @@ class SchemaValidator:
                 left_operand_is_null,
             )
 
-            pipeline_vars[apply["to"]]["assigned"] = True
+            to_pipeline_var.assigned = True
         except Exception as e:
             return [f"{self._context(path)}: apply: {str(e)}"]
 
