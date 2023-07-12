@@ -13,11 +13,12 @@ def is_global_ref(value):
     if not isinstance(value, str):
         return False
 
-    split_value = value.split(":")
-    ref_type = split_value[0]
-    ref_id = ":".join(split_value[1:])
+    first_segment = value.split(".")[0]  # in case it's a path
+    split_ref = first_segment.split(":")
+    ref_type = split_ref[0]
+    ref_id = ":".join(split_ref[1:])
 
-    return ref_type in ref_types and re.match("^{.+}$", ref_id)
+    return ref_type in ref_types and re.match(patterns.global_ref_identifier, ref_id)
 
 
 def is_local_variable(value):
@@ -28,7 +29,7 @@ def parse_ref_id(value):
     if not is_global_ref(value):
         raise Exception(f"Invalid ref: {value}")
 
-    framed_ref_id = ":".join(value.split(":")[1:])  # "{ref_id}"
+    framed_ref_id = ":".join(value.split(":")[1:]).split(".")[0]  # "{ref_id}"
     return framed_ref_id[1:-1]
 
 
