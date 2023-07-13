@@ -95,17 +95,7 @@ class TestAggregationPipeline:
 
         # should be able to traverse threads...
         schema["threads"] = [
-            {
-                "id": 0,
-                "description": "",
-                "depends_on": "checkpoint:{depends_on_0}",
-                "party": "party:{0}",
-                "spawn": {
-                    "from": "party:{0}",
-                    "foreach": "member_ids",
-                    "as": "$obj",
-                },
-            }
+            fixtures.thread(0, "depends_on_0"),
         ]
         schema["actions"][0]["context"] = "thread:{0}"  # action:{0} is now threaded
         set_pipeline_value("traverse", "ref", "action:{0}")

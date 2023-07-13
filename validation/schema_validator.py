@@ -564,14 +564,17 @@ class SchemaValidator:
                 matches = re.findall(patterns.global_ref, ref)
                 if len(matches) and len(matches[0]):
                     global_ref = matches[0][0]
-                    referenced_object = self._resolve_global_ref(global_ref)
-                    if len(matches[0][2]):
-                        if matches[0][1] == "action":
-                            split_path = matches[0][2].split(".")
-                            if split_path[0] == "object":
+                    ref_type = matches[0][1]
+                    ref_path = matches[0][2]
+                    if len(ref_path):
+                        if ref_type == "action":
+                            split_ref_path = ref_path.split(".")
+                            if split_ref_path[0] == "object":
                                 ref_type_details = self._resolve_type_from_object_path(
-                                    object_tag=referenced_object["object"],
-                                    path=split_path[1:],
+                                    object_tag=self._resolve_global_ref(global_ref)[
+                                        "object"
+                                    ],
+                                    path=split_ref_path[1:],
                                 )
                             else:
                                 raise NotImplementedError(
@@ -580,13 +583,12 @@ class SchemaValidator:
                         else:
                             raise NotImplementedError(
                                 "global ref resolution not implemented for ref type: "
-                                + matches[0][1]
+                                + ref_type
                             )
                     else:
-                        if matches[0][1] != "action":
+                        if ref_type != "action":
                             raise NotImplementedError(
-                                "iteration not implemented for ref type: "
-                                + matches[0][1]
+                                "iteration not implemented for ref type: " + ref_type
                             )
 
                         # action must be threaded -- infer the context
@@ -734,7 +736,7 @@ class SchemaValidator:
             ]
 
         to_pipeline_var = pipeline_vars[to_var_name]
-        
+
         if not scope.startswith(to_pipeline_var.scope):
             return [
                 f"{self._context(path)}.to: variable {json.dumps(to_var_name)} is not in scope"
@@ -940,6 +942,9 @@ class SchemaValidator:
         ref_type = ref.split(":")[0]
         ref_config = getattr(templates, ref_type)["ref_config"]
         collection = self._get_field(ref_config["collection"])
+
+        if collection is None:
+            return None
 
         for ref_field in ref_config["fields"]:
             for item in collection:

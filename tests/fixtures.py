@@ -71,3 +71,17 @@ def dependency(
             "operator": operator,
         },
     }
+
+
+def thread(id, depends_on_id):
+    return {
+        "id": id,
+        "description": "",
+        "depends_on": "checkpoint:{" + depends_on_id + "}",
+        "party": "party:{0}",
+        "spawn": {
+            "from": "party:{0}",
+            "foreach": "member_ids",
+            "as": "$obj",
+        },
+    }

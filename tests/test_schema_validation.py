@@ -70,6 +70,36 @@ class TestSchemaValidation:
             "\Action ids in schema:\n" + "\n".join([str(id) for id in action_ids])
         )
 
+    def test_action_context(self):
+        validator = SchemaValidator()
+
+        schema = fixtures.basic_schema_with_actions(2)
+        schema["checkpoints"] = [
+            fixtures.checkpoint(0, "depends_on_0", num_dependencies=1),
+        ]
+        schema["actions"][1]["depends_on"] = "checkpoint:{depends_on_0}"
+
+        # action.context must be a defined thread
+        schema["actions"][0]["context"] = "action:{0}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.actions[0].context (action id: 0): invalid ref type: expected one of ['thread'], got action"
+            in errors
+        )
+
+        schema["actions"][0]["context"] = "thread:{0}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.actions[0].context (action id: 0): invalid ref: object not found: "thread:{0}"'
+            in errors
+        )
+
+        schema["threads"] = [
+            fixtures.thread(0, "depends_on_0"),  # creates thread:{0}
+        ]
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
     def test_milestones(self):
         validator = SchemaValidator()
 
