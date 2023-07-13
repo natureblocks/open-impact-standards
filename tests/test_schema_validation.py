@@ -102,7 +102,23 @@ class TestSchemaValidation:
         ] = "checkpoint:{depends-on-3}"  # creates circular dependency
 
         errors = validator.validate(json_string=json.dumps(schema))
-        assert "Circular dependency detected (dependency path: [0, 3, 2, 1])" in errors
+        threaded_context_note = "; NOTE: actions with threaded context implicitly depend on the referenced thread's checkpoint (Thread.depends_on)"
+        assert (
+            f"Circular dependency detected (dependency path: [0, 3, 2, 1]){threaded_context_note}"
+            in errors
+        )
+
+        del schema["actions"][0]["depends_on"]
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # a thread cannot depend on an action that references said thread as its context
+        schema["actions"][0]["context"] = "thread:{0}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "A node cannot have itself as a dependency (id: 0); NOTE: actions with threaded context implicitly depend on the referenced thread's checkpoint (Thread.depends_on)"
+            in errors
+        )
 
     def test_action_context(self):
         validator = SchemaValidator()

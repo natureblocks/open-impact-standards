@@ -1577,6 +1577,7 @@ class SchemaValidator:
         self._action_checkpoints = {}
         self._checkpoints = {}
 
+        convert_to_psuedo = set()
         for action in self.schema["actions"]:
             if "id" in action:
                 # if the action has a threaded context...
@@ -1589,7 +1590,10 @@ class SchemaValidator:
                     if "depends_on" not in action:
                         self._action_checkpoints[
                             str(action["id"])
-                        ] = utils.parse_ref_id(thread["depends_on"])
+                        ] = "_psuedo-checkpoint-" + utils.parse_ref_id(
+                            thread["depends_on"]
+                        )
+                        convert_to_psuedo.add(thread["depends_on"])
                     else:
                         # a psuedo-checkpoint is needed to combine the action's checkpoint with the thread's checkpoint
                         alias = f"_psuedo-checkpoint-{str(action['id'])}"
@@ -1614,12 +1618,20 @@ class SchemaValidator:
                         else None
                     )
 
+        for checkpoint_ref in convert_to_psuedo:
+            checkpoint = self._resolve_global_ref(checkpoint_ref)
+            if checkpoint is not None:
+                checkpoint["alias"] = "_psuedo-checkpoint-" + checkpoint["alias"]
+                self._psuedo_checkpoints.append(checkpoint["alias"])
+
         for checkpoint in self.schema["checkpoints"]:
             if "alias" in checkpoint:
                 self._checkpoints[checkpoint["alias"]] = checkpoint
 
     def _detect_circular_dependencies(self):
-        def _explore_checkpoint_recursive(checkpoint, visited, dependency_path):
+        def _explore_checkpoint_recursive(
+            checkpoint, visited, dependency_path, includes_threaded_context
+        ):
             for dependency in checkpoint["dependencies"]:
                 # Could be a Dependency or a CheckpointReference
                 if "compare" in dependency:
@@ -1632,6 +1644,7 @@ class SchemaValidator:
                                 ),
                                 visited,
                                 dependency_path.copy(),
+                                includes_threaded_context,
                             )
 
                             if errors:
@@ -1645,6 +1658,8 @@ class SchemaValidator:
                         ],
                         visited=visited,
                         dependency_path=dependency_path.copy(),
+                        includes_threaded_context=includes_threaded_context
+                        or "_psuedo-checkpoint" in dependency["checkpoint"],
                     )
 
                     if errors:
@@ -1652,14 +1667,23 @@ class SchemaValidator:
 
             return []
 
-        def _explore_recursive(action_id, visited, dependency_path):
+        def _explore_recursive(
+            action_id, visited, dependency_path, includes_threaded_context=False
+        ):
             if action_id in dependency_path:
+                threaded_context_note = (
+                    "; NOTE: actions with threaded context implicitly depend on the referenced thread's checkpoint (Thread.depends_on)"
+                    if includes_threaded_context
+                    else ""
+                )
                 if len(dependency_path) > 1:
                     dependency_path = json.dumps(dependency_path).replace('"', "")
                     return [
-                        f"Circular dependency detected (dependency path: {dependency_path})"
+                        f"Circular dependency detected (dependency path: {dependency_path}){threaded_context_note}"
                     ]
-                return [f"A node cannot have itself as a dependency (id: {action_id})"]
+                return [
+                    f"A node cannot have itself as a dependency (id: {action_id}){threaded_context_note}"
+                ]
 
             if action_id in visited:
                 return []
@@ -1679,6 +1703,8 @@ class SchemaValidator:
                 checkpoint=self._checkpoints[alias],
                 visited=visited,
                 dependency_path=dependency_path,
+                includes_threaded_context=includes_threaded_context
+                or "_psuedo-checkpoint" in alias,
             )
 
             return [errors[0]] if errors else []
