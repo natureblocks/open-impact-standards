@@ -73,11 +73,10 @@ def dependency(
     }
 
 
-def thread(id, depends_on_id):
-    return {
+def thread(id, depends_on_id=None):
+    thread = {
         "id": id,
         "description": "",
-        "depends_on": "checkpoint:{" + depends_on_id + "}",
         "party": "party:{0}",
         "spawn": {
             "from": "party:{0}",
@@ -85,3 +84,8 @@ def thread(id, depends_on_id):
             "as": "$obj",
         },
     }
+
+    if depends_on_id is not None:
+        thread["depends_on"] = "checkpoint:{" + depends_on_id + "}"
+
+    return thread

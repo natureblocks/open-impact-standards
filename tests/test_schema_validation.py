@@ -70,32 +70,66 @@ class TestSchemaValidation:
             "\Action ids in schema:\n" + "\n".join([str(id) for id in action_ids])
         )
 
+    def test_thread_dependencies(self):
+        validator = SchemaValidator()
+
+        schema = fixtures.basic_schema_with_actions(4)
+        schema["checkpoints"] = [
+            fixtures.checkpoint(0, "depends-on-0", num_dependencies=1),
+            fixtures.checkpoint(1, "depends-on-1", num_dependencies=1),
+            fixtures.checkpoint(2, "depends-on-2", num_dependencies=1),
+            fixtures.checkpoint(3, "depends-on-3", num_dependencies=1),
+        ]
+
+        def set_dependency(checkpoint_idx, action_id):
+            schema["checkpoints"][checkpoint_idx]["dependencies"][0]["compare"]["left"][
+                "ref"
+            ] = action_id
+
+        set_dependency(0, "action:{0}")
+        set_dependency(1, "action:{1}")
+        set_dependency(2, "action:{2}")
+        set_dependency(3, "action:{3}")
+
+        schema["threads"] = [
+            fixtures.thread(0, "depends-on-0"),
+        ]
+        schema["actions"][1]["context"] = "thread:{0}"
+        schema["actions"][2]["depends_on"] = "checkpoint:{depends-on-1}"
+        schema["actions"][3]["depends_on"] = "checkpoint:{depends-on-2}"
+        schema["actions"][0][
+            "depends_on"
+        ] = "checkpoint:{depends-on-3}"  # creates circular dependency
+
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert "Circular dependency detected (dependency path: [0, 3, 2, 1])" in errors
+
     def test_action_context(self):
         validator = SchemaValidator()
 
         schema = fixtures.basic_schema_with_actions(2)
         schema["checkpoints"] = [
-            fixtures.checkpoint(0, "depends_on_0", num_dependencies=1),
+            fixtures.checkpoint(0, "depends-on-0", num_dependencies=1),
         ]
-        schema["actions"][1]["depends_on"] = "checkpoint:{depends_on_0}"
+        schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-0}"
 
         # action.context must be a defined thread
-        schema["actions"][0]["context"] = "action:{0}"
+        schema["actions"][1]["context"] = "action:{0}"
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            "root.actions[0].context (action id: 0): invalid ref type: expected one of ['thread'], got action"
+            "root.actions[1].context (action id: 1): invalid ref type: expected one of ['thread'], got action"
             in errors
         )
 
-        schema["actions"][0]["context"] = "thread:{0}"
+        schema["actions"][1]["context"] = "thread:{0}"
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.actions[0].context (action id: 0): invalid ref: object not found: "thread:{0}"'
+            'root.actions[1].context (action id: 1): invalid ref: object not found: "thread:{0}"'
             in errors
         )
 
         schema["threads"] = [
-            fixtures.thread(0, "depends_on_0"),  # creates thread:{0}
+            fixtures.thread(0, "depends-on-0"),  # creates thread:{0}
         ]
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
@@ -142,24 +176,24 @@ class TestSchemaValidation:
         # A node should not be able to depend on itself
         schema = fixtures.basic_schema_with_actions(1)
         schema["checkpoints"] = [
-            fixtures.checkpoint(0, "depends_on_0", num_dependencies=1),
+            fixtures.checkpoint(0, "depends-on-0", num_dependencies=1),
         ]
         assert (
             schema["checkpoints"][0]["dependencies"][0]["compare"]["left"]["ref"]
             == "action:{" + str(schema["actions"][0]["id"]) + "}"
         )
-        schema["actions"][0]["depends_on"] = "checkpoint:{depends_on_0}"
+        schema["actions"][0]["depends_on"] = "checkpoint:{depends-on-0}"
         errors = validator.validate(json_string=json.dumps(schema))
         assert len(errors) == 1
         assert errors[0] == "A node cannot have itself as a dependency (id: 0)"
 
         # Two nodes should not be able to depend on each other
         schema["actions"].append(fixtures.action(1))
-        checkpoint_2 = fixtures.checkpoint(1, "depends_on_1", num_dependencies=1)
+        checkpoint_2 = fixtures.checkpoint(1, "depends-on-1", num_dependencies=1)
         checkpoint_2["dependencies"][0]["compare"]["left"]["ref"] = "action:{1}"
         schema["checkpoints"].append(checkpoint_2)
-        schema["actions"][0]["depends_on"] = "checkpoint:{depends_on_1}"
-        schema["actions"][1]["depends_on"] = "checkpoint:{depends_on_0}"
+        schema["actions"][0]["depends_on"] = "checkpoint:{depends-on-1}"
+        schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-0}"
 
         errors = validator.validate(json_string=json.dumps(schema))
         assert len(errors) == 1
@@ -167,11 +201,11 @@ class TestSchemaValidation:
 
         # Three or more nodes should not be able to form a circular dependency
         schema["actions"].append(fixtures.action(2))
-        checkpoint_3 = fixtures.checkpoint(2, "depends_on_2", num_dependencies=1)
+        checkpoint_3 = fixtures.checkpoint(2, "depends-on-2", num_dependencies=1)
         checkpoint_3["dependencies"][0]["compare"]["left"]["ref"] = "action:{2}"
         schema["checkpoints"].append(checkpoint_3)
-        schema["actions"][1]["depends_on"] = "checkpoint:{depends_on_2}"
-        schema["actions"][2]["depends_on"] = "checkpoint:{depends_on_0}"
+        schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-2}"
+        schema["actions"][2]["depends_on"] = "checkpoint:{depends-on-0}"
 
         errors = validator.validate(json_string=json.dumps(schema))
         assert len(errors) == 1
@@ -180,15 +214,15 @@ class TestSchemaValidation:
         # What if a recurring dependency set helps form a circular dependency?
         schema["actions"].append(fixtures.action(3))
         schema["actions"].append(fixtures.action(4))
-        checkpoint_4 = fixtures.checkpoint(3, "depends_on_3", num_dependencies=1)
+        checkpoint_4 = fixtures.checkpoint(3, "depends-on-3", num_dependencies=1)
         checkpoint_4["dependencies"][0]["compare"]["left"]["ref"] = "action:{3}"
         schema["checkpoints"].append(checkpoint_4)
-        schema["actions"][2]["depends_on"] = "checkpoint:{depends_on_3}"
-        checkpoint_5 = fixtures.checkpoint(4, "depends_on_4_and_0", num_dependencies=1)
+        schema["actions"][2]["depends_on"] = "checkpoint:{depends-on-3}"
+        checkpoint_5 = fixtures.checkpoint(4, "depends-on-4-and-0", num_dependencies=1)
         checkpoint_5["dependencies"][0]["compare"]["left"]["ref"] = "action:{4}"
-        checkpoint_5["dependencies"].append({"checkpoint": "checkpoint:{depends_on_0}"})
+        checkpoint_5["dependencies"].append({"checkpoint": "checkpoint:{depends-on-0}"})
         schema["checkpoints"].append(checkpoint_5)
-        schema["actions"][3]["depends_on"] = "checkpoint:{depends_on_4_and_0}"
+        schema["actions"][3]["depends_on"] = "checkpoint:{depends-on-4-and-0}"
 
         errors = validator.validate(json_string=json.dumps(schema))
         assert "Circular dependency detected (dependency path: [0, 1, 2, 3])" in errors
@@ -200,8 +234,8 @@ class TestSchemaValidation:
 
         # Two checkpoints cannot have the same dependencies and the same gate type
         schema["checkpoints"] = [
-            fixtures.checkpoint(0, "checkpoint_1", "AND", 2),
-            fixtures.checkpoint(1, "checkpoint_2", "AND", 2),
+            fixtures.checkpoint(0, "checkpoint-1", "AND", 2),
+            fixtures.checkpoint(1, "checkpoint-2", "AND", 2),
         ]
 
         errors = validator.validate(json_string=json.dumps(schema))
@@ -220,7 +254,7 @@ class TestSchemaValidation:
         validator = SchemaValidator()
 
         schema = fixtures.basic_schema_with_actions(2)
-        checkpoint = fixtures.checkpoint(0, "test_ds", num_dependencies=0)
+        checkpoint = fixtures.checkpoint(0, "test-ds", num_dependencies=0)
 
         # Both operands cannot be LiteralOperand objects
         checkpoint["dependencies"].append(
@@ -233,7 +267,7 @@ class TestSchemaValidation:
             },
         )
         schema["checkpoints"].append(checkpoint)
-        schema["actions"][1]["depends_on"] = "checkpoint:{test_ds}"
+        schema["actions"][1]["depends_on"] = "checkpoint:{test-ds}"
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
             "root.checkpoints[0].dependencies[0].compare: invalid comparison: {'value': True} EQUALS {'value': False}: both operands cannot be literals"
@@ -384,8 +418,8 @@ class TestSchemaValidation:
         validator = SchemaValidator()
 
         schema = fixtures.basic_schema_with_actions(2)
-        schema["checkpoints"].append(fixtures.checkpoint(0, "test_ds", "AND", 1))
-        schema["actions"][1]["depends_on"] = "checkpoint:{test_ds}"
+        schema["checkpoints"].append(fixtures.checkpoint(0, "test-ds", "AND", 1))
+        schema["actions"][1]["depends_on"] = "checkpoint:{test-ds}"
 
         assert len(schema["checkpoints"][0]["dependencies"]) == 1
         assert "gate_type" not in schema["checkpoints"][0]
@@ -409,8 +443,8 @@ class TestSchemaValidation:
         validator = SchemaValidator()
 
         schema = fixtures.basic_schema_with_actions(2)
-        schema["checkpoints"].append(fixtures.checkpoint(0, "test_ds", "AND", 1))
-        schema["actions"][1]["depends_on"] = "checkpoint:{test_ds}"
+        schema["checkpoints"].append(fixtures.checkpoint(0, "test-ds", "AND", 1))
+        schema["actions"][1]["depends_on"] = "checkpoint:{test-ds}"
 
         schema["actions"][1]["operation"]["type"] = "EDIT"
         errors = validator.validate(json_string=json.dumps(schema))
@@ -419,14 +453,14 @@ class TestSchemaValidation:
             in errors
         )
         assert (
-            'root.actions[1].operation (action id: 1): the value of property "ref" must be an ancestor of action id 1, got null'
+            'root.actions[1].operation (action id: 1): the value of property "ref" must reference an ancestor of action id 1, got null'
             in errors
         )
 
         schema["actions"][1]["operation"]["ref"] = "action:{3}"
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.actions[1].operation (action id: 1): the value of property "ref" must be an ancestor of action id 1, got "action:{3}"'
+            'root.actions[1].operation (action id: 1): the value of property "ref" must reference an ancestor of action id 1, got "action:{3}"'
             in errors
         )
 
@@ -469,7 +503,7 @@ class TestSchemaValidation:
         schema["checkpoints"].append(
             {
                 "id": 0,
-                "alias": "test_ds",
+                "alias": "test-ds",
                 "description": "test dependency set",
                 "dependencies": [
                     fixtures.dependency("action:{0}"),
@@ -512,13 +546,13 @@ class TestSchemaValidation:
         schema = fixtures.basic_schema_with_actions(2)
 
         schema["checkpoints"] = [
-            fixtures.checkpoint(0, "some_alias"),
-            fixtures.checkpoint(1, "some_alias"),
+            fixtures.checkpoint(0, "some-alias"),
+            fixtures.checkpoint(1, "some-alias"),
         ]
 
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.checkpoints: duplicate value provided for unique field "alias": "some_alias"'
+            'root.checkpoints: duplicate value provided for unique field "alias": "some-alias"'
             in errors
         )
 
@@ -659,7 +693,7 @@ class TestSchemaValidation:
 
         # Min length for Checkpoint.dependencies is 1
         schema["checkpoints"].append(
-            fixtures.checkpoint(0, "some_alias", num_dependencies=0)
+            fixtures.checkpoint(0, "some-alias", num_dependencies=0)
         )
 
         errors = validator.validate(json_string=json.dumps(schema))

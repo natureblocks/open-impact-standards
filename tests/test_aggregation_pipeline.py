@@ -53,18 +53,18 @@ class TestAggregationPipeline:
 
         # ref must refer to an ancestor
         schema["checkpoints"].append(
-            fixtures.checkpoint(0, "depends_on_0", num_dependencies=1)
+            fixtures.checkpoint(id=0, alias="depends-on-0", num_dependencies=1)
         )
         assert (
             schema["checkpoints"][0]["dependencies"][0]["compare"]["left"]["ref"]
             == "action:{0}"
         )
-        schema["actions"][1]["depends_on"] = "checkpoint:{depends_on_0}"
+        schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-0}"
 
         set_pipeline_value("traverse", "ref", "action:{2}.object.objects")
         errors = schema_validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.actions[1].pipeline (action id: 1): the value of property "ref" must be an ancestor of action id 1, got "action:{2}.object.objects"'
+            'root.actions[1].pipeline (action id: 1): the value of property "ref" must reference an ancestor of action id 1, got "action:{2}.object.objects"'
             in errors
         )
 
@@ -95,10 +95,12 @@ class TestAggregationPipeline:
 
         # should be able to traverse threads...
         schema["threads"] = [
-            fixtures.thread(0, "depends_on_0"),
+            fixtures.thread(0),
         ]
         schema["actions"][0]["context"] = "thread:{0}"  # action:{0} is now threaded
-        set_pipeline_value("traverse", "ref", "action:{0}")
+        set_pipeline_value(
+            "traverse", "ref", "action:{0}"
+        )  # traversing the threaded action
         set_pipeline_value(
             "traverse",
             "foreach",

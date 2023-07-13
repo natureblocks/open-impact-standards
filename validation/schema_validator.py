@@ -16,6 +16,7 @@ class SchemaValidator:
         self._action_checkpoints = {}  # to be collected during validation
         # { alias: checkpoint}
         self._checkpoints = {}  # to be collected during validation
+        self._psuedo_checkpoints = []  # for implicit action dependencies on threads
 
         # for including helpful context information in error messages
         self._path_context = ""
@@ -137,6 +138,9 @@ class SchemaValidator:
 
         if not isinstance(field, dict):
             return [f"{self._context(path)}: expected object, got {str(type(field))}"]
+
+        if self._bypass_validation_of_object(template, field):
+            return []
 
         if "any_of_templates" in template:
             return self._validate_multi_template_object(
@@ -295,10 +299,10 @@ class SchemaValidator:
 
     def validate_has_ancestor(self, path, action_id, ancestor_ref, ancestor_source):
         error = [
-            f"{self._context(path)}: the value of property {json.dumps(ancestor_source)} must be an ancestor of action id {json.dumps(action_id)}, got {json.dumps(ancestor_ref)}"
+            f"{self._context(path)}: the value of property {json.dumps(ancestor_source)} must reference an ancestor of action id {json.dumps(action_id)}, got {json.dumps(ancestor_ref)}"
         ]
 
-        if ancestor_ref is None:
+        if ancestor_ref is None or str(action_id) not in self._action_checkpoints:
             return error
 
         ancestor_id = utils.parse_ref_id(ancestor_ref)
@@ -309,6 +313,10 @@ class SchemaValidator:
             return utils.parse_ref_id(dependency["compare"][left_or_right]["ref"])
 
         def validate_has_ancestor_recursive(checkpoint_alias, visited_checkpoints):
+            if not checkpoint_alias in self._checkpoints:
+                # pattern validation will have caught this
+                return []
+
             if checkpoint_alias is None or checkpoint_alias in visited_checkpoints:
                 return error
 
@@ -1571,11 +1579,40 @@ class SchemaValidator:
 
         for action in self.schema["actions"]:
             if "id" in action:
-                self._action_checkpoints[str(action["id"])] = (
-                    utils.parse_ref_id(action["depends_on"])
-                    if "depends_on" in action
-                    else None
-                )
+                # if the action has a threaded context...
+                if "context" in action:
+                    # the action implicitly depends on the thread's checkpoint
+                    thread = self._resolve_global_ref(action["context"])
+                    if thread is None or "depends_on" not in thread:
+                        continue
+
+                    if "depends_on" not in action:
+                        self._action_checkpoints[
+                            str(action["id"])
+                        ] = utils.parse_ref_id(thread["depends_on"])
+                    else:
+                        # a psuedo-checkpoint is needed to combine the action's checkpoint with the thread's checkpoint
+                        alias = f"_psuedo-checkpoint-{str(action['id'])}"
+                        self.schema["checkpoints"].append(
+                            {
+                                "alias": alias,
+                                "gate_type": "AND",
+                                "dependencies": [
+                                    {"checkpoint": thread["depends_on"]},
+                                    {"checkpoint": action["depends_on"]},
+                                ],
+                            }
+                        )
+                        self._action_checkpoints[str(action["id"])] = alias
+
+                        # bypass validation of psuedo-checkpoint fields
+                        self._psuedo_checkpoints.append(alias)
+                else:
+                    self._action_checkpoints[str(action["id"])] = (
+                        utils.parse_ref_id(action["depends_on"])
+                        if "depends_on" in action
+                        else None
+                    )
 
         for checkpoint in self.schema["checkpoints"]:
             if "alias" in checkpoint:
@@ -1826,3 +1863,14 @@ class SchemaValidator:
 
     def _matches_meta_template(self, template_name, obj):
         return self._validate_object("", obj, getattr(oisql, template_name)) == []
+
+    def _bypass_validation_of_object(self, template, field):
+        if (
+            "template" in template
+            and template["template"] == "checkpoint"
+            and "alias" in field
+            and field["alias"] in self._psuedo_checkpoints
+        ):
+            return True
+
+        return False

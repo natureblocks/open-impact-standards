@@ -191,7 +191,7 @@ checkpoint = {
     "type": "object",
     "properties": {
         "id": {"type": "integer"},
-        "alias": {"type": "string"},
+        "alias": {"type": "string", "pattern": patterns.alias, "pattern_description": "checkpoint alias"},
         "description": {"type": "string"},
         "abbreviated_description": {"type": "string"},
         "supporting_info": {"type": "array", "values": {"type": "string"}},

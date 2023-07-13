@@ -9,3 +9,6 @@ variable = "^\$(?!_).+$"
 
 # hex color code
 hex_code = "^#(?:[0-9a-fA-F]{3}){1,2}$"
+
+# cannot include "_", "{", "}", or ":" (avoids ref parsing issues)
+alias = "^[^_\{\}:]+$"
