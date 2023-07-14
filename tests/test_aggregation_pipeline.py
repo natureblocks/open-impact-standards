@@ -49,6 +49,9 @@ class TestAggregationPipeline:
         }
 
         def set_pipeline_value(key1, key2, val):
+            if not len(schema["actions"][1]["pipeline"][key1]):
+                schema["actions"][1]["pipeline"][key1].append({})
+
             schema["actions"][1]["pipeline"][key1][0][key2] = val
 
         # ref must refer to an ancestor
@@ -98,6 +101,9 @@ class TestAggregationPipeline:
             fixtures.thread(0),
         ]
         schema["actions"][0]["context"] = "thread:{0}"  # action:{0} is now threaded
+        set_pipeline_value("variables", "name", "$average_minimums")
+        set_pipeline_value("variables", "type", "NUMERIC_LIST")
+        set_pipeline_value("variables", "initial", [])
         set_pipeline_value(
             "traverse", "ref", "action:{0}"
         )  # traversing the threaded action
@@ -111,11 +117,6 @@ class TestAggregationPipeline:
                         "name": "$minimums",
                         "type": "NUMERIC_LIST",
                         "initial": [],
-                    },
-                    {
-                        "name": "$average_minimum",
-                        "type": "NUMERIC",
-                        "initial": 0,
                     },
                 ],
                 "traverse": [  # nested traversal
@@ -144,18 +145,14 @@ class TestAggregationPipeline:
                             "field": "$_item",
                             "operator": "AVERAGE",
                         },
-                        "method": "ADD",
-                        "to": "$average_minimum",
+                        "method": "APPEND",
+                        "to": "$average_minimums",
                     }
-                ],
-                "output": [
-                    {
-                        "from": "$average_minimum",
-                        "to": "number",
-                    },
                 ],
             },
         )
+        set_pipeline_value("output", "from", "$average_minimums")
+        set_pipeline_value("output", "to", "numbers")
         errors = schema_validator.validate(json_string=json.dumps(schema))
         assert not errors
 

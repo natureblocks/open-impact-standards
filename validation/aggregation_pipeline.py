@@ -149,6 +149,10 @@ traverse = {
             },
             "constraints": {
                 "optional": ["traverse", "variables"],
+                "forbidden": {
+                    "properties": ["output"],
+                    "reason": "pipeline traversals cannot have output -- specify pipeline.output instead",
+                },
             },
         },
     },
