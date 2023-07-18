@@ -6,6 +6,7 @@ from validation.field_type_details import FieldTypeDetails
 from validation.pipeline_variable import PipelineVariable
 
 from validation import templates, oisql, utils, patterns, pipeline_utils
+from validation.utils import is_path, is_global_ref, is_variable, is_local_variable
 
 
 class SchemaValidator:
@@ -17,6 +18,10 @@ class SchemaValidator:
         # { alias: checkpoint}
         self._checkpoints = {}  # to be collected during validation
         self._psuedo_checkpoints = []  # for implicit action dependencies on threads
+
+        # { thread_id: { scope, sub_thread_ids, variables } }
+        # scopes are strings of dot-separated thread ids (e.g. f"{top_level_thread_id}.{nested_thread_id}")
+        self._threads = {}
 
         # for including helpful context information in error messages
         self._path_context = ""
@@ -85,7 +90,7 @@ class SchemaValidator:
         if expected_type == "ref":
             return self._validate_ref(path, field, template)
 
-        if utils.is_path(expected_type):
+        if is_path(expected_type):
             if "{_corresponding_key}" in expected_type:
                 corresponding_key = path.split(".")[-1]
                 path_to_expected_type = expected_type.replace(
@@ -297,12 +302,14 @@ class SchemaValidator:
 
         return errors
 
-    def validate_has_ancestor(self, path, action_id, ancestor_ref, ancestor_source):
+    def validate_has_ancestor(
+        self, path, descendant_id, descendant_type, ancestor_ref, ancestor_source
+    ):
         error = [
-            f"{self._context(path)}: the value of property {json.dumps(ancestor_source)} must reference an ancestor of action id {json.dumps(action_id)}, got {json.dumps(ancestor_ref)}"
+            f"{self._context(path)}: the value of property {json.dumps(ancestor_source)} must reference an ancestor of {descendant_type} id {json.dumps(descendant_id)}, got {json.dumps(ancestor_ref)}"
         ]
 
-        if ancestor_ref is None or str(action_id) not in self._action_checkpoints:
+        if ancestor_ref is None or str(descendant_id) not in self._action_checkpoints:
             return error
 
         ancestor_id = utils.parse_ref_id(ancestor_ref)
@@ -340,9 +347,18 @@ class SchemaValidator:
 
             return error
 
-        return validate_has_ancestor_recursive(
-            self._action_checkpoints[str(action_id)], []
-        )
+        if descendant_type == "action":
+            return validate_has_ancestor_recursive(
+                self._action_checkpoints[str(descendant_id)], []
+            )
+        elif descendant_type == "thread":
+            return validate_has_ancestor_recursive(
+                self._thread_checkpoints[str(descendant_id)], []
+            )
+        else:
+            raise Exception(
+                f"cannot validate ancestry: invalid descendant type: {descendant_type}"
+            )
 
     def validate_comparison(self, path, left, right, operator):
         if (
@@ -367,7 +383,7 @@ class SchemaValidator:
                 if referenced_obj is None:
                     raise Exception("Failed to resolve ref: " + operand_object["ref"])
 
-                ref_type = operand_object["ref"].split(":")[0]
+                ref_type = utils.parse_ref_type(operand_object["ref"])
                 if ref_type != "action":
                     raise NotImplementedError(
                         "comparison validation not implemented for ref type: "
@@ -465,20 +481,215 @@ class SchemaValidator:
 
         return [f"{self._context(path)}: invalid comparison: {left} {operator} {right}"]
 
+    def validate_thread(self, path, thread):
+        spawn = thread["spawn"] if "spawn" in thread else None
+        if (
+            spawn is None
+            or "from" not in spawn
+            or "foreach" not in spawn
+            or "as" not in spawn
+        ):
+            # there will already be validation errors for the missing field(s)
+            return []
+
+        def resolve_thread_scope_recursive(thread):
+            # get the scope of the thread
+            if thread["id"] in self._threads:
+                return self._threads[thread["id"]]["scope"]
+
+            if "context" not in thread:
+                # it's a top-level thread
+                scope = str(thread["id"])
+                self._threads[thread["id"]] = {
+                    "scope": scope,
+                    "sub_thread_ids": [],
+                    "variables": {},
+                }
+                return scope
+            else:
+                # it's a nested thread
+                if is_global_ref(thread["context"]):
+                    # resolve all parent threads first
+                    parent_thread_id = utils.parse_ref_id(thread["context"])
+                    if parent_thread_id not in self._threads:
+                        resolve_thread_scope_recursive(
+                            thread=self._resolve_global_ref(thread["context"])
+                        )
+
+                    if parent_thread_id not in self._threads:
+                        return None  # could not resolve parent thread scope
+
+                    # record the thread and set its scope
+                    scope = (
+                        self._threads[parent_thread_id]["scope"]
+                        + "."
+                        + str(thread["id"])
+                    )
+                    self._threads[thread["id"]] = {
+                        "scope": scope,
+                        "sub_thread_ids": [],
+                        "variables": {},
+                    }
+                    self._threads[parent_thread_id]["sub_thread_ids"].append(
+                        thread["id"]
+                    )
+
+                    return scope
+
+                return None  # cannot resolve scope
+
+        errors = []
+
+        scope = resolve_thread_scope_recursive(thread)
+        if scope is None:
+            return [f"{self._context(path)}: could not resolve thread scope"]
+
+        if is_global_ref(spawn["from"]):
+            # if the global ref is an action, it must be an ancestor of the thread
+            if utils.parse_ref_type(spawn["from"]) == "action":
+                errors += self.validate_has_ancestor(
+                    path,
+                    descendant_id=thread["id"],
+                    descendant_type="thread",
+                    ancestor_ref=spawn["from"],
+                    ancestor_source="spawn.from",
+                )
+
+                if errors:
+                    return errors
+
+            from_object_type = self._resolve_type_from_global_ref(ref=spawn["from"])
+        elif is_variable(spawn["from"]):
+            from_path = spawn["from"].split(".")
+            var_name = from_path[0]
+
+            from_var_type_details = self._find_thread_variable(var_name, scope)
+
+            if from_var_type_details is None:
+                return [
+                    f"{self._context(path)}.spawn.from: variable not found within thread scope: {json.dumps(var_name)}"
+                ]
+
+            # if there's a path, resolve it from the variable's type
+            if len(path) > 1:
+                try:
+                    from_object_type = self._resolve_type_from_variable_path(
+                        var_type_details=from_var_type_details,
+                        path=from_path[1:],
+                    )
+                except Exception as e:
+                    return [f"{self._context(path)}.spawn.from: {str(e)}"]
+            else:
+                from_object_type = from_var_type_details
+        else:
+            return [
+                f"{self._context(path)}.spawn.from: expected global ref or thread variable, got {json.dumps(spawn['from'])}"
+            ]
+
+        if from_object_type is None:
+            errors += [
+                f"{self._context(path)}.spawn.from: could not resolve object type"
+            ]
+        else:
+            # from_object_type must be an object or template object
+            if from_object_type.item_type == "OBJECT":
+                variable_type = self._resolve_type_from_object_path(
+                    from_object_type.item_tag, spawn["foreach"]
+                )
+            elif is_global_ref(from_object_type.item_type):
+                variable_type = self._resolve_type_from_global_ref(
+                    ref=from_object_type.item_type + "." + spawn["foreach"]
+                )
+            else:
+                errors += [
+                    f"{self._context(path)}.spawn.from: invalid type ({from_object_type.to_string()})"
+                ]
+
+            if variable_type is None:
+                errors += [
+                    f"{self._context(path)}.spawn: could not resolve variable type: {json.dumps(spawn['from'] + '.' + spawn['foreach'])}"
+                ]
+            else:
+                if variable_type.is_list:
+                    if from_object_type.is_list:
+                        errors += [
+                            f"{self._context(path)}.spawn: nested list types are not supported"
+                        ]
+                else:
+                    if not from_object_type.is_list:
+                        errors += [
+                            f"{self._context(path)}.spawn: cannot spawn threads from a non-list object"
+                        ]
+
+        # check for variable name collision
+        var_name = spawn["as"]
+        if self._find_thread_variable(var_name, scope) is not None:
+            errors += [
+                f"{self._context(path)}.spawn.as: variable already defined within thread scope: {json.dumps(var_name)}"
+            ]
+        elif not errors:
+            # thread variables are essentially loop variables, so the collection is de-listified here for convenience
+            variable_type.is_list = False
+            # record the variable type
+            self._threads[thread["id"]]["variables"][var_name] = variable_type
+
+        return errors
+
+    def _get_action_thread_scope(self, path):
+        action = self._get_parent_object(path)
+        if (
+            action is not None
+            and "context" in action
+            and utils.parse_ref_type(action["context"]) == "thread"
+            and is_global_ref(action["context"])
+        ):
+            thread_id = utils.parse_ref_id(action["context"])
+            if thread_id in self._threads:
+                return self._threads[thread_id]["scope"]
+
+        return None
+
+    def _find_thread_variable(self, var_name, scope):
+        thread_path = scope.split(".")
+        thread_path.reverse()
+        for thread_id in thread_path:
+            if thread_id not in self._threads:
+                break
+
+            thread_context = self._threads[thread_id]
+            if var_name in thread_context["variables"]:
+                return thread_context["variables"][var_name]
+
+        return None
+
     def validate_pipeline(self, path, field):
         errors = []
 
         # {variable name: PipelineVariable}
         pipeline_vars = {}
-        scope = "0"
+        pipeline_scope = "0"
+
+        thread_scope = self._get_action_thread_scope(path)
 
         if "variables" in field and isinstance(field["variables"], list):
             for i in range(len(field["variables"])):
                 var = field["variables"][i]
 
+                # check for pipeline variable name collision
                 if var["name"] in pipeline_vars:
                     errors += [
                         f"{self._context(path)}: variables[{str(i)}].name: variable already defined: {json.dumps(var['name'])}"
+                    ]
+                    continue
+
+                # check for collision with scoped thread variables
+                if (
+                    thread_scope is not None
+                    and self._find_thread_variable(var["name"], thread_scope)
+                    is not None
+                ):
+                    errors += [
+                        f"{self._context(path)}: variables[{str(i)}].name: variable already defined within thread scope: {json.dumps(var['name'])}"
                     ]
                     continue
 
@@ -502,27 +713,31 @@ class SchemaValidator:
 
                 pipeline_vars[var["name"]] = PipelineVariable(
                     type_details=initial_type_details,
-                    scope=scope,
+                    scope=pipeline_scope,
                     initial=var["initial"],
                     assigned=False,
                 )
 
-        if "traverse" in field and isinstance(field["traverse"], list):
+        if not errors and "traverse" in field and isinstance(field["traverse"], list):
             for i in range(len(field["traverse"])):
                 errors += self._validate_pipeline_traversal_recursive(
-                    path, pipeline_vars, field["traverse"][i], scope=f"{scope}.{i}"
+                    path,
+                    pipeline_vars,
+                    field["traverse"][i],
+                    f"{pipeline_scope}.{i}",
+                    thread_scope,
                 )
 
-        if "apply" in field and isinstance(field["apply"], list):
+        if not errors and "apply" in field and isinstance(field["apply"], list):
             for i in range(len(field["apply"])):
                 errors += self._validate_pipeline_application(
-                    path, pipeline_vars, field["apply"][i], scope
+                    path, pipeline_vars, field["apply"][i], pipeline_scope, thread_scope
                 )
 
         return errors
 
     def _validate_pipeline_traversal_recursive(
-        self, path, pipeline_vars, traversal, scope
+        self, path, pipeline_vars, traversal, pipeline_scope, thread_scope
     ):
         if "ref" not in traversal or "foreach" not in traversal:
             # there will already be validation errors for the missing fields,
@@ -534,89 +749,73 @@ class SchemaValidator:
         # resolve the ref type
         ref = traversal["ref"]
         ref_path = ref.split(".")
-        if re.match(patterns.variable, ref_path[0]):
+        if is_variable(ref_path[0]):
             var_name = ref_path[0]
-            # variable must have been defined in a previous stage
-            if var_name not in pipeline_vars:
-                return [
-                    f"{self._context(path)}.ref: variable not found: {json.dumps(var_name)}"
-                ]
+            if var_name in pipeline_vars:
+                pipeline_var = pipeline_vars[var_name]
+                # variable must be in scope
+                if not pipeline_scope.startswith(pipeline_var.scope):
+                    return [
+                        f"{self._context(path)}.ref: variable {json.dumps(var_name)} is not in scope"
+                    ]
 
-            pipeline_var = pipeline_vars[var_name]
-            # variable must be in scope
-            if not scope.startswith(pipeline_var.scope):
-                return [
-                    f"{self._context(path)}.ref: variable {json.dumps(var_name)} is not in scope"
-                ]
+                var_type_details = pipeline_var.type_details
+            else:
+                # look for a thread variable in the current scope
+                parent_action = self._get_parent_object(path)
+                if "context" in parent_action:
+                    parent_thread_id = utils.parse_ref_id(parent_action["context"])
+                    var_type_details = self._find_thread_variable(
+                        var_name, self._threads[parent_thread_id]["scope"]
+                    )
+                else:
+                    var_type_details = None
+
+                if var_type_details is None:
+                    return [
+                        f"{self._context(path)}.ref: variable not found in scope: {json.dumps(var_name)}"
+                    ]
 
             if len(ref_path) > 1:
                 try:
                     ref_type_details = self._resolve_type_from_variable_path(
-                        var_type_details=pipeline_var.type_details,
-                        path=ref_path,
+                        var_type_details=var_type_details,
+                        path=ref_path[1:],
                     )
                 except Exception as e:
                     return [f"{self._context(path)}.ref: {str(e)}"]
             else:
-                ref_type_details = copy.deepcopy(pipeline_var.type_details)
+                ref_type_details = copy.deepcopy(var_type_details)
         else:  # ref is not a variable, so it's a global or local ref
             parent_action = self._get_parent_object(path)
-            if utils.is_global_ref(ref):
+            if is_global_ref(ref):
                 errors += self.validate_has_ancestor(
                     path,
-                    action_id=parent_action["id"],
+                    descendant_id=parent_action["id"],
+                    descendant_type="action",
                     ancestor_ref=ref,
                     ancestor_source="ref",
                 )
 
-                matches = re.findall(patterns.global_ref, ref)
-                if len(matches) and len(matches[0]):
-                    global_ref = matches[0][0]
-                    ref_type = matches[0][1]
-                    ref_path = matches[0][2]
-                    if len(ref_path):
-                        if ref_type == "action":
-                            split_ref_path = ref_path.split(".")
-                            if split_ref_path[0] == "object":
-                                ref_type_details = self._resolve_type_from_object_path(
-                                    object_tag=self._resolve_global_ref(global_ref)[
-                                        "object"
-                                    ],
-                                    path=split_ref_path[1:],
-                                )
-                            else:
-                                raise NotImplementedError(
-                                    "global ref resolution not implemented for action properties"
-                                )
-                        else:
-                            raise NotImplementedError(
-                                "global ref resolution not implemented for ref type: "
-                                + ref_type
-                            )
-                    else:
-                        if ref_type != "action":
-                            raise NotImplementedError(
-                                "iteration not implemented for ref type: " + ref_type
-                            )
+                ref_type_details = self._resolve_type_from_global_ref(ref)
 
-                        # action must be threaded -- infer the context
-                        action = self._resolve_global_ref(global_ref)
-                        if "context" not in action:
-                            return [
-                                f"{self._context(path)}.ref: cannot traverse non-threaded action: {json.dumps(ref)}"
-                            ]
+                if ref_type_details is None:
+                    return [f"{self._context(path)}.ref: could not resolve object type"]
 
-                        # list of threaded actions
-                        ref_type_details = FieldTypeDetails(
-                            is_list=True,
-                            item_type=global_ref,
-                            item_tag=None,
-                        )
-                else:
+                if is_global_ref(
+                    ref_type_details.item_type
+                ) and not ref_type_details.item_type.startswith("action:"):
+                    raise NotImplementedError(
+                        "iteration not implemented for ref type: "
+                        + ref_type_details.item_type
+                    )
+
+                if not ref_type_details.is_list:
                     return [
-                        f"{self._context(path)}.ref: invalid global ref: {json.dumps(ref)}"
+                        f"{self._context(path)}.ref: cannot traverse non-list object"
                     ]
-            elif utils.is_local_variable(ref):
+
+            elif is_local_variable(ref):
                 ref_type_details = self._resolve_type_from_local_ref(
                     local_ref=ref, obj=parent_action
                 )
@@ -631,13 +830,17 @@ class SchemaValidator:
             return [
                 f"{self._context(path)}.foreach.as: variable already defined: {item_name}"
             ]
+        elif self._find_thread_variable(item_name, thread_scope) is not None:
+            return [
+                f"{self._context(path)}.foreach.as: variable already defined within thread scope: {item_name}"
+            ]
 
         ref_type_details.is_list = (
             False  # de-listify, because we're iterating over the items
         )
         pipeline_vars[item_name] = PipelineVariable(
             type_details=ref_type_details,
-            scope=scope,
+            scope=pipeline_scope,
             assigned=True,  # loop variables are automatically assigned
             is_loop_variable=True,
         )
@@ -664,7 +867,7 @@ class SchemaValidator:
 
                 pipeline_vars[var["name"]] = PipelineVariable(
                     type_details=initial_type_details,
-                    scope=scope,
+                    scope=pipeline_scope,
                     initial=var["initial"],
                     assigned=False,
                 )
@@ -675,47 +878,60 @@ class SchemaValidator:
                     path,
                     pipeline_vars,
                     traversal["foreach"]["traverse"][i],
-                    scope=f"{scope}.{i}",
+                    f"{pipeline_scope}.{i}",
+                    thread_scope,
                 )
 
         if "apply" in traversal["foreach"]:
             for i in range(len(traversal["foreach"]["apply"])):
                 errors += self._validate_pipeline_application(
-                    path, pipeline_vars, traversal["foreach"]["apply"][i], scope
+                    path,
+                    pipeline_vars,
+                    traversal["foreach"]["apply"][i],
+                    pipeline_scope,
+                    thread_scope,
                 )
 
         return errors
 
-    def _validate_pipeline_application(self, path, pipeline_vars, apply, scope):
+    def _validate_pipeline_application(
+        self, path, pipeline_vars, apply, pipeline_scope, thread_scope
+    ):
         from_path = apply["from"].split(".")
-        if re.match(patterns.variable, from_path[0]):
+        if is_variable(from_path[0]):
             var_name = from_path[0]
-            if var_name not in pipeline_vars:
+            var_type_details = None
+            if var_name in pipeline_vars:
+                pipeline_var = pipeline_vars[var_name]
+                if not pipeline_var.assigned:
+                    self.warnings.append(
+                        f"{self._context(path)}.from: variable used before assignment: {json.dumps(var_name)}"
+                    )
+
+                if not pipeline_scope.startswith(pipeline_var.scope):
+                    return [
+                        f"{self._context(path)}.from: variable {json.dumps(var_name)} is not in scope"
+                    ]
+                else:
+                    var_type_details = pipeline_var.type_details
+            else:
+                thread_variable = self._find_thread_variable(var_name, thread_scope)
+                if thread_variable is not None:
+                    var_type_details = thread_variable
+
+            if var_type_details is None:
                 return [
                     f"{self._context(path)}.from: variable not found: {json.dumps(var_name)}"
-                ]
-
-            pipeline_var = pipeline_vars[var_name]
-            if not pipeline_var.assigned:
-                self.warnings.append(
-                    f"{self._context(path)}.from: variable used before assignment: {json.dumps(var_name)}"
-                )
-
-            if not scope.startswith(pipeline_var.scope):
-                return [
-                    f"{self._context(path)}.from: variable {json.dumps(var_name)} is not in scope"
                 ]
 
             if len(from_path) > 1:
                 try:
                     ref_type_details = self._resolve_type_from_variable_path(
-                        var_type_details=pipeline_var.type_details,
-                        path=from_path,
+                        var_type_details=var_type_details,
+                        path=from_path[1:],
                     )
                 except Exception as e:
                     return [f"{self._context(path)}.ref: {str(e)}"]
-            else:
-                ref_type_details = pipeline_var.type_details
         elif re.match(patterns.local_variable, apply["from"]):
             ref_type_details = self._resolve_type_from_local_ref(
                 apply["from"], path=path
@@ -734,20 +950,20 @@ class SchemaValidator:
             return []
 
         to_var_name = apply["to"]
-        if not re.match(patterns.variable, to_var_name):
+        if not is_variable(to_var_name):
             # pattern validation will have already caught this
             return []
 
         if to_var_name not in pipeline_vars:
             return [
-                f"{self._context(path)}.to: variable not found: {json.dumps(to_var_name)}"
+                f"{self._context(path)}.to: pipeline variable not found: {json.dumps(to_var_name)}"
             ]
 
         to_pipeline_var = pipeline_vars[to_var_name]
 
-        if not scope.startswith(to_pipeline_var.scope):
+        if not pipeline_scope.startswith(to_pipeline_var.scope):
             return [
-                f"{self._context(path)}.to: variable {json.dumps(to_var_name)} is not in scope"
+                f"{self._context(path)}.to: pipeline variable {json.dumps(to_var_name)} used out of scope"
             ]
 
         if to_pipeline_var.is_loop_variable:
@@ -782,7 +998,7 @@ class SchemaValidator:
             # resolve the type on the object definition
             return self._resolve_type_from_object_path(
                 object_tag=var_type_details.item_tag,
-                path=path[1:],
+                path=path,
             )
         elif re.match(patterns.global_ref, var_type_details.item_type):
             referenced_object = self._resolve_global_ref(var_type_details.item_type)
@@ -793,12 +1009,57 @@ class SchemaValidator:
 
             return self._resolve_type_from_object_path(
                 object_tag=referenced_object["object"],
-                path=path[2:],
+                path=path[1:],
             )
-        else:
+        elif path:
             raise Exception(
-                f"invalid loop variable type: {var_type_details.to_string()}"
+                f"cannot resolve path from non-object type: {var_type_details.to_string()}"
             )
+
+        return var_type_details
+
+    def _resolve_type_from_global_ref(self, ref):
+        type_details = None
+
+        matches = re.findall(patterns.global_ref, ref)
+        if len(matches) and len(matches[0]):
+            global_ref = matches[0][0]
+            ref_type = matches[0][1]
+            ref_path = matches[0][2]
+
+            template_object = self._resolve_global_ref(global_ref)
+
+            if len(ref_path):
+                if ref_type == "action":
+                    split_ref_path = ref_path.split(".")
+                    if split_ref_path[0] == "object":
+                        type_details = self._resolve_type_from_object_path(
+                            object_tag=template_object["object"],
+                            path=split_ref_path[1:],
+                        )
+                    else:
+                        raise NotImplementedError(
+                            "global ref resolution not implemented for action properties"
+                        )
+                else:
+                    raise NotImplementedError(
+                        "global ref resolution not implemented for ref type: "
+                        + ref_type
+                    )
+            else:
+                is_threaded_action = (
+                    "context" in template_object
+                    and is_global_ref(template_object["context"])
+                    and utils.parse_ref_type(template_object["context"]) == "thread"
+                )
+
+                type_details = FieldTypeDetails(
+                    is_list=is_threaded_action,
+                    item_type=global_ref,
+                    item_tag=None,
+                )
+
+        return type_details
 
     def _resolve_type_from_local_ref(self, local_ref, obj=None, path=None):
         if obj is None:
@@ -921,15 +1182,15 @@ class SchemaValidator:
             )
 
     def _validate_ref(self, path, field, template, parent_object_template=None):
-        if "local_ref" in template["ref_types"] and utils.is_local_variable(field):
+        if "local_ref" in template["ref_types"] and is_local_variable(field):
             referenced_object = self._resolve_type_from_local_ref(
                 local_ref=field, path=path
             )
         else:
-            if not utils.is_global_ref(field) and not ():
+            if not is_global_ref(field):
                 return [f"{self._context(path)}: expected ref, got {json.dumps(field)}"]
 
-            ref_type = field.split(":")[0]
+            ref_type = utils.parse_ref_type(field)
             if ref_type not in template["ref_types"]:
                 return [
                     f"{self._context(path)}: invalid ref type: expected one of {template['ref_types']}, got {ref_type}"
@@ -947,7 +1208,7 @@ class SchemaValidator:
 
     def _resolve_global_ref(self, ref):
         ref_id = utils.parse_ref_id(ref)
-        ref_type = ref.split(":")[0]
+        ref_type = utils.parse_ref_type(ref)
         ref_config = getattr(templates, ref_type)["ref_config"]
         collection = self._get_field(ref_config["collection"])
 
@@ -1166,7 +1427,7 @@ class SchemaValidator:
                             unique_values[item[field_name]] = (
                                 item[field_name] not in unique_values
                             )
-                    elif utils.is_path(field_name):
+                    elif is_path(field_name):
                         val = self._get_field(field_name, obj=item)
                         unique_values[val] = val not in unique_values
 
@@ -1199,7 +1460,7 @@ class SchemaValidator:
 
         if obj is None:
             obj = self.schema
-        elif utils.is_local_variable(path[0]):
+        elif is_local_variable(path[0]):
             path[0] = path[0][2:]  # remove "$_" prefix
 
         for key in path if isinstance(path, list) else path.split("."):
@@ -1272,7 +1533,7 @@ class SchemaValidator:
                 ]
 
         elif isinstance(objectOrArray, list):
-            if utils.is_path(referenced_prop):
+            if is_path(referenced_prop):
                 referenced_prop_path = referenced_prop.split(".")
                 referenced_prop_name = (
                     referenced_prop_path.pop()
@@ -1517,7 +1778,7 @@ class SchemaValidator:
         operator = condition["operator"]
         value = (
             self._get_field(condition["value"], field)
-            if utils.is_path(condition["value"])
+            if is_path(condition["value"])
             else condition["value"]
         )
 
@@ -1546,7 +1807,7 @@ class SchemaValidator:
             return prop in value
 
         if operator == "IS_REFERENCED_BY":
-            return utils.is_global_ref(value) and utils.parse_ref_id(value) == prop
+            return is_global_ref(value) and utils.parse_ref_id(value) == prop
 
         raise NotImplementedError(
             "template operator not yet supported: " + str(operator)
@@ -1576,24 +1837,30 @@ class SchemaValidator:
 
         self._action_checkpoints = {}
         self._checkpoints = {}
+        self._thread_checkpoints = {}
+        self._threaded_action_ids = []
 
-        convert_to_psuedo = set()
         for action in self.schema["actions"]:
             if "id" in action:
                 # if the action has a threaded context...
                 if "context" in action:
                     # the action implicitly depends on the thread's checkpoint
                     thread = self._resolve_global_ref(action["context"])
-                    if thread is None or "depends_on" not in thread:
+                    if (
+                        thread is None
+                        or utils.parse_ref_type(action["context"]) != "thread"
+                        or "depends_on" not in thread
+                    ):
                         continue
 
+                    checkpoint_id = utils.parse_ref_id(thread["depends_on"])
+
+                    self._thread_checkpoints[str(thread["id"])] = checkpoint_id
+                    self._threaded_action_ids.append(str(action["id"]))
+
                     if "depends_on" not in action:
-                        self._action_checkpoints[
-                            str(action["id"])
-                        ] = "_psuedo-checkpoint-" + utils.parse_ref_id(
-                            thread["depends_on"]
-                        )
-                        convert_to_psuedo.add(thread["depends_on"])
+                        # the action implicitly depends on the thread's checkpoint
+                        self._action_checkpoints[str(action["id"])] = checkpoint_id
                     else:
                         # a psuedo-checkpoint is needed to combine the action's checkpoint with the thread's checkpoint
                         alias = f"_psuedo-checkpoint-{str(action['id'])}"
@@ -1618,20 +1885,12 @@ class SchemaValidator:
                         else None
                     )
 
-        for checkpoint_ref in convert_to_psuedo:
-            checkpoint = self._resolve_global_ref(checkpoint_ref)
-            if checkpoint is not None:
-                checkpoint["alias"] = "_psuedo-checkpoint-" + checkpoint["alias"]
-                self._psuedo_checkpoints.append(checkpoint["alias"])
-
         for checkpoint in self.schema["checkpoints"]:
             if "alias" in checkpoint:
                 self._checkpoints[checkpoint["alias"]] = checkpoint
 
     def _detect_circular_dependencies(self):
-        def _explore_checkpoint_recursive(
-            checkpoint, visited, dependency_path, includes_threaded_context
-        ):
+        def _explore_checkpoint_recursive(checkpoint, visited, dependency_path):
             for dependency in checkpoint["dependencies"]:
                 # Could be a Dependency or a CheckpointReference
                 if "compare" in dependency:
@@ -1644,7 +1903,6 @@ class SchemaValidator:
                                 ),
                                 visited,
                                 dependency_path.copy(),
-                                includes_threaded_context,
                             )
 
                             if errors:
@@ -1658,8 +1916,6 @@ class SchemaValidator:
                         ],
                         visited=visited,
                         dependency_path=dependency_path.copy(),
-                        includes_threaded_context=includes_threaded_context
-                        or "_psuedo-checkpoint" in dependency["checkpoint"],
                     )
 
                     if errors:
@@ -1667,23 +1923,24 @@ class SchemaValidator:
 
             return []
 
-        def _explore_recursive(
-            action_id, visited, dependency_path, includes_threaded_context=False
-        ):
+        def _explore_recursive(action_id, visited, dependency_path):
             if action_id in dependency_path:
-                threaded_context_note = (
-                    "; NOTE: actions with threaded context implicitly depend on the referenced thread's checkpoint (Thread.depends_on)"
-                    if includes_threaded_context
-                    else ""
-                )
                 if len(dependency_path) > 1:
-                    dependency_path = json.dumps(dependency_path).replace('"', "")
-                    return [
-                        f"Circular dependency detected (dependency path: {dependency_path}){threaded_context_note}"
-                    ]
-                return [
-                    f"A node cannot have itself as a dependency (id: {action_id}){threaded_context_note}"
-                ]
+                    dependency_path_string = json.dumps(dependency_path).replace(
+                        '"', ""
+                    )
+                    error = f"Circular dependency detected (dependency path: {dependency_path_string})"
+                else:
+                    error = (
+                        f"A node cannot have itself as a dependency (id: {action_id})"
+                    )
+
+                for action_id in dependency_path:
+                    if action_id in self._threaded_action_ids:
+                        error += "; NOTE: actions with threaded context implicitly depend on the referenced thread's checkpoint (Thread.depends_on)"
+                        break
+
+                return [error]
 
             if action_id in visited:
                 return []
@@ -1703,8 +1960,6 @@ class SchemaValidator:
                 checkpoint=self._checkpoints[alias],
                 visited=visited,
                 dependency_path=dependency_path,
-                includes_threaded_context=includes_threaded_context
-                or "_psuedo-checkpoint" in alias,
             )
 
             return [errors[0]] if errors else []

@@ -62,6 +62,16 @@ root_object = {
                 "unique": ["id", "milestones"],
             },
         },
+        "threads": {
+            "type": "array",
+            "values": {
+                "type": "object",
+                "template": "thread",
+            },
+            "constraints": {
+                "unique": ["id"],
+            },
+        },
         "checkpoints": {
             "type": "array",
             "values": {
@@ -75,6 +85,9 @@ root_object = {
                 ],
             },
         },
+    },
+    "constraints": {
+        "optional": ["threads"],
     },
 }
 
@@ -358,7 +371,7 @@ action = {
                             "validation_functions": [
                                 {
                                     "function": "validate_has_ancestor",
-                                    "args": ["{_parent}.id", "{ref}", "ref"],
+                                    "args": ["{_parent}.id", "action", "{ref}", "ref"],
                                 }
                             ],
                         },
@@ -431,6 +444,13 @@ thread = {
                 },
             },
         },
+    },
+    "constraints": {
+        "validation_functions": [
+            {
+                "function": "validate_thread",
+            },
+        ],
     },
     "ref_config": {
         "fields": ["id"],

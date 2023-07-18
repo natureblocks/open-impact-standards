@@ -21,6 +21,10 @@ def is_global_ref(value):
     return ref_type in ref_types and re.match(patterns.global_ref_identifier, ref_id)
 
 
+def is_variable(value):
+    return re.match(patterns.variable, value)
+
+
 def is_local_variable(value):
     return isinstance(value, str) and re.match(patterns.local_variable, value)
 
@@ -31,6 +35,13 @@ def parse_ref_id(value):
 
     framed_ref_id = ":".join(value.split(":")[1:]).split(".")[0]  # "{ref_id}"
     return framed_ref_id[1:-1]
+
+
+def parse_ref_type(value):
+    if not is_global_ref(value):
+        raise Exception(f"Invalid ref: {value}")
+
+    return value.split(":")[0]
 
 
 def get_template(template_name):

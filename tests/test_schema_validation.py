@@ -70,6 +70,65 @@ class TestSchemaValidation:
             "\Action ids in schema:\n" + "\n".join([str(id) for id in action_ids])
         )
 
+    def test_thread_spawn(self):
+        validator = SchemaValidator()
+
+        schema = fixtures.basic_schema_with_actions(3)
+        schema["checkpoints"] = [
+            fixtures.checkpoint(0, "depends-on-0", num_dependencies=1)
+        ]
+        schema["threads"] = [
+            {
+                "id": 0,
+                "description": "",
+                "party": "party:{0}",
+                "spawn": {
+                    "from": "",
+                    "foreach": "numbers",
+                    "as": "$number",
+                },
+                "depends_on": "checkpoint:{depends-on-0}",
+            }
+        ]
+        schema["actions"][1]["context"] = "thread:{0}"
+
+        def set_thread_value(key, val):
+            if isinstance(key, list):
+                obj = schema["threads"][0]
+                for i in range(len(key) - 1):
+                    obj = obj[key[i]]
+
+                obj[key[-1]] = val
+            else:
+                schema["threads"][0][key] = val
+
+        # spawn.from must be an ancestor of the thread
+        set_thread_value(["spawn", "from"], "action:{2}.object")
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.threads[0]: the value of property "spawn.from" must reference an ancestor of thread id 0, got "action:{2}.object"'
+            in errors
+        )
+
+        set_thread_value(["spawn", "from"], "action:{0}.object")
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # spawn.foreach must refer to a collection on spawn.from
+        set_thread_value(["spawn", "foreach"], "words")
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.threads[0].spawn: could not resolve variable type: "action:{0}.object.words"'
+            in errors
+        )
+
+        set_thread_value(["spawn", "foreach"], "name")
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.threads[0].spawn: cannot spawn threads from a non-list object"
+            in errors
+        )
+
     def test_thread_dependencies(self):
         validator = SchemaValidator()
 
@@ -354,7 +413,9 @@ class TestSchemaValidation:
         # An empty root object should yield an error for each required property
         valid_root = "{}"
         errors = validator.validate(json_string=valid_root)
-        assert len(errors) == len(templates.root_object["properties"])
+        assert len(errors) == len(templates.root_object["properties"]) - len(
+            templates.root_object["constraints"]["optional"]
+        )
 
         # The basic_schema fixture should be valid
         errors = validator.validate(json_string=json.dumps(fixtures.basic_schema()))

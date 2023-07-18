@@ -79,9 +79,9 @@ def thread(id, depends_on_id=None):
         "description": "",
         "party": "party:{0}",
         "spawn": {
-            "from": "party:{0}",
-            "foreach": "member_ids",
-            "as": "$obj",
+            "from": "action:{0}.object",
+            "foreach": "numbers",
+            "as": "$number",
         },
     }
 
