@@ -89,6 +89,7 @@ root_object = {
     "constraints": {
         "optional": ["threads"],
     },
+    "property_validation_priority": ["threads"],
 }
 
 object_definition = {

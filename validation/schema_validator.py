@@ -28,6 +28,8 @@ class SchemaValidator:
         self._context_path = None
 
     def validate(self, schema_dict=None, json_file_path=None, json_string=None):
+        self._threads = {}
+
         if schema_dict is not None:
             self.schema = schema_dict
         elif json_file_path is not None:
@@ -173,14 +175,27 @@ class SchemaValidator:
                     path, field, template["constraints"]
                 )
 
+            def validate_property(key):
+                return self._validate_field(
+                    path=f"{path}.{key}",
+                    field=field[key],
+                    template=template["properties"][key],
+                    parent_object_template=template,
+                )
+
+            validated_properties = []
+            if "property_validation_priority" in template:
+                for key in template["property_validation_priority"]:
+                    if key in field:
+                        errors += validate_property(key)
+                        validated_properties.append(key)
+
             for key in field:
+                if key in validated_properties:
+                    continue
+
                 if key in template["properties"]:
-                    errors += self._validate_field(
-                        path=f"{path}.{key}",
-                        field=field[key],
-                        template=template["properties"][key],
-                        parent_object_template=template,
-                    )
+                    errors += validate_property(key)
                 elif key in templates.RESERVED_KEYWORDS:
                     errors += [
                         f"{self._context(path)}: cannot use reserved keyword as property name: {json.dumps(key)}"
@@ -494,13 +509,14 @@ class SchemaValidator:
 
         def resolve_thread_scope_recursive(thread):
             # get the scope of the thread
-            if thread["id"] in self._threads:
-                return self._threads[thread["id"]]["scope"]
+            thread_id = str(thread["id"])
+            if thread_id in self._threads:
+                return self._threads[thread_id]["scope"]
 
             if "context" not in thread:
                 # it's a top-level thread
-                scope = str(thread["id"])
-                self._threads[thread["id"]] = {
+                scope = thread_id
+                self._threads[thread_id] = {
                     "scope": scope,
                     "sub_thread_ids": [],
                     "variables": {},
@@ -520,19 +536,13 @@ class SchemaValidator:
                         return None  # could not resolve parent thread scope
 
                     # record the thread and set its scope
-                    scope = (
-                        self._threads[parent_thread_id]["scope"]
-                        + "."
-                        + str(thread["id"])
-                    )
-                    self._threads[thread["id"]] = {
+                    scope = f'{self._threads[parent_thread_id]["scope"]}.{thread_id}'
+                    self._threads[thread_id] = {
                         "scope": scope,
                         "sub_thread_ids": [],
                         "variables": {},
                     }
-                    self._threads[parent_thread_id]["sub_thread_ids"].append(
-                        thread["id"]
-                    )
+                    self._threads[parent_thread_id]["sub_thread_ids"].append(thread_id)
 
                     return scope
 
@@ -544,12 +554,13 @@ class SchemaValidator:
         if scope is None:
             return [f"{self._context(path)}: could not resolve thread scope"]
 
+        thread_id = str(thread["id"])
         if is_global_ref(spawn["from"]):
             # if the global ref is an action, it must be an ancestor of the thread
             if utils.parse_ref_type(spawn["from"]) == "action":
                 errors += self.validate_has_ancestor(
                     path,
-                    descendant_id=thread["id"],
+                    descendant_id=thread_id,
                     descendant_type="thread",
                     ancestor_ref=spawn["from"],
                     ancestor_source="spawn.from",
@@ -631,7 +642,7 @@ class SchemaValidator:
             # thread variables are essentially loop variables, so the collection is de-listified here for convenience
             variable_type.is_list = False
             # record the variable type
-            self._threads[thread["id"]]["variables"][var_name] = variable_type
+            self._threads[thread_id]["variables"][var_name] = variable_type
 
         return errors
 
@@ -732,7 +743,6 @@ class SchemaValidator:
 
                 pipeline_vars[pipeline_scope][var["name"]] = PipelineVariable(
                     type_details=initial_type_details,
-                    scope=pipeline_scope,
                     initial=var["initial"],
                     assigned=False,
                 )
@@ -865,7 +875,6 @@ class SchemaValidator:
         pipeline_vars[pipeline_scope] = {}
         pipeline_vars[pipeline_scope][item_name] = PipelineVariable(
             type_details=ref_type_details,
-            scope=pipeline_scope,
             assigned=True,  # loop variables are automatically assigned a value
             is_loop_variable=True,
         )
@@ -897,7 +906,6 @@ class SchemaValidator:
 
                 pipeline_vars[pipeline_scope][var["name"]] = PipelineVariable(
                     type_details=initial_type_details,
-                    scope=pipeline_scope,
                     initial=var["initial"],
                     assigned=False,
                 )
@@ -990,11 +998,6 @@ class SchemaValidator:
         if to_pipeline_var is None:
             return [
                 f"{self._context(f'{path}.to')}: pipeline variable not found in scope: {json.dumps(to_var_name)}"
-            ]
-
-        if not pipeline_scope.startswith(to_pipeline_var.scope):
-            return [
-                f"{self._context(f'{path}.to')}: pipeline variable {json.dumps(to_var_name)} used out of scope"
             ]
 
         if to_pipeline_var.is_loop_variable:

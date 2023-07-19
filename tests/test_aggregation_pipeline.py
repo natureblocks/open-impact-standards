@@ -265,7 +265,7 @@ class TestAggregationPipeline:
 
     def test_variable_name_collision(self):
         schema_validator = SchemaValidator()
-        schema = fixtures.basic_schema_with_actions(1)
+        schema = fixtures.basic_schema_with_actions(2)
 
         # should not be able to declare variables with the same name
         schema["actions"][0]["pipeline"] = {
@@ -371,7 +371,13 @@ class TestAggregationPipeline:
                 "ref": "$loop_var.numbers",
                 "foreach": {
                     "as": "$nested_loop_var",
-                    "variables": [],
+                    "variables": [
+                        {
+                            "name": "$a_nested_var",
+                            "type": "NUMERIC",
+                            "initial": 0,
+                        },
+                    ],
                     "apply": [],
                 },
             },
@@ -379,13 +385,46 @@ class TestAggregationPipeline:
                 "ref": "$loop_var.objects",
                 "foreach": {
                     "as": "$nested_loop_var",
-                    "variables": [],
+                    "variables": [
+                        {
+                            "name": "$a_nested_var",
+                            "type": "NUMERIC",
+                            "initial": 0,
+                        },
+                    ],
                     "apply": [],
                 },
             },
         ]
         errors = schema_validator.validate(json_string=json.dumps(schema))
         assert not errors
+
+        # pipeline variables cannot conflict with thread variable names in the same scope
+
+        depends_on_1 = fixtures.checkpoint(
+            id=0, alias="depends-on-1", num_dependencies=1
+        )
+        depends_on_1["dependencies"][0]["compare"]["left"]["ref"] = "action:{1}"
+        schema["checkpoints"].append(depends_on_1)
+        schema["threads"] = [
+            fixtures.thread(0, "depends-on-1"),
+        ]
+        schema["threads"][0]["spawn"]["from"] = "action:{1}.object"
+        schema["actions"][0]["context"] = "thread:{0}"
+        schema["threads"][0]["spawn"]["as"] = "$thread_var"
+
+        schema["actions"][0]["pipeline"]["variables"].append(
+            {
+                "name": "$thread_var",
+                "type": "NUMERIC",
+                "initial": 0,
+            }
+        )
+        errors = schema_validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.actions[0].pipeline.variables[1].name (action id: 0): variable already defined within thread scope: "$thread_var"'
+            in errors
+        )
 
     def test_apply(self):
         schema_validator = SchemaValidator()

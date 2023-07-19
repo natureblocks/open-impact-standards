@@ -106,7 +106,7 @@ class TestSchemaValidation:
         set_thread_value(["spawn", "from"], "action:{2}.object")
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.threads[0]: the value of property "spawn.from" must reference an ancestor of thread id 0, got "action:{2}.object"'
+            'root.threads[0]: the value of property "spawn.from" must reference an ancestor of thread id "0", got "action:{2}.object"'
             in errors
         )
 
