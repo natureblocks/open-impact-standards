@@ -324,7 +324,11 @@ class SchemaValidator:
             f"{self._context(path)}: the value of property {json.dumps(ancestor_source)} must reference an ancestor of {descendant_type} id {json.dumps(descendant_id)}, got {json.dumps(ancestor_ref)}"
         ]
 
-        if ancestor_ref is None or str(descendant_id) not in self._action_checkpoints:
+        descendant_id = str(descendant_id)
+        if ancestor_ref is None or (
+            descendant_id not in self._action_checkpoints
+            and descendant_id not in self._thread_checkpoints
+        ):
             return error
 
         ancestor_id = utils.parse_ref_id(ancestor_ref)
@@ -364,11 +368,11 @@ class SchemaValidator:
 
         if descendant_type == "action":
             return validate_has_ancestor_recursive(
-                self._action_checkpoints[str(descendant_id)], []
+                self._action_checkpoints[descendant_id], []
             )
         elif descendant_type == "thread":
             return validate_has_ancestor_recursive(
-                self._thread_checkpoints[str(descendant_id)], []
+                self._thread_checkpoints[descendant_id], []
             )
         else:
             raise Exception(
@@ -634,7 +638,10 @@ class SchemaValidator:
 
         # check for variable name collision
         var_name = spawn["as"]
-        if self._find_thread_variable(var_name, scope) is not None:
+        if (
+            self._find_thread_variable(var_name, scope, check_nested_scopes=True)
+            is not None
+        ):
             errors += [
                 f"{self._context(path)}.spawn.as: variable already defined within thread scope: {json.dumps(var_name)}"
             ]
@@ -660,10 +667,11 @@ class SchemaValidator:
 
         return None
 
-    def _find_thread_variable(self, var_name, scope):
+    def _find_thread_variable(self, var_name, scope, check_nested_scopes=False):
         if scope is None:
             return None
 
+        # check the current scope
         thread_path = scope.split(".")
         thread_path.reverse()
         for thread_id in thread_path:
@@ -673,6 +681,20 @@ class SchemaValidator:
             thread_context = self._threads[thread_id]
             if var_name in thread_context["variables"]:
                 return thread_context["variables"][var_name]
+
+        if check_nested_scopes:
+
+            def check_nested_scopes_recursive(thread_id):
+                for sub_thread_id in self._threads[thread_id]["sub_thread_ids"]:
+                    sub_thread_context = self._threads[sub_thread_id]
+
+                    if var_name in sub_thread_context["variables"]:
+                        return sub_thread_context["variables"][var_name]
+
+                    if sub_thread_context["sub_thread_ids"]:
+                        return check_nested_scopes_recursive(sub_thread_id)
+
+            return check_nested_scopes_recursive(thread_id)
 
         return None
 
@@ -1876,6 +1898,45 @@ class SchemaValidator:
         self._checkpoints = {}
         self._thread_checkpoints = {}
         self._threaded_action_ids = []
+
+        if "threads" in self.schema:
+            for thread in self.schema["threads"]:
+                thread_id = str(thread["id"])
+                if "context" in thread:
+                    parent_thread = self._resolve_global_ref(thread["context"])
+                    if (
+                        parent_thread is None
+                        or utils.parse_ref_type(thread["context"]) != "thread"
+                        or "depends_on" not in parent_thread
+                    ):
+                        continue
+
+                    checkpoint_id = utils.parse_ref_id(parent_thread["depends_on"])
+
+                    if "depends_on" not in thread:
+                        self._thread_checkpoints[thread_id] = checkpoint_id
+                    else:
+                        # a psuedo-checkpoint is needed to combine the thread's checkpoint
+                        # with the parent thread's checkpoint
+                        alias = f"_psuedo-thread-checkpoint-{str(thread['id'])}"
+                        self.schema["checkpoints"].append(
+                            {
+                                "alias": alias,
+                                "gate_type": "AND",
+                                "dependencies": [
+                                    {"checkpoint": parent_thread["depends_on"]},
+                                    {"checkpoint": thread["depends_on"]},
+                                ],
+                            }
+                        )
+                        self._thread_checkpoints[thread_id] = alias
+
+                        # bypass validation of psuedo-checkpoint fields
+                        self._psuedo_checkpoints.append(alias)
+                elif "depends_on" in thread:
+                    self._thread_checkpoints[thread_id] = utils.parse_ref_id(
+                        thread["depends_on"]
+                    )
 
         for action in self.schema["actions"]:
             if "id" in action:

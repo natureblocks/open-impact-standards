@@ -70,6 +70,47 @@ class TestSchemaValidation:
             "\Action ids in schema:\n" + "\n".join([str(id) for id in action_ids])
         )
 
+    def test_thread_variable_name_collision(self):
+        validator = SchemaValidator()
+
+        schema = fixtures.basic_schema_with_actions(1)
+        schema["checkpoints"] = [
+            fixtures.checkpoint(0, "depends-on-0", num_dependencies=1)
+        ]
+        thread = fixtures.thread(0, "depends-on-0")
+        child_thread = fixtures.thread(1)
+        child_thread["context"] = "thread:{0}"
+
+        # should not be able to reuse a variable name in the same scope
+        thread["spawn"]["as"] = "$some_var"
+        child_thread["spawn"]["as"] = "$some_var"
+        schema["threads"] = [thread, child_thread]
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.threads[1].spawn.as: variable already defined within thread scope: "$some_var"'
+            in errors
+        )
+
+        # the validation results should be the same
+        # regardless of the order of the threads in the schama
+        schema["threads"] = [child_thread, thread]
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.threads[1].spawn.as: variable already defined within thread scope: "$some_var"'
+            in errors
+        )
+
+        child_thread["spawn"]["as"] = "$some_other_var"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # should be able to reuse a variable name in a different scope
+        sibling_thread = fixtures.thread(2, "depends-on-0")
+        sibling_thread["spawn"]["as"] = "$some_var"
+        schema["threads"].append(sibling_thread)
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
     def test_thread_spawn(self):
         validator = SchemaValidator()
 

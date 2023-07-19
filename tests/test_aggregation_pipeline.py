@@ -426,6 +426,35 @@ class TestAggregationPipeline:
             in errors
         )
 
+        schema["actions"][0]["pipeline"]["variables"].pop()
+
+        # same for pipeline loop variables
+        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"]["as"] = "$thread_var"
+        errors = schema_validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.actions[0].pipeline.traverse[0].foreach.as (action id: 0): variable already defined within thread scope: $thread_var"
+            in errors
+        )
+
+        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"]["as"] = "$loop_var"
+
+        # should be able to reuse a thread variable name in the
+        # pipeline of an action that is outside of the thread scope.
+        schema["actions"][1]["pipeline"] = {
+            "context": "TEMPLATE",
+            "variables": [
+                {
+                    "name": "$thread_var",
+                    "type": "NUMERIC",
+                    "initial": 0,
+                },
+            ],
+            "apply": [],
+            "output": [],
+        }
+        errors = schema_validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
     def test_apply(self):
         schema_validator = SchemaValidator()
         schema = fixtures.basic_schema_with_actions(1)
