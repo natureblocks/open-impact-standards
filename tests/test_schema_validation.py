@@ -192,7 +192,7 @@ class TestSchemaValidation:
         schema["actions"][1]["context"] = "action:{0}"
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            "root.actions[1].context (action id: 1): invalid ref type: expected one of ['thread'], got action"
+            'root.actions[1].context (action id: 1): invalid ref type: expected one of ["thread"], got "action"'
             in errors
         )
 
@@ -668,7 +668,7 @@ class TestSchemaValidation:
             assert len(errors) == 1
             assert (
                 errors[0]
-                == f"none: expected one of {allowed_types}, got {str(type(val))}"
+                == f"none: expected one of {json.dumps(allowed_types)}, got {json.dumps(type(val).__name__)}"
             )
 
         valid = ["test", 1]

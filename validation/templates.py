@@ -446,6 +446,7 @@ thread = {
         },
     },
     "constraints": {
+        "optional": ["depends_on"],
         "validation_functions": [
             {
                 "function": "validate_thread",

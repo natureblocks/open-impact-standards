@@ -55,9 +55,9 @@ class TestAggregationPipeline:
             schema["actions"][1]["pipeline"][key1][0][key2] = val
 
         # ref must refer to an ancestor
-        schema["checkpoints"].append(
-            fixtures.checkpoint(id=0, alias="depends-on-0", num_dependencies=1)
-        )
+        schema["checkpoints"] = [
+            fixtures.checkpoint(id=0, alias="depends-on-0", num_dependencies=1),
+        ]
         assert (
             schema["checkpoints"][0]["dependencies"][0]["compare"]["left"]["ref"]
             == "action:{0}"
@@ -67,7 +67,7 @@ class TestAggregationPipeline:
         set_pipeline_value("traverse", "ref", "action:{2}.object.objects")
         errors = schema_validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.actions[1].pipeline (action id: 1): the value of property "ref" must reference an ancestor of action id 1, got "action:{2}.object.objects"'
+            'root.actions[1].pipeline.traverse[0] (action id: 1): the value of property "ref" must reference an ancestor of action id 1, got "action:{2}.object.objects"'
             in errors
         )
 
@@ -92,20 +92,26 @@ class TestAggregationPipeline:
         )
         errors = schema_validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.actions[1].pipeline (action id: 1).to: cannot assign to loop variable: "$edge"'
+            'root.actions[1].pipeline.traverse[0].foreach.apply[1].to (action id: 1): cannot assign to loop variable: "$edge"'
             in errors
         )
 
         # should be able to traverse threads...
         schema["threads"] = [
-            fixtures.thread(0),
+            fixtures.thread(0, "depends-on-0"),
         ]
-        schema["actions"][0]["context"] = "thread:{0}"  # action:{0} is now threaded
+        schema["actions"][2]["context"] = "thread:{0}"  # action:{2} is now threaded
+        depends_on_2 = fixtures.checkpoint(
+            id=1, alias="depends-on-2", num_dependencies=1
+        )
+        depends_on_2["dependencies"][0]["compare"]["left"]["ref"] = "action:{2}"
+        schema["checkpoints"].append(depends_on_2)
+        schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-2}"
         set_pipeline_value("variables", "name", "$average_minimums")
         set_pipeline_value("variables", "type", "NUMERIC_LIST")
         set_pipeline_value("variables", "initial", [])
         set_pipeline_value(
-            "traverse", "ref", "action:{0}"
+            "traverse", "ref", "action:{2}"
         )  # traversing the threaded action
         set_pipeline_value(
             "traverse",
@@ -157,10 +163,10 @@ class TestAggregationPipeline:
         assert not errors
 
         # should not be able to traverse non-threaded actions
-        set_pipeline_value("traverse", "ref", "action:{1}")
+        set_pipeline_value("traverse", "ref", "action:{0}")
         errors = schema_validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.actions[1].pipeline (action id: 1).ref: cannot traverse non-threaded action: "action:{1}"'
+            "root.actions[1].pipeline.traverse[0].ref (action id: 1): cannot traverse non-list object"
             in errors
         )
 
@@ -224,7 +230,7 @@ class TestAggregationPipeline:
         set_pipeline_value("apply", "from", "$average")
         errors = schema_validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.actions[0].pipeline (action id: 0).from: variable "$average" is not in scope'
+            'root.actions[0].pipeline.apply[0].from (action id: 0): variable "$average" used out of scope'
             in errors
         )
 
@@ -235,7 +241,7 @@ class TestAggregationPipeline:
         errors = schema_validator.validate(json_string=json.dumps(schema))
         assert not errors
         assert (
-            'root.actions[0].pipeline (action id: 0).from: variable used before assignment: "$some_var"'
+            'root.actions[0].pipeline.apply[0].from (action id: 0): variable used before assignment: "$some_var"'
             in schema_validator.warnings
         )
 
@@ -253,7 +259,65 @@ class TestAggregationPipeline:
         set_pipeline_value("apply", "method", "ADD")
         errors = schema_validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.actions[0].pipeline (action id: 0).to: variable "$average" is not in scope'
+            'root.actions[0].pipeline.apply[0].to (action id: 0): pipeline variable "$average" used out of scope'
+            in errors
+        )
+
+    def test_variable_collision(self):
+        schema_validator = SchemaValidator()
+        schema = fixtures.basic_schema_with_actions(1)
+
+        # should not be able to declare variables with the same name
+        schema["actions"][0]["pipeline"] = {
+            "context": "TEMPLATE",
+            "variables": [
+                {
+                    "name": "$some_var",
+                    "type": "NUMERIC",
+                    "initial": 0,
+                },
+                {
+                    "name": "$some_var",
+                    "type": "STRING",
+                    "initial": "",
+                },
+            ],
+            "apply": [],
+            "output": [],
+        }
+        errors = schema_validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.actions[0].pipeline.variables[1].name (action id: 0): variable already defined: "$some_var"'
+            in errors
+        )
+
+        # should not be able to use an already-declared variable name in a nested scope
+        schema["actions"][0]["pipeline"]["variables"] = [
+            {
+                "name": "$some_var",
+                "type": "NUMERIC",
+                "initial": 0,
+            },
+        ]
+        schema["actions"][0]["pipeline"]["traverse"] = [
+            {
+                "ref": "$_object.objects",
+                "foreach": {
+                    "as": "$edge",
+                    "variables": [
+                        {
+                            "name": "$some_var",
+                            "type": "NUMERIC",
+                            "initial": 0,
+                        },
+                    ],
+                    "apply": [],
+                },
+            },
+        ]
+        errors = schema_validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.actions[0].pipeline.traverse[0].foreach.variables[0].name (action id: 0): variable already defined: $some_var"
             in errors
         )
 
@@ -286,7 +350,7 @@ class TestAggregationPipeline:
         set_pipeline_value("apply", "from", "$non_existent_var")
         errors = schema_validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.actions[0].pipeline (action id: 0).from: variable not found: "$non_existent_var"'
+            'root.actions[0].pipeline.apply[0].from (action id: 0): variable not found: "$non_existent_var"'
             in errors
         )
 
@@ -303,7 +367,7 @@ class TestAggregationPipeline:
         }
         errors = schema_validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.actions[0].pipeline (action id: 0): apply: cannot set value of type "STRING" to variable of type "NUMERIC"'
+            'root.actions[0].pipeline.apply[0] (action id: 0): cannot set value of type "STRING" to variable of type "NUMERIC"'
             in errors
         )
 
@@ -328,7 +392,7 @@ class TestAggregationPipeline:
         )
         errors = schema_validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.actions[0].pipeline (action id: 0): apply: the "SET" method can only be used for the first operation on a variable'
+            'root.actions[0].pipeline.apply[1] (action id: 0): the "SET" method can only be used for the first operation on a variable'
             in errors
         )
 
@@ -336,7 +400,7 @@ class TestAggregationPipeline:
         set_pipeline_value("apply", "method", "CONCAT")
         errors = schema_validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.actions[0].pipeline (action id: 0): apply: when a variable\'s initial value is null, the "SET" method must be used for the first operation on the variable'
+            'root.actions[0].pipeline.apply[0] (action id: 0): when a variable\'s initial value is null, the "SET" method must be used for the first operation on the variable'
             in errors
         )
 
@@ -393,7 +457,7 @@ class TestAggregationPipeline:
         }
 
         expected_context = (
-            "root.actions[0].pipeline (action id: 0): variables[0].initial:"
+            "root.actions[0].pipeline.variables[0].initial (action id: 0):"
         )
         for field_type, values in invalid_initial_values.items():
             set_type(field_type)

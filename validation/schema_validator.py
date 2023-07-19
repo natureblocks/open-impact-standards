@@ -135,7 +135,7 @@ class SchemaValidator:
                 return []
 
         return [
-            f"{self._context(path)}: expected one of {allowed_types}, got {str(type(field))}"
+            f"{self._context(path)}: expected one of {json.dumps(allowed_types)}, got {json.dumps(type(field).__name__)}"
         ]
 
     def _validate_object(self, path, field, template, parent_object_template=None):
@@ -636,7 +636,7 @@ class SchemaValidator:
         return errors
 
     def _get_action_thread_scope(self, path):
-        action = self._get_parent_object(path)
+        action = self._get_parent_action(path)
         if (
             action is not None
             and "context" in action
@@ -650,6 +650,9 @@ class SchemaValidator:
         return None
 
     def _find_thread_variable(self, var_name, scope):
+        if scope is None:
+            return None
+
         thread_path = scope.split(".")
         thread_path.reverse()
         for thread_id in thread_path:
@@ -678,18 +681,14 @@ class SchemaValidator:
                 # check for pipeline variable name collision
                 if var["name"] in pipeline_vars:
                     errors += [
-                        f"{self._context(path)}: variables[{str(i)}].name: variable already defined: {json.dumps(var['name'])}"
+                        f"{self._context(f'{path}.variables[{str(i)}].name')}: variable already defined: {json.dumps(var['name'])}"
                     ]
                     continue
 
                 # check for collision with scoped thread variables
-                if (
-                    thread_scope is not None
-                    and self._find_thread_variable(var["name"], thread_scope)
-                    is not None
-                ):
+                if self._find_thread_variable(var["name"], thread_scope):
                     errors += [
-                        f"{self._context(path)}: variables[{str(i)}].name: variable already defined within thread scope: {json.dumps(var['name'])}"
+                        f"{self._context(f'{path}.variables[{str(i)}].name')}: variable already defined within thread scope: {json.dumps(var['name'])}"
                     ]
                     continue
 
@@ -699,7 +698,7 @@ class SchemaValidator:
                     )
                 except Exception as e:
                     errors += [
-                        f"{self._context(path)}: variables[{str(i)}].initial: {str(e)}"
+                        f"{self._context(f'{path}.variables[{str(i)}].initial')}: {str(e)}"
                     ]
                     continue
 
@@ -707,7 +706,7 @@ class SchemaValidator:
                     initial_type_details, var["type"]
                 ):
                     errors += [
-                        f"{self._context(path)}: variables[{str(i)}].initial: does not match expected type {json.dumps(var['type'])}"
+                        f"{self._context(f'{path}.variables[{str(i)}].initial')}: does not match expected type {json.dumps(var['type'])}"
                     ]
                     continue
 
@@ -721,7 +720,7 @@ class SchemaValidator:
         if not errors and "traverse" in field and isinstance(field["traverse"], list):
             for i in range(len(field["traverse"])):
                 errors += self._validate_pipeline_traversal_recursive(
-                    path,
+                    f"{path}.traverse[{str(i)}]",
                     pipeline_vars,
                     field["traverse"][i],
                     f"{pipeline_scope}.{i}",
@@ -731,7 +730,11 @@ class SchemaValidator:
         if not errors and "apply" in field and isinstance(field["apply"], list):
             for i in range(len(field["apply"])):
                 errors += self._validate_pipeline_application(
-                    path, pipeline_vars, field["apply"][i], pipeline_scope, thread_scope
+                    f"{path}.apply[{str(i)}]",
+                    pipeline_vars,
+                    field["apply"][i],
+                    pipeline_scope,
+                    thread_scope,
                 )
 
         return errors
@@ -756,13 +759,13 @@ class SchemaValidator:
                 # variable must be in scope
                 if not pipeline_scope.startswith(pipeline_var.scope):
                     return [
-                        f"{self._context(path)}.ref: variable {json.dumps(var_name)} is not in scope"
+                        f"{self._context(f'{path}.ref')}: variable {json.dumps(var_name)} used out of scope"
                     ]
 
                 var_type_details = pipeline_var.type_details
             else:
                 # look for a thread variable in the current scope
-                parent_action = self._get_parent_object(path)
+                parent_action = self._get_parent_action(path)
                 if "context" in parent_action:
                     parent_thread_id = utils.parse_ref_id(parent_action["context"])
                     var_type_details = self._find_thread_variable(
@@ -773,7 +776,7 @@ class SchemaValidator:
 
                 if var_type_details is None:
                     return [
-                        f"{self._context(path)}.ref: variable not found in scope: {json.dumps(var_name)}"
+                        f"{self._context(f'{path}.ref')}: variable not found in scope: {json.dumps(var_name)}"
                     ]
 
             if len(ref_path) > 1:
@@ -783,11 +786,11 @@ class SchemaValidator:
                         path=ref_path[1:],
                     )
                 except Exception as e:
-                    return [f"{self._context(path)}.ref: {str(e)}"]
+                    return [f"{self._context(f'{path}.ref')}: {str(e)}"]
             else:
                 ref_type_details = copy.deepcopy(var_type_details)
         else:  # ref is not a variable, so it's a global or local ref
-            parent_action = self._get_parent_object(path)
+            parent_action = self._get_parent_action(path)
             if is_global_ref(ref):
                 errors += self.validate_has_ancestor(
                     path,
@@ -800,7 +803,9 @@ class SchemaValidator:
                 ref_type_details = self._resolve_type_from_global_ref(ref)
 
                 if ref_type_details is None:
-                    return [f"{self._context(path)}.ref: could not resolve object type"]
+                    return [
+                        f"{self._context(f'{path}.ref')}: could not resolve object type"
+                    ]
 
                 if is_global_ref(
                     ref_type_details.item_type
@@ -812,7 +817,7 @@ class SchemaValidator:
 
                 if not ref_type_details.is_list:
                     return [
-                        f"{self._context(path)}.ref: cannot traverse non-list object"
+                        f"{self._context(f'{path}.ref')}: cannot traverse non-list object"
                     ]
 
             elif is_local_variable(ref):
@@ -821,7 +826,7 @@ class SchemaValidator:
                 )
             else:
                 return [
-                    f"{self._context(path)}.ref: "
+                    f"{self._context(f'{path}.ref')}: "
                     + f"expected global reference, local reference, or variable, got {json.dumps(ref)}"
                 ]
 
@@ -851,7 +856,7 @@ class SchemaValidator:
 
                 if var["name"] in pipeline_vars:
                     return [
-                        f"{self._context(path)}.foreach.variables[{str(i)}].name: variable already defined: {var['name']}"
+                        f"{self._context(f'{path}.foreach.variables[{str(i)}].name')}: variable already defined: {var['name']}"
                     ]
 
                 initial_type_details = (
@@ -862,7 +867,7 @@ class SchemaValidator:
                     initial_type_details, var["type"]
                 ):
                     return [
-                        f"{self._context(path)}.foreach.variables[{str(i)}].initial: does not match expected type {var['type']}"
+                        f"{self._context(f'{path}.foreach.variables[{str(i)}].initial')}: does not match expected type {var['type']}"
                     ]
 
                 pipeline_vars[var["name"]] = PipelineVariable(
@@ -875,7 +880,7 @@ class SchemaValidator:
         if "traverse" in traversal["foreach"]:
             for i in range(len(traversal["foreach"]["traverse"])):
                 errors += self._validate_pipeline_traversal_recursive(
-                    path,
+                    f"{path}.foreach.traverse[{str(i)}]",
                     pipeline_vars,
                     traversal["foreach"]["traverse"][i],
                     f"{pipeline_scope}.{i}",
@@ -885,7 +890,7 @@ class SchemaValidator:
         if "apply" in traversal["foreach"]:
             for i in range(len(traversal["foreach"]["apply"])):
                 errors += self._validate_pipeline_application(
-                    path,
+                    f"{path}.foreach.apply[{str(i)}]",
                     pipeline_vars,
                     traversal["foreach"]["apply"][i],
                     pipeline_scope,
@@ -905,12 +910,12 @@ class SchemaValidator:
                 pipeline_var = pipeline_vars[var_name]
                 if not pipeline_var.assigned:
                     self.warnings.append(
-                        f"{self._context(path)}.from: variable used before assignment: {json.dumps(var_name)}"
+                        f"{self._context(f'{path}.from')}: variable used before assignment: {json.dumps(var_name)}"
                     )
 
                 if not pipeline_scope.startswith(pipeline_var.scope):
                     return [
-                        f"{self._context(path)}.from: variable {json.dumps(var_name)} is not in scope"
+                        f"{self._context(f'{path}.from')}: variable {json.dumps(var_name)} used out of scope"
                     ]
                 else:
                     var_type_details = pipeline_var.type_details
@@ -921,7 +926,7 @@ class SchemaValidator:
 
             if var_type_details is None:
                 return [
-                    f"{self._context(path)}.from: variable not found: {json.dumps(var_name)}"
+                    f"{self._context(f'{path}.from')}: variable not found: {json.dumps(var_name)}"
                 ]
 
             if len(from_path) > 1:
@@ -931,7 +936,9 @@ class SchemaValidator:
                         path=from_path[1:],
                     )
                 except Exception as e:
-                    return [f"{self._context(path)}.ref: {str(e)}"]
+                    return [f"{self._context(f'{path}.ref')}: {str(e)}"]
+            else:
+                ref_type_details = copy.deepcopy(var_type_details)
         elif re.match(patterns.local_variable, apply["from"]):
             ref_type_details = self._resolve_type_from_local_ref(
                 apply["from"], path=path
@@ -956,19 +963,19 @@ class SchemaValidator:
 
         if to_var_name not in pipeline_vars:
             return [
-                f"{self._context(path)}.to: pipeline variable not found: {json.dumps(to_var_name)}"
+                f"{self._context(f'{path}.to')}: pipeline variable not found: {json.dumps(to_var_name)}"
             ]
 
         to_pipeline_var = pipeline_vars[to_var_name]
 
         if not pipeline_scope.startswith(to_pipeline_var.scope):
             return [
-                f"{self._context(path)}.to: pipeline variable {json.dumps(to_var_name)} used out of scope"
+                f"{self._context(f'{path}.to')}: pipeline variable {json.dumps(to_var_name)} used out of scope"
             ]
 
         if to_pipeline_var.is_loop_variable:
             return [
-                f"{self._context(path)}.to: cannot assign to loop variable: {json.dumps(to_var_name)}"
+                f"{self._context(f'{path}.to')}: cannot assign to loop variable: {json.dumps(to_var_name)}"
             ]
 
         left_operand_type = to_pipeline_var.type_details
@@ -989,7 +996,7 @@ class SchemaValidator:
 
             to_pipeline_var.assigned = True
         except Exception as e:
-            return [f"{self._context(path)}: apply: {str(e)}"]
+            return [f"{self._context(path)}: {str(e)}"]
 
         return []
 
@@ -1002,7 +1009,7 @@ class SchemaValidator:
             )
         elif re.match(patterns.global_ref, var_type_details.item_type):
             referenced_object = self._resolve_global_ref(var_type_details.item_type)
-            if path[1] != "object":
+            if path[0] != "object":
                 raise NotImplementedError(
                     "global ref resolution not implemented for action properties"
                 )
@@ -1193,7 +1200,7 @@ class SchemaValidator:
             ref_type = utils.parse_ref_type(field)
             if ref_type not in template["ref_types"]:
                 return [
-                    f"{self._context(path)}: invalid ref type: expected one of {template['ref_types']}, got {ref_type}"
+                    f"{self._context(path)}: invalid ref type: expected one of {json.dumps(template['ref_types'])}, got {json.dumps(ref_type)}"
                 ]
 
             referenced_object = self._resolve_global_ref(field)
@@ -1678,6 +1685,9 @@ class SchemaValidator:
     def _get_parent_object(self, path):
         return self._get_field(path.split(".")[:-1])
 
+    def _get_parent_action(self, path):
+        return self._get_field(path.split(".")[:2])
+
     def _apply_template_modifiers(self, referenced_template, template_modifiers):
         modified_template = copy.deepcopy(referenced_template)
 
@@ -1910,10 +1920,13 @@ class SchemaValidator:
 
                 elif "checkpoint" in dependency:
                     # CheckpointReference
+                    alias = utils.parse_ref_id(dependency["checkpoint"])
+                    if alias not in self._checkpoints:
+                        # CheckpointReference is invalid -- allow validation to fail elsewhere
+                        return []
+
                     errors = _explore_checkpoint_recursive(
-                        checkpoint=self._checkpoints[
-                            utils.parse_ref_id(dependency["checkpoint"])
-                        ],
+                        checkpoint=self._checkpoints[alias],
                         visited=visited,
                         dependency_path=dependency_path.copy(),
                     )
