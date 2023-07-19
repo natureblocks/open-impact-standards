@@ -230,7 +230,7 @@ class TestAggregationPipeline:
         set_pipeline_value("apply", "from", "$average")
         errors = schema_validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.actions[0].pipeline.apply[0].from (action id: 0): variable "$average" used out of scope'
+            'root.actions[0].pipeline.apply[0].from (action id: 0): variable not found in pipeline scope: "$average"'
             in errors
         )
 
@@ -259,11 +259,11 @@ class TestAggregationPipeline:
         set_pipeline_value("apply", "method", "ADD")
         errors = schema_validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.actions[0].pipeline.apply[0].to (action id: 0): pipeline variable "$average" used out of scope'
+            'root.actions[0].pipeline.apply[0].to (action id: 0): pipeline variable not found in scope: "$average"'
             in errors
         )
 
-    def test_variable_collision(self):
+    def test_variable_name_collision(self):
         schema_validator = SchemaValidator()
         schema = fixtures.basic_schema_with_actions(1)
 
@@ -321,6 +321,72 @@ class TestAggregationPipeline:
             in errors
         )
 
+        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"]["variables"][0][
+            "name"
+        ] = "$another_var"
+        errors = schema_validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # loop variable name cannot collide with...
+
+        # ...variable name from parent scope
+        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"]["as"] = "$some_var"
+        errors = schema_validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.actions[0].pipeline.traverse[0].foreach.as (action id: 0): variable already defined within pipeline scope: $some_var"
+            in errors
+        )
+
+        # ...variable name from same scope
+        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"][
+            "as"
+        ] = "$another_var"
+        errors = schema_validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.actions[0].pipeline.traverse[0].foreach.variables[0].name (action id: 0): variable already defined: $another_var"
+            in errors
+        )
+
+        # ...nested loop variable name
+        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"]["as"] = "$loop_var"
+        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"]["traverse"] = [
+            {
+                "ref": "$loop_var.numbers",
+                "foreach": {
+                    "as": "$loop_var",
+                    "variables": [],
+                    "apply": [],
+                },
+            },
+        ]
+        errors = schema_validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.actions[0].pipeline.traverse[0].foreach.traverse[0].foreach.as (action id: 0): variable already defined within pipeline scope: $loop_var"
+            in errors
+        )
+
+        # should be able to use the same variable name in different scopes (e.g. sibling "traverse" objects)
+        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"]["traverse"] = [
+            {
+                "ref": "$loop_var.numbers",
+                "foreach": {
+                    "as": "$nested_loop_var",
+                    "variables": [],
+                    "apply": [],
+                },
+            },
+            {
+                "ref": "$loop_var.objects",
+                "foreach": {
+                    "as": "$nested_loop_var",
+                    "variables": [],
+                    "apply": [],
+                },
+            },
+        ]
+        errors = schema_validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
     def test_apply(self):
         schema_validator = SchemaValidator()
         schema = fixtures.basic_schema_with_actions(1)
@@ -350,7 +416,7 @@ class TestAggregationPipeline:
         set_pipeline_value("apply", "from", "$non_existent_var")
         errors = schema_validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.actions[0].pipeline.apply[0].from (action id: 0): variable not found: "$non_existent_var"'
+            'root.actions[0].pipeline.apply[0].from (action id: 0): variable not found in pipeline scope: "$non_existent_var"'
             in errors
         )
 

@@ -665,21 +665,41 @@ class SchemaValidator:
 
         return None
 
+    def _find_pipeline_variable(self, pipeline_vars, scope, var_name):
+        if scope is None:
+            return None
+
+        scope_path = scope.split(".")
+        while len(scope_path):
+            scope = ".".join(scope_path)
+            scope_path.pop()
+
+            if scope not in pipeline_vars:
+                continue
+
+            if var_name in pipeline_vars[scope]:
+                return pipeline_vars[scope][var_name]
+
+        return None
+
     def validate_pipeline(self, path, field):
         errors = []
 
-        # {variable name: PipelineVariable}
+        # {scope: {var_name: PipelineVariable}}
         pipeline_vars = {}
         pipeline_scope = "0"
 
         thread_scope = self._get_action_thread_scope(path)
 
+        pipeline_vars[pipeline_scope] = {}
         if "variables" in field and isinstance(field["variables"], list):
             for i in range(len(field["variables"])):
                 var = field["variables"][i]
 
                 # check for pipeline variable name collision
-                if var["name"] in pipeline_vars:
+                if self._find_pipeline_variable(
+                    pipeline_vars, pipeline_scope, var["name"]
+                ):
                     errors += [
                         f"{self._context(f'{path}.variables[{str(i)}].name')}: variable already defined: {json.dumps(var['name'])}"
                     ]
@@ -710,7 +730,7 @@ class SchemaValidator:
                     ]
                     continue
 
-                pipeline_vars[var["name"]] = PipelineVariable(
+                pipeline_vars[pipeline_scope][var["name"]] = PipelineVariable(
                     type_details=initial_type_details,
                     scope=pipeline_scope,
                     initial=var["initial"],
@@ -754,14 +774,10 @@ class SchemaValidator:
         ref_path = ref.split(".")
         if is_variable(ref_path[0]):
             var_name = ref_path[0]
-            if var_name in pipeline_vars:
-                pipeline_var = pipeline_vars[var_name]
-                # variable must be in scope
-                if not pipeline_scope.startswith(pipeline_var.scope):
-                    return [
-                        f"{self._context(f'{path}.ref')}: variable {json.dumps(var_name)} used out of scope"
-                    ]
-
+            pipeline_var = self._find_pipeline_variable(
+                pipeline_vars, pipeline_scope, var_name
+            )
+            if pipeline_var is not None:
                 var_type_details = pipeline_var.type_details
             else:
                 # look for a thread variable in the current scope
@@ -776,7 +792,7 @@ class SchemaValidator:
 
                 if var_type_details is None:
                     return [
-                        f"{self._context(f'{path}.ref')}: variable not found in scope: {json.dumps(var_name)}"
+                        f"{self._context(f'{path}.ref')}: variable not found in pipeline scope: {json.dumps(var_name)}"
                     ]
 
             if len(ref_path) > 1:
@@ -831,22 +847,26 @@ class SchemaValidator:
                 ]
 
         item_name = traversal["foreach"]["as"]
-        if item_name in pipeline_vars:
+        if (
+            self._find_pipeline_variable(pipeline_vars, pipeline_scope, item_name)
+            is not None
+        ):
             return [
-                f"{self._context(path)}.foreach.as: variable already defined: {item_name}"
+                f"{self._context(f'{path}.foreach.as')}: variable already defined within pipeline scope: {item_name}"
             ]
         elif self._find_thread_variable(item_name, thread_scope) is not None:
             return [
-                f"{self._context(path)}.foreach.as: variable already defined within thread scope: {item_name}"
+                f"{self._context(f'{path}.foreach.as')}: variable already defined within thread scope: {item_name}"
             ]
 
-        ref_type_details.is_list = (
-            False  # de-listify, because we're iterating over the items
-        )
-        pipeline_vars[item_name] = PipelineVariable(
+        # de-listify, because the traversal iterates over the items
+        ref_type_details.is_list = False
+
+        pipeline_vars[pipeline_scope] = {}
+        pipeline_vars[pipeline_scope][item_name] = PipelineVariable(
             type_details=ref_type_details,
             scope=pipeline_scope,
-            assigned=True,  # loop variables are automatically assigned
+            assigned=True,  # loop variables are automatically assigned a value
             is_loop_variable=True,
         )
 
@@ -854,7 +874,12 @@ class SchemaValidator:
             for i in range(len(traversal["foreach"]["variables"])):
                 var = traversal["foreach"]["variables"][i]
 
-                if var["name"] in pipeline_vars:
+                if (
+                    self._find_pipeline_variable(
+                        pipeline_vars, pipeline_scope, var["name"]
+                    )
+                    is not None
+                ):
                     return [
                         f"{self._context(f'{path}.foreach.variables[{str(i)}].name')}: variable already defined: {var['name']}"
                     ]
@@ -870,7 +895,7 @@ class SchemaValidator:
                         f"{self._context(f'{path}.foreach.variables[{str(i)}].initial')}: does not match expected type {var['type']}"
                     ]
 
-                pipeline_vars[var["name"]] = PipelineVariable(
+                pipeline_vars[pipeline_scope][var["name"]] = PipelineVariable(
                     type_details=initial_type_details,
                     scope=pipeline_scope,
                     initial=var["initial"],
@@ -906,19 +931,17 @@ class SchemaValidator:
         if is_variable(from_path[0]):
             var_name = from_path[0]
             var_type_details = None
-            if var_name in pipeline_vars:
-                pipeline_var = pipeline_vars[var_name]
+
+            pipeline_var = self._find_pipeline_variable(
+                pipeline_vars, pipeline_scope, var_name
+            )
+            if pipeline_var is not None:
                 if not pipeline_var.assigned:
                     self.warnings.append(
                         f"{self._context(f'{path}.from')}: variable used before assignment: {json.dumps(var_name)}"
                     )
 
-                if not pipeline_scope.startswith(pipeline_var.scope):
-                    return [
-                        f"{self._context(f'{path}.from')}: variable {json.dumps(var_name)} used out of scope"
-                    ]
-                else:
-                    var_type_details = pipeline_var.type_details
+                var_type_details = pipeline_var.type_details
             else:
                 thread_variable = self._find_thread_variable(var_name, thread_scope)
                 if thread_variable is not None:
@@ -926,7 +949,7 @@ class SchemaValidator:
 
             if var_type_details is None:
                 return [
-                    f"{self._context(f'{path}.from')}: variable not found: {json.dumps(var_name)}"
+                    f"{self._context(f'{path}.from')}: variable not found in pipeline scope: {json.dumps(var_name)}"
                 ]
 
             if len(from_path) > 1:
@@ -961,12 +984,13 @@ class SchemaValidator:
             # pattern validation will have already caught this
             return []
 
-        if to_var_name not in pipeline_vars:
+        to_pipeline_var = self._find_pipeline_variable(
+            pipeline_vars, pipeline_scope, to_var_name
+        )
+        if to_pipeline_var is None:
             return [
-                f"{self._context(f'{path}.to')}: pipeline variable not found: {json.dumps(to_var_name)}"
+                f"{self._context(f'{path}.to')}: pipeline variable not found in scope: {json.dumps(to_var_name)}"
             ]
-
-        to_pipeline_var = pipeline_vars[to_var_name]
 
         if not pipeline_scope.startswith(to_pipeline_var.scope):
             return [
