@@ -170,6 +170,103 @@ class TestSchemaValidation:
             in errors
         )
 
+    def test_thread_spawn_collections(self):
+        validator = SchemaValidator()
+
+        schema = fixtures.basic_schema_with_actions(3)
+        schema["checkpoints"] = [
+            fixtures.checkpoint(0, "depends-on-0", num_dependencies=1),
+            fixtures.checkpoint(1, "depends-on-1", num_dependencies=1),
+        ]
+        schema["checkpoints"][1]["dependencies"][0]["compare"]["left"][
+            "ref"
+        ] = "action:{1}"
+        schema["threads"] = [
+            fixtures.thread(0),
+        ]
+        schema["threads"][0]["depends_on"] = "checkpoint:{depends-on-0}"
+
+        # test valid list sources...
+        valid_list_sources = [
+            ("", "numbers"),  # list of scalars
+            ("", "objects"),  # edge collection
+            ("objects", "name"),  # field on an edge collection
+            ("objects", "edge"),  # edge on an edge collection
+            ("edge.edge.edge.objects", "name"),  # just for fun
+        ]
+
+        for path_completion, field_name in valid_list_sources:
+            schema["threads"][0]["spawn"] = {
+                "from": "action:{0}.object"
+                + ("." + path_completion if path_completion else ""),
+                "foreach": field_name,
+                "as": "$var",
+            }
+            errors = validator.validate(json_string=json.dumps(schema))
+            assert not errors
+
+        # field from a threaded action (the threading makes it a list)
+        schema["threads"].append(fixtures.thread(1))
+        schema["actions"][1]["context"] = "thread:{0}"
+        schema["threads"][1]["depends_on"] = "checkpoint:{depends-on-1}"
+        schema["threads"][1]["spawn"] = {
+            "from": "action:{1}.object",  # list (threaded action)
+            "foreach": "name",  # non-list
+            "as": "$name",  # should be a list
+        }
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # edge on a threaded action (the threading makes it a list)
+        schema["threads"][1]["spawn"] = {
+            "from": "action:{1}.object",  # list (threaded action)
+            "foreach": "edge",  # non-list
+            "as": "$edge",  # should be a list
+        }
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # non-lists are invalid...
+        non_list_sources = [
+            "name",  # scalar field
+            "edge",  # edge
+        ]
+        for field_name in non_list_sources:
+            schema["threads"][0]["spawn"] = {
+                "from": "action:{0}.object",
+                "foreach": field_name,
+                "as": "$var",
+            }
+            errors = validator.validate(json_string=json.dumps(schema))
+            assert (
+                "root.threads[0].spawn: cannot spawn threads from a non-list object"
+                in errors
+            )
+
+        # nested lists are invalid...
+        nested_list_sources = [
+            (0, "objects", "numbers"),  # edge_collection->list
+            (0, "objects.edge", "numbers"),  # edge_collection->edge->list
+            (0, "objects.edge", "objects"),  # edge_collection->edge->edge_collection
+            (1, "", "numbers"),  # threaded_action->list
+            (1, "objects", "name"),  # threaded_action->list
+        ]
+
+        for thread_action_id, path_completion, field_name in nested_list_sources:
+            schema["threads"][thread_action_id]["spawn"] = {
+                "from": "action:{"
+                + str(thread_action_id)
+                + "}.object"
+                + ("." + path_completion if path_completion else ""),
+                "foreach": field_name,
+                "as": "$var",
+            }
+            errors = validator.validate(json_string=json.dumps(schema))
+            assert (
+                f"root.threads[{thread_action_id}].spawn: nested list types are not supported"
+                in errors
+            )
+
     def test_thread_dependencies(self):
         validator = SchemaValidator()
 

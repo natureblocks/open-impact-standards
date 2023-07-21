@@ -367,10 +367,16 @@ class SchemaValidator:
             return error
 
         if descendant_type == "action":
+            if descendant_id not in self._action_checkpoints:
+                return error
+
             return validate_has_ancestor_recursive(
                 self._action_checkpoints[descendant_id], []
             )
         elif descendant_type == "thread":
+            if descendant_id not in self._thread_checkpoints:
+                return error
+
             return validate_has_ancestor_recursive(
                 self._thread_checkpoints[descendant_id], []
             )
@@ -572,8 +578,11 @@ class SchemaValidator:
 
                 if errors:
                     return errors
+            try:
+                from_object_type = self._resolve_type_from_global_ref(ref=spawn["from"])
+            except Exception as e:
+                return [f"{self._context(path)}.spawn: {str(e)}"]
 
-            from_object_type = self._resolve_type_from_global_ref(ref=spawn["from"])
         elif is_variable(spawn["from"]):
             from_path = spawn["from"].split(".")
             var_name = from_path[0]
@@ -973,9 +982,7 @@ class SchemaValidator:
 
                 var_type_details = pipeline_var.type_details
             else:
-                thread_variable = self._find_thread_variable(var_name, thread_scope)
-                if thread_variable is not None:
-                    var_type_details = thread_variable
+                var_type_details = self._find_thread_variable(var_name, thread_scope)
 
             if var_type_details is None:
                 return [
@@ -1075,8 +1082,6 @@ class SchemaValidator:
         return var_type_details
 
     def _resolve_type_from_global_ref(self, ref):
-        type_details = None
-
         matches = re.findall(patterns.global_ref, ref)
         if len(matches) and len(matches[0]):
             global_ref = matches[0][0]
@@ -1085,37 +1090,44 @@ class SchemaValidator:
 
             template_object = self._resolve_global_ref(global_ref)
 
-            if len(ref_path):
-                if ref_type == "action":
-                    split_ref_path = ref_path.split(".")
-                    if split_ref_path[0] == "object":
-                        type_details = self._resolve_type_from_object_path(
-                            object_tag=template_object["object"],
-                            path=split_ref_path[1:],
-                        )
-                    else:
-                        raise NotImplementedError(
-                            "global ref resolution not implemented for action properties"
-                        )
-                else:
-                    raise NotImplementedError(
-                        "global ref resolution not implemented for ref type: "
-                        + ref_type
-                    )
-            else:
+            if ref_type == "action":
                 is_threaded_action = (
                     "context" in template_object
                     and is_global_ref(template_object["context"])
                     and utils.parse_ref_type(template_object["context"]) == "thread"
                 )
 
-                type_details = FieldTypeDetails(
-                    is_list=is_threaded_action,
-                    item_type=global_ref,
-                    item_tag=None,
+                if len(ref_path):
+                    split_ref_path = ref_path.split(".")
+                    if split_ref_path[0] == "object":
+                        type_details = self._resolve_type_from_object_path(
+                            object_tag=template_object["object"],
+                            path=split_ref_path[1:],
+                        )
+
+                        if is_threaded_action:
+                            if type_details.is_list:
+                                raise Exception("nested list types are not supported")
+
+                            type_details.is_list = True
+
+                        return type_details
+                    else:
+                        raise NotImplementedError(
+                            "global ref resolution not implemented for action properties"
+                        )
+                else:
+                    return FieldTypeDetails(
+                        is_list=is_threaded_action,
+                        item_type=global_ref,
+                        item_tag=None,
+                    )
+            else:
+                raise NotImplementedError(
+                    "global ref resolution not implemented for ref type: " + ref_type
                 )
 
-        return type_details
+        return None
 
     def _resolve_type_from_local_ref(self, local_ref, obj=None, path=None):
         if obj is None:
@@ -1934,6 +1946,10 @@ class SchemaValidator:
                         # bypass validation of psuedo-checkpoint fields
                         self._psuedo_checkpoints.append(alias)
                 elif "depends_on" in thread:
+                    if not is_global_ref(thread["depends_on"]):
+                        # skip invalid refs -- allow validation to fail elsewhere
+                        continue
+
                     self._thread_checkpoints[thread_id] = utils.parse_ref_id(
                         thread["depends_on"]
                     )

@@ -21,6 +21,7 @@ def basic_schema():
                 "name": {"field_type": "STRING"},
                 "number": {"field_type": "NUMERIC"},
                 "numbers": {"field_type": "NUMERIC_LIST"},
+                "edge": {"field_type": "EDGE", "object": "Placeholder"},
                 "objects": {"field_type": "EDGE_COLLECTION", "object": "Placeholder"},
             }
         },
