@@ -73,13 +73,14 @@ class TestSchemaValidation:
     def test_thread_variable_name_collision(self):
         validator = SchemaValidator()
 
-        schema = fixtures.basic_schema_with_actions(1)
+        schema = fixtures.basic_schema_with_actions(3)
         schema["checkpoints"] = [
             fixtures.checkpoint(0, "depends-on-0", num_dependencies=1)
         ]
         thread = fixtures.thread(0, "depends-on-0")
         child_thread = fixtures.thread(1)
         child_thread["context"] = "thread:{0}"
+        schema["actions"][1]["context"] = "thread:{1}"
 
         # should not be able to reuse a variable name in the same scope
         thread["spawn"]["as"] = "$some_var"
@@ -108,6 +109,7 @@ class TestSchemaValidation:
         sibling_thread = fixtures.thread(2, "depends-on-0")
         sibling_thread["spawn"]["as"] = "$some_var"
         schema["threads"].append(sibling_thread)
+        schema["actions"][2]["context"] = "thread:{2}"
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
@@ -185,6 +187,7 @@ class TestSchemaValidation:
             fixtures.thread(0),
         ]
         schema["threads"][0]["depends_on"] = "checkpoint:{depends-on-0}"
+        schema["actions"][2]["context"] = "thread:{0}"
 
         # test valid list sources...
         valid_list_sources = [
@@ -208,6 +211,7 @@ class TestSchemaValidation:
         # field from a threaded action (the threading makes it a list)
         schema["threads"].append(fixtures.thread(1))
         schema["actions"][1]["context"] = "thread:{0}"
+        schema["actions"][2]["context"] = "thread:{1}"
         schema["threads"][1]["depends_on"] = "checkpoint:{depends-on-1}"
         schema["threads"][1]["spawn"] = {
             "from": "action:{1}.object",  # list (threaded action)
@@ -352,6 +356,46 @@ class TestSchemaValidation:
         )
 
         del schema["actions"][0]["depends_on"]
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+    def test_thread_is_used(self):
+        validator = SchemaValidator()
+
+        schema = fixtures.basic_schema_with_actions(2)
+        schema["checkpoints"] = [
+            fixtures.checkpoint(0, "depends-on-0", num_dependencies=1),
+        ]
+        schema["threads"] = [
+            fixtures.thread(0, "depends-on-0"),
+        ]
+
+        # threads must contain either an action or a nested thread
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.threads[0]: thread is never referenced as the context of an action or sub-thread"
+            in errors
+        )
+
+        schema["actions"][1]["context"] = "thread:{0}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        del schema["actions"][1]["context"]
+        schema["threads"].append(fixtures.thread(1))
+        schema["threads"][1]["context"] = "thread:{0}"
+        schema["threads"][1]["spawn"] = {
+            "from": "action:{0}.object",
+            "foreach": "objects",
+            "as": "$object",
+        }
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.threads[1]: thread is never referenced as the context of an action or sub-thread"
+            in errors
+        )
+
+        schema["actions"][1]["context"] = "thread:{1}"
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 

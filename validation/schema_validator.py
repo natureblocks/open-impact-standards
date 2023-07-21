@@ -4,6 +4,7 @@ import json
 import re
 from validation.field_type_details import FieldTypeDetails
 from validation.pipeline_variable import PipelineVariable
+from validation.thread import Thread
 
 from validation import templates, oisql, utils, patterns, pipeline_utils
 from validation.utils import is_path, is_global_ref, is_variable, is_local_variable
@@ -18,9 +19,6 @@ class SchemaValidator:
         # { alias: checkpoint}
         self._checkpoints = {}  # to be collected during validation
         self._psuedo_checkpoints = []  # for implicit action dependencies on threads
-
-        # { thread_id: { scope, sub_thread_ids, variables } }
-        # scopes are strings of dot-separated thread ids (e.g. f"{top_level_thread_id}.{nested_thread_id}")
         self._threads = {}
 
         # for including helpful context information in error messages
@@ -28,8 +26,6 @@ class SchemaValidator:
         self._context_path = None
 
     def validate(self, schema_dict=None, json_file_path=None, json_string=None):
-        self._threads = {}
-
         if schema_dict is not None:
             self.schema = schema_dict
         elif json_file_path is not None:
@@ -520,39 +516,33 @@ class SchemaValidator:
         def resolve_thread_scope_recursive(thread):
             # get the scope of the thread
             thread_id = str(thread["id"])
-            if thread_id in self._threads:
-                return self._threads[thread_id]["scope"]
+            if self._threads[thread_id].scope is not None:
+                return self._threads[thread_id].scope
 
             if "context" not in thread:
                 # it's a top-level thread
-                scope = thread_id
-                self._threads[thread_id] = {
-                    "scope": scope,
-                    "sub_thread_ids": [],
-                    "variables": {},
-                }
-                return scope
+                self._threads[thread_id].scope = thread_id
+                return thread_id
             else:
                 # it's a nested thread
                 if is_global_ref(thread["context"]):
                     # resolve all parent threads first
                     parent_thread_id = utils.parse_ref_id(thread["context"])
                     if parent_thread_id not in self._threads:
-                        resolve_thread_scope_recursive(
+                        return None  # cannot resolve parent thread scope
+
+                    if (
+                        self._threads[parent_thread_id].scope is None
+                        and resolve_thread_scope_recursive(
                             thread=self._resolve_global_ref(thread["context"])
                         )
-
-                    if parent_thread_id not in self._threads:
+                        is None
+                    ):
                         return None  # could not resolve parent thread scope
 
                     # record the thread and set its scope
-                    scope = f'{self._threads[parent_thread_id]["scope"]}.{thread_id}'
-                    self._threads[thread_id] = {
-                        "scope": scope,
-                        "sub_thread_ids": [],
-                        "variables": {},
-                    }
-                    self._threads[parent_thread_id]["sub_thread_ids"].append(thread_id)
+                    scope = f"{self._threads[parent_thread_id].scope}.{thread_id}"
+                    self._threads[thread_id].scope = scope
 
                     return scope
 
@@ -658,7 +648,15 @@ class SchemaValidator:
             # thread variables are essentially loop variables, so the collection is de-listified here for convenience
             variable_type.is_list = False
             # record the variable type
-            self._threads[thread_id]["variables"][var_name] = variable_type
+            self._threads[thread_id].variables[var_name] = variable_type
+
+        # threads must be used as the context of at least one action or sub-thread
+        if not len(self._threads[thread_id].action_ids) and not len(
+            self._threads[thread_id].sub_thread_ids
+        ):
+            errors += [
+                f"{self._context(path)}: thread is never referenced as the context of an action or sub-thread"
+            ]
 
         return errors
 
@@ -672,7 +670,7 @@ class SchemaValidator:
         ):
             thread_id = utils.parse_ref_id(action["context"])
             if thread_id in self._threads:
-                return self._threads[thread_id]["scope"]
+                return self._threads[thread_id].scope
 
         return None
 
@@ -688,19 +686,19 @@ class SchemaValidator:
                 break
 
             thread_context = self._threads[thread_id]
-            if var_name in thread_context["variables"]:
-                return thread_context["variables"][var_name]
+            if var_name in thread_context.variables:
+                return thread_context.variables[var_name]
 
         if check_nested_scopes:
 
             def check_nested_scopes_recursive(thread_id):
-                for sub_thread_id in self._threads[thread_id]["sub_thread_ids"]:
+                for sub_thread_id in self._threads[thread_id].sub_thread_ids:
                     sub_thread_context = self._threads[sub_thread_id]
 
-                    if var_name in sub_thread_context["variables"]:
-                        return sub_thread_context["variables"][var_name]
+                    if var_name in sub_thread_context.variables:
+                        return sub_thread_context.variables[var_name]
 
-                    if sub_thread_context["sub_thread_ids"]:
+                    if sub_thread_context.sub_thread_ids:
                         return check_nested_scopes_recursive(sub_thread_id)
 
             return check_nested_scopes_recursive(thread_id)
@@ -826,7 +824,7 @@ class SchemaValidator:
                 if "context" in parent_action:
                     parent_thread_id = utils.parse_ref_id(parent_action["context"])
                     var_type_details = self._find_thread_variable(
-                        var_name, self._threads[parent_thread_id]["scope"]
+                        var_name, self._threads[parent_thread_id].scope
                     )
                 else:
                     var_type_details = None
@@ -1910,10 +1908,14 @@ class SchemaValidator:
         self._checkpoints = {}
         self._thread_checkpoints = {}
         self._threaded_action_ids = []
+        self._threads = {}
 
         if "threads" in self.schema:
             for thread in self.schema["threads"]:
                 thread_id = str(thread["id"])
+                if thread_id not in self._threads:
+                    self._threads[thread_id] = Thread()
+
                 if "context" in thread:
                     parent_thread = self._resolve_global_ref(thread["context"])
                     if (
@@ -1922,6 +1924,12 @@ class SchemaValidator:
                         or "depends_on" not in parent_thread
                     ):
                         continue
+
+                    parent_thread_id = str(parent_thread["id"])
+                    if parent_thread_id not in self._threads:
+                        self._threads[parent_thread_id] = Thread()
+
+                    self._threads[parent_thread_id].sub_thread_ids.append(thread_id)
 
                     checkpoint_id = utils.parse_ref_id(parent_thread["depends_on"])
 
@@ -1969,6 +1977,11 @@ class SchemaValidator:
                         continue
 
                     thread_id = str(thread["id"])
+
+                    if thread_id not in self._threads:
+                        self._threads[thread_id] = Thread()
+
+                    self._threads[thread_id].action_ids.append(action_id)
 
                     if "depends_on" in thread:
                         checkpoint_id = utils.parse_ref_id(thread["depends_on"])
