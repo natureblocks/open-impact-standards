@@ -436,7 +436,16 @@ thread = {
         "spawn": {
             "type": "object",
             "properties": {
-                "from": {"type": "ref", "ref_types": ["action"]},
+                "from": {
+                    "types": [
+                        {"type": "ref", "ref_types": ["action"]},
+                        {
+                            "type": "string",
+                            "pattern": patterns.variable,
+                            "pattern_description": "variable name"
+                        },
+                    ],
+                },
                 "foreach": {"type": "string"},
                 "as": {
                     "type": "string",

@@ -1956,25 +1956,33 @@ class SchemaValidator:
 
         for action in self.schema["actions"]:
             if "id" in action:
+                action_id = str(action["id"])
                 # if the action has a threaded context...
                 if "context" in action:
                     # the action implicitly depends on the thread's checkpoint
                     thread = self._resolve_global_ref(action["context"])
+
                     if (
                         thread is None
                         or utils.parse_ref_type(action["context"]) != "thread"
-                        or "depends_on" not in thread
                     ):
                         continue
 
-                    checkpoint_id = utils.parse_ref_id(thread["depends_on"])
+                    thread_id = str(thread["id"])
 
-                    self._thread_checkpoints[str(thread["id"])] = checkpoint_id
-                    self._threaded_action_ids.append(str(action["id"]))
+                    if "depends_on" in thread:
+                        checkpoint_id = utils.parse_ref_id(thread["depends_on"])
+                    elif "context" in thread and thread_id in self._thread_checkpoints:
+                        checkpoint_id = self._thread_checkpoints[thread_id]
+                    else:
+                        continue
+
+                    self._thread_checkpoints[thread_id] = checkpoint_id
+                    self._threaded_action_ids.append(action_id)
 
                     if "depends_on" not in action:
                         # the action implicitly depends on the thread's checkpoint
-                        self._action_checkpoints[str(action["id"])] = checkpoint_id
+                        self._action_checkpoints[action_id] = checkpoint_id
                     else:
                         # a psuedo-checkpoint is needed to combine the action's checkpoint with the thread's checkpoint
                         alias = f"_psuedo-checkpoint-{str(action['id'])}"
@@ -1988,12 +1996,12 @@ class SchemaValidator:
                                 ],
                             }
                         )
-                        self._action_checkpoints[str(action["id"])] = alias
+                        self._action_checkpoints[action_id] = alias
 
                         # bypass validation of psuedo-checkpoint fields
                         self._psuedo_checkpoints.append(alias)
                 else:
-                    self._action_checkpoints[str(action["id"])] = (
+                    self._action_checkpoints[action_id] = (
                         utils.parse_ref_id(action["depends_on"])
                         if "depends_on" in action
                         else None

@@ -317,6 +317,44 @@ class TestSchemaValidation:
             in errors
         )
 
+        # nested threads can form circular dependencies
+        schema = fixtures.basic_schema_with_actions(2)
+        schema["checkpoints"] = [
+            fixtures.checkpoint(0, "depends-on-0", num_dependencies=1),
+            fixtures.checkpoint(1, "depends-on-1", num_dependencies=1),
+        ]
+        schema["checkpoints"][1]["dependencies"][0]["compare"]["left"][
+            "ref"
+        ] = "action:{1}"
+
+        schema["threads"] = [
+            fixtures.thread(0, "depends-on-0"),
+            fixtures.thread(1),
+        ]
+        schema["threads"][0]["spawn"] = {
+            "from": "action:{0}.object",
+            "foreach": "objects",
+            "as": "$object",
+        }
+        schema["threads"][1]["spawn"] = {
+            "from": "$object",  # parent thread variable!
+            "foreach": "numbers",
+            "as": "$number",
+        }
+        schema["threads"][1]["context"] = "thread:{0}"
+        schema["actions"][1]["context"] = "thread:{1}"
+        schema["actions"][0]["depends_on"] = "checkpoint:{depends-on-1}"
+
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "Circular dependency detected (dependency path: [0, 1]); NOTE: actions with threaded context implicitly depend on the referenced thread's checkpoint (Thread.depends_on)"
+            in errors
+        )
+
+        del schema["actions"][0]["depends_on"]
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
     def test_action_context(self):
         validator = SchemaValidator()
 
