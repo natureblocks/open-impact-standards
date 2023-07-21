@@ -172,6 +172,35 @@ class TestSchemaValidation:
             in errors
         )
 
+        # a nested thread should be able to
+        # spawn from a collection on a parent thread variable
+        set_thread_value(
+            ["spawn"],
+            {
+                "from": "action:{0}.object",
+                "foreach": "objects",
+                "as": "$object",
+            },
+        )
+        schema["threads"].append(fixtures.thread(1))
+        schema["threads"][1]["context"] = "thread:{0}"
+        schema["threads"][1]["spawn"] = {
+            "from": "$object",
+            "foreach": "numbers",
+            "as": "$number",
+        }
+        schema["actions"][2]["context"] = "thread:{1}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        schema["threads"][1]["spawn"] = {
+            "from": "$object",
+            "foreach": "objects",
+            "as": "$sub_object",
+        }
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
     def test_thread_spawn_collections(self):
         validator = SchemaValidator()
 
