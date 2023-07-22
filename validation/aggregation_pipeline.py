@@ -37,6 +37,9 @@ pipeline = {
                 "type": "object",
                 "template": "variable",
             },
+            "constraints": {
+                "min_length": 1,
+            },
         },
         "traverse": {
             "type": "array",
@@ -61,6 +64,9 @@ pipeline = {
                     "to": {"type": "string"},
                 },
             },
+            "constraints": {
+                "min_length": 1,
+            }
         },
     },
     "constraints": {
@@ -130,6 +136,9 @@ traverse = {
                     "values": {
                         "type": "object",
                         "template": "variable",
+                    },
+                    "constraints": {
+                        "min_length": 1,
                     },
                 },
                 "traverse": {

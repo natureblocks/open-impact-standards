@@ -45,7 +45,12 @@ class TestAggregationPipeline:
                     },
                 },
             ],
-            "output": [],
+            "output": [
+                {
+                    "from": "$some_var",
+                    "to": "number",
+                }
+            ],
         }
 
         def set_pipeline_value(key1, key2, val):
@@ -220,7 +225,12 @@ class TestAggregationPipeline:
                     "to": "$some_var",
                 },
             ],
-            "output": [],
+            "output": [
+                {
+                    "from": "$another_var",
+                    "to": "numbers",
+                }
+            ],
         }
 
         def set_pipeline_value(key1, key2, val):
@@ -283,7 +293,12 @@ class TestAggregationPipeline:
                 },
             ],
             "apply": [],
-            "output": [],
+            "output": [
+                {
+                    "from": "$some_var",
+                    "to": "number",
+                }
+            ],
         }
         errors = schema_validator.validate(json_string=json.dumps(schema))
         assert (
@@ -450,7 +465,12 @@ class TestAggregationPipeline:
                 },
             ],
             "apply": [],
-            "output": [],
+            "output": [
+                {
+                    "from": "$thread_var",
+                    "to": "number",
+                }
+            ],
         }
         errors = schema_validator.validate(json_string=json.dumps(schema))
         assert not errors
@@ -474,7 +494,12 @@ class TestAggregationPipeline:
                     "to": "$some_var",
                 },
             ],
-            "output": [],
+            "output": [
+                {
+                    "from": "$some_var",
+                    "to": "number",
+                }
+            ],
         }
 
         def set_pipeline_value(key1, key2, val):
@@ -570,7 +595,12 @@ class TestAggregationPipeline:
                     "initial": None,
                 },
             ],
-            "output": [],
+            "output": [
+                {
+                    "from": "$some_var",
+                    "to": "number",
+                }
+            ],
         }
 
         def set_type(field_type):
