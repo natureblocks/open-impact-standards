@@ -400,6 +400,27 @@ action = {
             "pipeline",
         ],
     },
+    "if": [
+        {
+            "property": "context",
+            "operator": "IS_SPECIFIED",
+            "value": True,
+            "then": {
+                "override_properties": {
+                    "party": {
+                        "type": "ref",
+                        "ref_types": ["party"],
+                        "expected_value": {
+                            "equivalent_ref": {
+                                "from_ref": "{_parent}.context",
+                                "extract": "party",
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    ],
     "ref_config": {
         "fields": ["id"],
         "collection": "root.actions",

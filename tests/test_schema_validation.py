@@ -458,6 +458,20 @@ class TestSchemaValidation:
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
+        # threaded actions must specify the same party as the thread
+        schema["threads"][0]["party"] = "party:{Project}"
+        schema["parties"].append({"id": 1, "name": "Vandelay Industries"})
+        schema["actions"][1]["party"] = "party:{Vandelay Industries}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.actions[1].party (action id: 1): expected ref equivalent to "party:{Project}", got "party:{Vandelay Industries}"'
+            in errors
+        )
+
+        schema["actions"][1]["party"] = "party:{Project}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
     def test_milestones(self):
         validator = SchemaValidator()
 

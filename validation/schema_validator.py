@@ -1210,28 +1210,7 @@ class SchemaValidator:
             else {}
         )
 
-        if "referenced_value" in template:
-            # looking for a specific value
-            reference_path = self._resolve_path_variables(
-                path, template["referenced_value"].split("."), template_vars
-            )
-            sub_path = ".".join(reference_path[1:])
-
-            if reference_path[0] == "root":
-                expected_value = self._get_field(sub_path)
-            else:
-                raise NotImplementedError(
-                    "unexpected reference template: " + str(template)
-                )
-
-            if field == expected_value:
-                return []
-            else:
-                return [
-                    f"{self._context(path)}: expected {expected_value} ({'.'.join(reference_path)}), got {json.dumps(field)}"
-                ]
-
-        elif "one_of" in template["expected_value"]:
+        if "one_of" in template["expected_value"]:
             # looking for any matching value
             one_of = copy.deepcopy(template["expected_value"]["one_of"])
             one_of["from"] = ".".join(
@@ -1243,9 +1222,77 @@ class SchemaValidator:
             return self._object_or_array_contains(path, field, one_of)
 
         else:
-            raise NotImplementedError(
-                "expected_value template not implemented: " + str(template)
-            )
+
+            def extract_value_from_referenced_object(ref_details):
+                if "from_ref" not in ref_details or "extract" not in ref_details:
+                    raise Exception(
+                        "invalid referenced_value template: " + str(ref_details)
+                    )
+
+                ref = self._get_field(
+                    self._resolve_path_variables(
+                        path, ref_details["from_ref"].split("."), template_vars
+                    )
+                )
+                referenced_object = self._resolve_global_ref(ref)
+
+                return self._get_field(ref_details["extract"], referenced_object)
+
+            if "referenced_value" in template["expected_value"]:
+                expected_value = extract_value_from_referenced_object(
+                    template["expected_value"]["referenced_value"]
+                )
+
+                if field == expected_value:
+                    return []
+                else:
+                    return [
+                        f"{self._context(path)}: expected {expected_value}, got {json.dumps(field)}"
+                    ]
+
+            elif "equivalent_ref" in template["expected_value"]:
+                ref = extract_value_from_referenced_object(
+                    template["expected_value"]["equivalent_ref"]
+                )
+
+                if ref is None or not is_global_ref(ref) or not is_global_ref(field):
+                    # validation errors will already have been raised
+                    return []
+
+                # no need to resolve the refs if they are identical
+                if ref == field:
+                    return []
+
+                ref_type_a = utils.parse_ref_type(ref)
+                ref_type_b = utils.parse_ref_type(field)
+                if ref_type_a != ref_type_b:
+                    return [
+                        f"{self._context(path)}: expected ref type {json.dumps(ref_type_a)}, got {json.dumps(ref_type_b)}"
+                    ]
+
+                # resolve the refs and check whether they have the same id
+                obj_a = self._resolve_global_ref(ref)
+                obj_b = self._resolve_global_ref(field)
+
+                if (
+                    obj_a is None
+                    or obj_b is None
+                    or "id" not in obj_a
+                    or "id" not in obj_b
+                ):
+                    # validation errors will already have been raised
+                    return []
+
+                if obj_a["id"] == obj_b["id"]:
+                    return []
+                else:
+                    return [
+                        f"{self._context(path)}: expected ref equivalent to {json.dumps(ref)}, got {json.dumps(field)}"
+                    ]
+            else:
+                raise NotImplementedError(
+                    "expected_value template not implemented: " + str(template)
+                )
 
     def _validate_ref(self, path, field, template, parent_object_template=None):
         if "local_ref" in template["ref_types"] and is_local_variable(field):
@@ -1264,13 +1311,17 @@ class SchemaValidator:
 
             referenced_object = self._resolve_global_ref(field)
 
-        return (
-            [
+        if referenced_object is None:
+            return [
                 f"{self._context(path)}: invalid ref: object not found: {json.dumps(field)}"
             ]
-            if referenced_object is None
-            else []
-        )
+
+        if "expected_value" in template:
+            return self._validate_expected_value(
+                path, field, template, parent_object_template
+            )
+
+        return []
 
     def _resolve_global_ref(self, ref):
         ref_id = utils.parse_ref_id(ref)
@@ -1831,6 +1882,18 @@ class SchemaValidator:
         if not all(prop in condition for prop in required_props):
             raise Exception(f"Invalid template condition: {condition}")
 
+        operator = condition["operator"]
+        value = (
+            self._get_field(condition["value"], field)
+            if is_path(condition["value"])
+            else condition["value"]
+        )
+
+        # special case:
+        # is an optional property specified?
+        if operator == "IS_SPECIFIED" and value == True:
+            return condition["property"] in field
+
         prop = self._get_field(
             condition["property"],
             field,
@@ -1843,13 +1906,6 @@ class SchemaValidator:
                 prop = len(prop)
             elif condition["attribute"] == "type":
                 prop = utils.field_type_from_python_type_name(type(prop).__name__)
-
-        operator = condition["operator"]
-        value = (
-            self._get_field(condition["value"], field)
-            if is_path(condition["value"])
-            else condition["value"]
-        )
 
         if operator == "EQUALS":
             return prop == value
