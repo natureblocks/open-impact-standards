@@ -2089,14 +2089,25 @@ class SchemaValidator:
             if not len(thread.action_ids) and not len(thread.sub_thread_ids):
                 self._unreferenced_threads.append(thread_id)
 
-        self._unreferenced_checkpoints = []
+        nested_checkpoints = []
         for checkpoint in self.schema["checkpoints"]:
             if "alias" in checkpoint:
                 self._checkpoints[checkpoint["alias"]] = checkpoint
 
+            if "dependencies" in checkpoint:
+                for dependency in checkpoint["dependencies"]:
+                    if "checkpoint" in dependency and is_global_ref(dependency["checkpoint"]):
+                        alias = utils.parse_ref_id(dependency["checkpoint"])
+                        nested_checkpoints.append(alias)
+        
+        self._unreferenced_checkpoints = []
+        for checkpoint in self.schema["checkpoints"]:
+            if "alias" in checkpoint:
+                alias = checkpoint["alias"]
                 if (
-                    checkpoint["alias"] not in self._action_checkpoints.values()
-                    and checkpoint["alias"] not in self._thread_checkpoints.values()
+                    alias not in self._action_checkpoints.values()
+                    and alias not in self._thread_checkpoints.values()
+                    and alias not in nested_checkpoints
                 ):
                     self._unreferenced_checkpoints.append(checkpoint["alias"])
 
