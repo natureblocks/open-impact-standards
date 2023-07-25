@@ -313,6 +313,22 @@ class SchemaValidator:
 
         return errors
 
+    def validate_is_referenced(self, path, referenced_value_path, ref_type):
+        referenced_value = self._get_field(
+            self._resolve_path_variables(
+                path, f"{path}.{referenced_value_path}".split(".")
+            )
+        )
+
+        if referenced_value is None:
+            # ref validation will have alrady caught this
+            return []
+
+        if str(referenced_value) in getattr(self, "_unreferenced_" + ref_type):
+            return [f"{self._context(path)}: {ref_type[:-1]} is never referenced"]
+
+        return []
+
     def validate_has_ancestor(
         self, path, descendant_id, descendant_type, ancestor_ref, ancestor_source
     ):
@@ -649,14 +665,6 @@ class SchemaValidator:
             variable_type.is_list = False
             # record the variable type
             self._threads[thread_id].variables[var_name] = variable_type
-
-        # threads must be used as the context of at least one action or sub-thread
-        if not len(self._threads[thread_id].action_ids) and not len(
-            self._threads[thread_id].sub_thread_ids
-        ):
-            errors += [
-                f"{self._context(path)}: thread is never referenced as the context of an action or sub-thread"
-            ]
 
         return errors
 
@@ -2076,9 +2084,21 @@ class SchemaValidator:
                         else None
                     )
 
+        self._unreferenced_threads = []
+        for thread_id, thread in self._threads.items():
+            if not len(thread.action_ids) and not len(thread.sub_thread_ids):
+                self._unreferenced_threads.append(thread_id)
+
+        self._unreferenced_checkpoints = []
         for checkpoint in self.schema["checkpoints"]:
             if "alias" in checkpoint:
                 self._checkpoints[checkpoint["alias"]] = checkpoint
+
+                if (
+                    checkpoint["alias"] not in self._action_checkpoints.values()
+                    and checkpoint["alias"] not in self._thread_checkpoints.values()
+                ):
+                    self._unreferenced_checkpoints.append(checkpoint["alias"])
 
     def _detect_circular_dependencies(self):
         def _explore_checkpoint_recursive(checkpoint, visited, dependency_path):

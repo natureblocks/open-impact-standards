@@ -207,11 +207,7 @@ class TestSchemaValidation:
         schema = fixtures.basic_schema_with_actions(3)
         schema["checkpoints"] = [
             fixtures.checkpoint(0, "depends-on-0", num_dependencies=1),
-            fixtures.checkpoint(1, "depends-on-1", num_dependencies=1),
         ]
-        schema["checkpoints"][1]["dependencies"][0]["compare"]["left"][
-            "ref"
-        ] = "action:{1}"
         schema["threads"] = [
             fixtures.thread(0),
         ]
@@ -241,6 +237,12 @@ class TestSchemaValidation:
         schema["threads"].append(fixtures.thread(1))
         schema["actions"][1]["context"] = "thread:{0}"
         schema["actions"][2]["context"] = "thread:{1}"
+        schema["checkpoints"].append(
+            fixtures.checkpoint(1, "depends-on-1", num_dependencies=1)
+        )
+        schema["checkpoints"][1]["dependencies"][0]["compare"]["left"][
+            "ref"
+        ] = "action:{1}"
         schema["threads"][1]["depends_on"] = "checkpoint:{depends-on-1}"
         schema["threads"][1]["spawn"] = {
             "from": "action:{1}.object",  # list (threaded action)
@@ -338,6 +340,16 @@ class TestSchemaValidation:
             in errors
         )
 
+        def remove_checkpoint(checkpoint_alias):
+            for i in range(len(schema["checkpoints"])):
+                if (
+                    checkpoint_alias
+                    == "checkpoint:{" + schema["checkpoints"][i]["alias"] + "}"
+                ):
+                    del schema["checkpoints"][i]
+                    return
+
+        remove_checkpoint(schema["actions"][0]["depends_on"])
         del schema["actions"][0]["depends_on"]
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
@@ -384,6 +396,7 @@ class TestSchemaValidation:
             in errors
         )
 
+        remove_checkpoint(schema["actions"][0]["depends_on"])
         del schema["actions"][0]["depends_on"]
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
@@ -401,10 +414,7 @@ class TestSchemaValidation:
 
         # threads must contain either an action or a nested thread
         errors = validator.validate(json_string=json.dumps(schema))
-        assert (
-            "root.threads[0]: thread is never referenced as the context of an action or sub-thread"
-            in errors
-        )
+        assert "root.threads[0]: thread is never referenced" in errors
 
         schema["actions"][1]["context"] = "thread:{0}"
         errors = validator.validate(json_string=json.dumps(schema))
@@ -419,10 +429,7 @@ class TestSchemaValidation:
             "as": "$object",
         }
         errors = validator.validate(json_string=json.dumps(schema))
-        assert (
-            "root.threads[1]: thread is never referenced as the context of an action or sub-thread"
-            in errors
-        )
+        assert "root.threads[1]: thread is never referenced" in errors
 
         schema["actions"][1]["context"] = "thread:{1}"
         errors = validator.validate(json_string=json.dumps(schema))
@@ -568,13 +575,15 @@ class TestSchemaValidation:
     def test_duplicate_checkpoint_dependencies(self):
         validator = SchemaValidator()
 
-        schema = fixtures.basic_schema_with_actions(2)
+        schema = fixtures.basic_schema_with_actions(4)
 
         # Two checkpoints cannot have the same dependencies and the same gate type
         schema["checkpoints"] = [
             fixtures.checkpoint(0, "checkpoint-1", "AND", 2),
             fixtures.checkpoint(1, "checkpoint-2", "AND", 2),
         ]
+        schema["actions"][2]["depends_on"] = "checkpoint:{checkpoint-1}"
+        schema["actions"][3]["depends_on"] = "checkpoint:{checkpoint-2}"
 
         errors = validator.validate(json_string=json.dumps(schema))
         assert len(errors) == 1
@@ -623,6 +632,34 @@ class TestSchemaValidation:
         }
         errors = validator.validate(json_string=json.dumps(schema))
         assert errors
+
+    def test_checkpoint_is_referenced(self):
+        validator = SchemaValidator()
+
+        schema = fixtures.basic_schema_with_actions(2)
+        schema["checkpoints"] = [
+            fixtures.checkpoint(0, "test-checkpoint", num_dependencies=1),
+        ]
+
+        # there is nothing referencing the checkpoint
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert "root.checkpoints[0]: checkpoint is never referenced" in errors
+
+        # the error should be resolved by setting the reference...
+
+        # ...on an action
+        schema["actions"][1]["depends_on"] = "checkpoint:{test-checkpoint}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # ...or on a thread
+        del schema["actions"][1]["depends_on"]
+        schema["threads"] = [
+            fixtures.thread(0, "test-checkpoint"),
+        ]
+        schema["actions"][1]["context"] = "thread:{0}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
 
     def test_unordered_action_ids(self):
         validator = SchemaValidator()
@@ -811,9 +848,10 @@ class TestSchemaValidation:
     def test_override_properties(self):
         validator = SchemaValidator()
 
-        schema = fixtures.basic_schema_with_actions(3)
+        schema = fixtures.basic_schema_with_actions(4)
 
         checkpoint_a = fixtures.checkpoint(0, "a", num_dependencies=1)
+        schema["actions"][1]["depends_on"] = "checkpoint:{a}"
         assert len(checkpoint_a["dependencies"]) == 1
         assert "compare" in checkpoint_a["dependencies"][0]
 
@@ -822,6 +860,7 @@ class TestSchemaValidation:
         checkpoint_b = fixtures.checkpoint(1, "b", num_dependencies=0)
         checkpoint_b["dependencies"].append({"checkpoint": "checkpoint:{a}"})
         checkpoint_b["gate_type"] = "OR"
+        schema["actions"][2]["depends_on"] = "checkpoint:{b}"
         schema["checkpoints"] = [checkpoint_a, checkpoint_b]
         errors = validator.validate(json_string=json.dumps(schema))
         assert errors
@@ -831,6 +870,7 @@ class TestSchemaValidation:
         checkpoint_c["dependencies"][0]["compare"]["left"]["ref"] = "action:{1}"
         schema["checkpoints"].append(checkpoint_c)
         checkpoint_b["dependencies"].append({"checkpoint": "checkpoint:{c}"})
+        schema["actions"][3]["depends_on"] = "checkpoint:{c}"
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
@@ -851,6 +891,7 @@ class TestSchemaValidation:
                 ],
             }
         )
+        schema["actions"][2]["depends_on"] = "checkpoint:{test-ds}"
         errors = validator.validate(json_string=json.dumps(schema))
         assert len(errors) == 1
         assert "root.checkpoints[0]: missing required property: gate_type" in errors
@@ -883,12 +924,13 @@ class TestSchemaValidation:
     def test_unique_fields(self):
         validator = SchemaValidator()
 
-        schema = fixtures.basic_schema_with_actions(2)
+        schema = fixtures.basic_schema_with_actions(3)
 
         schema["checkpoints"] = [
             fixtures.checkpoint(0, "some-alias"),
             fixtures.checkpoint(1, "some-alias"),
         ]
+        schema["actions"][2]["depends_on"] = "checkpoint:{some-alias}"
 
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
@@ -1035,6 +1077,7 @@ class TestSchemaValidation:
         schema["checkpoints"].append(
             fixtures.checkpoint(0, "some-alias", num_dependencies=0)
         )
+        schema["actions"][1]["depends_on"] = "checkpoint:{some-alias}"
 
         errors = validator.validate(json_string=json.dumps(schema))
         assert len(errors) == 1

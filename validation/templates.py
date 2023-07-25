@@ -220,6 +220,12 @@ checkpoint = {
     },
     "constraints": {
         "optional": ["abbreviated_description", "supporting_info"],
+        "validation_functions": [
+            {
+                "function": "validate_is_referenced",
+                "args": ["alias", "checkpoints"],
+            },
+        ],
     },
     "if": [
         {
@@ -479,6 +485,10 @@ thread = {
     "constraints": {
         "optional": ["depends_on"],
         "validation_functions": [
+            {
+                "function": "validate_is_referenced",
+                "args": ["id", "threads"],
+            },
             {
                 "function": "validate_thread",
             },
