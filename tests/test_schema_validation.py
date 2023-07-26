@@ -718,17 +718,33 @@ class TestSchemaValidation:
 
         # the error should be resolved by setting the reference...
 
-        # ...on an action
+        # on an action
         schema["actions"][1]["depends_on"] = "checkpoint:{test-checkpoint}"
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
-        # ...or on a thread
+        # on a thread
         del schema["actions"][1]["depends_on"]
         schema["threads"] = [
             fixtures.thread(0, "test-checkpoint"),
         ]
         schema["actions"][1]["context"] = "thread:{0}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # within another checkpoint
+        del schema["actions"][1]["context"]
+        del schema["threads"][0]
+        nested_checkpoint = fixtures.checkpoint(
+            1, "nested-checkpoint", num_dependencies=1
+        )
+        nested_checkpoint["dependencies"][0]["compare"]["right"]["value"] = False
+        schema["checkpoints"].append(nested_checkpoint)
+        schema["checkpoints"][0]["dependencies"].append(
+            {"checkpoint": "checkpoint:{nested-checkpoint}"}
+        )
+        schema["checkpoints"][0]["gate_type"] = "AND"
+        schema["actions"][1]["depends_on"] = "checkpoint:{test-checkpoint}"
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
