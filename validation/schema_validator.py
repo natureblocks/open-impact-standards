@@ -351,7 +351,7 @@ class SchemaValidator:
             return utils.parse_ref_id(dependency["compare"][left_or_right]["ref"])
 
         def validate_has_ancestor_recursive(checkpoint_alias, visited_checkpoints):
-            if not checkpoint_alias in self._checkpoints:
+            if checkpoint_alias not in self._checkpoints:
                 # pattern validation will have caught this
                 return []
 
@@ -517,6 +517,85 @@ class SchemaValidator:
                     return []
 
         return [f"{self._context(path)}: invalid comparison: {left} {operator} {right}"]
+
+    def validate_does_not_depend_on_threaded_context(self, path, field):
+        if (
+            field is None
+            or "depends_on" not in field
+            or not is_global_ref(field["depends_on"])
+        ):
+            return []
+
+        checkpoint = self._resolve_global_ref(field["depends_on"])
+        if checkpoint is None:
+            return []
+
+        # gather a list of the contexts that would be considered implicit for this field
+        implicit_checkpoints = []
+        context = field["context"] if "context" in field else None
+        while context is not None:
+            if (
+                not is_global_ref(context)
+                or not utils.parse_ref_type(context) == "thread"
+            ):
+                break
+
+            thread = self._resolve_global_ref(context)
+            if thread is None:
+                break
+
+            if "depends_on" in thread:
+                implicit_checkpoints.append(utils.parse_ref_id(thread["depends_on"]))
+
+            context = thread["context"] if "context" in thread else None
+
+        def checkpoint_is_implicit(checkpoint):
+            return "alias" in checkpoint and checkpoint["alias"] in implicit_checkpoints
+
+        def find_dependency_context_mismatches_recursive(checkpoint, expected_context):
+            if checkpoint_is_implicit(checkpoint):
+                return []
+
+            context_mismatches = []
+            for dependency in checkpoint["dependencies"]:
+                if "checkpoint" in dependency:
+                    if not is_global_ref(dependency["checkpoint"]):
+                        continue
+
+                    checkpoint = self._resolve_global_ref(dependency["checkpoint"])
+                    if checkpoint is None:
+                        continue
+
+                    context_mismatches += find_dependency_context_mismatches_recursive(
+                        checkpoint, expected_context
+                    )
+                elif "compare" in dependency:
+                    for operand in ["left", "right"]:
+                        if "ref" not in dependency["compare"][operand]:
+                            continue
+
+                        ref = dependency["compare"][operand]["ref"]
+                        if not is_global_ref(ref):
+                            continue
+
+                        referenced_action = self._resolve_global_ref(ref)
+                        if referenced_action is None:
+                            continue
+
+                        if (
+                            "context" in referenced_action
+                            and referenced_action["context"] != expected_context
+                        ):
+                            context_mismatches += [
+                                f"{self._context(path)}: cannot depend on threaded action: {json.dumps(ref)}"
+                            ]
+
+            return context_mismatches
+
+        return find_dependency_context_mismatches_recursive(
+            checkpoint,
+            expected_context=field["context"] if "context" in field else None,
+        )
 
     def validate_thread(self, path, thread):
         spawn = thread["spawn"] if "spawn" in thread else None
@@ -855,14 +934,6 @@ class SchemaValidator:
         else:  # ref is not a variable, so it's a global or local ref
             parent_action = self._get_parent_action(path)
             if is_global_ref(ref):
-                errors += self.validate_has_ancestor(
-                    path,
-                    descendant_id=parent_action["id"],
-                    descendant_type="action",
-                    ancestor_ref=ref,
-                    ancestor_source="ref",
-                )
-
                 ref_type_details = self._resolve_type_from_global_ref(ref)
 
                 if ref_type_details is None:
@@ -2063,12 +2134,19 @@ class SchemaValidator:
                     else:
                         # a psuedo-checkpoint is needed to combine the action's checkpoint with the thread's checkpoint
                         alias = f"_psuedo-checkpoint-{str(action['id'])}"
+
+                        thread_checkpoint_ref = "checkpoint:{" + checkpoint_id + "}"
+                        if action["depends_on"] == thread_checkpoint_ref:
+                            # the action's checkpoint is the same as the thread's checkpoint
+                            # TODO: decide whther to raise en error here
+                            continue
+
                         self.schema["checkpoints"].append(
                             {
                                 "alias": alias,
                                 "gate_type": "AND",
                                 "dependencies": [
-                                    {"checkpoint": thread["depends_on"]},
+                                    {"checkpoint": thread_checkpoint_ref},
                                     {"checkpoint": action["depends_on"]},
                                 ],
                             }
@@ -2096,10 +2174,12 @@ class SchemaValidator:
 
             if "dependencies" in checkpoint:
                 for dependency in checkpoint["dependencies"]:
-                    if "checkpoint" in dependency and is_global_ref(dependency["checkpoint"]):
+                    if "checkpoint" in dependency and is_global_ref(
+                        dependency["checkpoint"]
+                    ):
                         alias = utils.parse_ref_id(dependency["checkpoint"])
                         nested_checkpoints.append(alias)
-        
+
         self._unreferenced_checkpoints = []
         for checkpoint in self.schema["checkpoints"]:
             if "alias" in checkpoint:

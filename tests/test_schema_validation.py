@@ -235,6 +235,7 @@ class TestSchemaValidation:
 
         # field from a threaded action (the threading makes it a list)
         schema["threads"].append(fixtures.thread(1))
+        schema["threads"][1]["context"] = "thread:{0}"
         schema["actions"][1]["context"] = "thread:{0}"
         schema["actions"][2]["context"] = "thread:{1}"
         schema["checkpoints"].append(
@@ -352,7 +353,13 @@ class TestSchemaValidation:
         remove_checkpoint(schema["actions"][0]["depends_on"])
         del schema["actions"][0]["depends_on"]
         errors = validator.validate(json_string=json.dumps(schema))
-        assert not errors
+        # The circular dependency should be gone,
+        # but the context mismatch will still cause an error.
+        assert len(errors) == 1
+        assert (
+            errors[0]
+            == 'root.actions[2] (action id: 2): cannot depend on threaded action: "action:{1}"'
+        )
 
         # a thread cannot depend on an action that references said thread as its context
         schema["actions"][0]["context"] = "thread:{0}"
@@ -594,6 +601,70 @@ class TestSchemaValidation:
 
         schema["checkpoints"][1]["dependencies"][0]["compare"]["right"]["value"] = False
 
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+    def test_depends_on_threaded_action(self):
+        validator = SchemaValidator()
+
+        schema = fixtures.basic_schema_with_actions(4)
+        depends_on_1 = fixtures.checkpoint(1, "depends-on-1", num_dependencies=1)
+        schema["checkpoints"] = [
+            fixtures.checkpoint(0, "depends-on-0", num_dependencies=1),
+            depends_on_1,
+        ]
+        schema["checkpoints"][1]["dependencies"][0]["compare"]["left"][
+            "ref"
+        ] = "action:{1}"
+        schema["threads"] = [
+            fixtures.thread(0, "depends-on-0"),
+        ]
+
+        # An action cannot depend on a threaded action that is not part of the same context
+        schema["actions"][1]["context"] = "thread:{0}"
+        schema["actions"][2]["depends_on"] = "checkpoint:{depends-on-1}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.actions[2] (action id: 2): cannot depend on threaded action: "action:{1}"'
+            in errors
+        )
+
+        # An action should be able to depend on a threaded action that has the same threaded context
+        schema["actions"][2]["context"] = "thread:{0}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # A thread should not be able to depend on an action that is not part of the same context
+        # in which the thread was defined
+        thread_1 = fixtures.thread(1, "depends-on-1")
+        thread_1["spawn"] = {
+            "from": "action:{1}.object",
+            "foreach": "name",
+            "as": "$names",
+        }
+        schema["threads"].append(thread_1)
+
+        schema["actions"][2]["context"] = "thread:{1}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.threads[1]: cannot depend on threaded action: "action:{1}"' in errors
+        )
+
+        # threads should be able to depend on actions that share their context
+        schema["threads"][1]["context"] = "thread:{0}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # the same should hold true for nested threads
+        thread_2 = fixtures.thread(2)
+        thread_2["context"] = "thread:{1}"
+        thread_2["spawn"] = {
+            "from": "action:{1}.object",
+            "foreach": "edge",
+            "as": "$edge",
+        }
+        schema["threads"].append(thread_2)
+        schema["actions"][3]["context"] = "thread:{2}"
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 

@@ -405,6 +405,11 @@ action = {
             "supporting_info",
             "pipeline",
         ],
+        "validation_functions": [
+            {
+                "function": "validate_does_not_depend_on_threaded_context",
+            }
+        ],
     },
     "if": [
         {
@@ -488,6 +493,9 @@ thread = {
             {
                 "function": "validate_is_referenced",
                 "args": ["id", "threads"],
+            },
+            {
+                "function": "validate_does_not_depend_on_threaded_context",
             },
             {
                 "function": "validate_thread",

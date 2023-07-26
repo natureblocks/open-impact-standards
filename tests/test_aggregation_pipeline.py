@@ -59,23 +59,12 @@ class TestAggregationPipeline:
 
             schema["actions"][1]["pipeline"][key1][0][key2] = val
 
-        # ref must refer to an ancestor
         schema["checkpoints"] = [
             fixtures.checkpoint(id=0, alias="depends-on-0", num_dependencies=1),
         ]
-        assert (
-            schema["checkpoints"][0]["dependencies"][0]["compare"]["left"]["ref"]
-            == "action:{0}"
-        )
         schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-0}"
 
-        set_pipeline_value("traverse", "ref", "action:{2}.object.objects")
-        errors = schema_validator.validate(json_string=json.dumps(schema))
-        assert (
-            'root.actions[1].pipeline.traverse[0] (action id: 1): the value of property "ref" must reference an ancestor of action id 1, got "action:{2}.object.objects"'
-            in errors
-        )
-
+        # should be able to traverse an edge collection
         set_pipeline_value("traverse", "ref", "action:{0}.object.objects")
         errors = schema_validator.validate(json_string=json.dumps(schema))
         assert not errors
@@ -106,12 +95,6 @@ class TestAggregationPipeline:
             fixtures.thread(0, "depends-on-0"),
         ]
         schema["actions"][2]["context"] = "thread:{0}"  # action:{2} is now threaded
-        depends_on_2 = fixtures.checkpoint(
-            id=1, alias="depends-on-2", num_dependencies=1
-        )
-        depends_on_2["dependencies"][0]["compare"]["left"]["ref"] = "action:{2}"
-        schema["checkpoints"].append(depends_on_2)
-        schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-2}"
         set_pipeline_value("variables", "name", "$average_minimums")
         set_pipeline_value("variables", "type", "NUMERIC_LIST")
         set_pipeline_value("variables", "initial", [])
