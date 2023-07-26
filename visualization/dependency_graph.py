@@ -1,8 +1,8 @@
-import hashlib
 import networkx as nx
 import json
+from utils import hash_sorted_object
 from validation.schema_validator import SchemaValidator
-from validation.utils import recursive_sort, parse_ref_id
+from validation.utils import parse_ref_id
 from visualization.dependency_chart_layout import DependencyChartLayout
 from services.miro import MiroBoard
 
@@ -86,9 +86,6 @@ class DependencyGraph:
         self._set_node_coordinates()
 
     def _explore_edges_recursive(self, dependent_id, checkpoint_alias):
-        def hash_sorted_object(obj):
-            return hashlib.sha1(json.dumps(recursive_sort(obj)).encode()).digest()
-
         def is_duplicate_dependency(dependent_id, dependency_obj):
             if dependent_id not in self.dependency_hashes:
                 self.dependency_hashes[dependent_id] = []

@@ -1,7 +1,7 @@
 import copy
-import hashlib
 import json
 import re
+from utils import recursive_sort, hash_sorted_object, objects_are_identical
 from validation.field_type_details import FieldTypeDetails
 from validation.pipeline_variable import PipelineVariable
 from validation.thread import Thread
@@ -406,10 +406,7 @@ class SchemaValidator:
                 f"{self._context(path)}: invalid comparison: {left} {operator} {right}: both operands cannot be literals"
             ]
 
-        def hash_sorted_object(obj):
-            return hashlib.sha1(json.dumps(utils.recursive_sort(obj)).encode()).digest()
-
-        if hash_sorted_object(left) == hash_sorted_object(right):
+        if objects_are_identical(left, right):
             return [
                 f"{self._context(path)}: invalid comparison: {left} {operator} {right}: operands are identical"
             ]
@@ -1597,9 +1594,7 @@ class SchemaValidator:
                         if prop in item:
                             unique_obj[prop] = item[prop]
 
-                    obj_hash = hashlib.sha1(
-                        json.dumps(utils.recursive_sort(unique_obj)).encode()
-                    ).digest()
+                    obj_hash = hash_sorted_object(unique_obj)
 
                     unique_values[obj_hash] = obj_hash not in unique_values
                     hash_map[obj_hash] = unique_obj
@@ -1610,7 +1605,7 @@ class SchemaValidator:
                             key = (
                                 sub_item
                                 if not isinstance(sub_item, dict)
-                                else json.dumps(utils.recursive_sort(sub_item))
+                                else json.dumps(recursive_sort(sub_item))
                             )
                             unique_values[key] = key not in unique_values
                     elif field_name in item:
