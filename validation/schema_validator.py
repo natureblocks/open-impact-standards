@@ -2061,7 +2061,11 @@ class SchemaValidator:
 
                     self._threads[parent_thread_id].sub_thread_ids.append(thread_id)
 
-                    checkpoint_id = utils.parse_ref_id(parent_thread["depends_on"])
+                    # Normalize to alias (ref could be a different field)
+                    checkpoint = self._resolve_global_ref(parent_thread["depends_on"])
+                    if checkpoint is None or "alias" not in checkpoint:
+                        continue
+                    checkpoint_id = checkpoint["alias"]
 
                     if "depends_on" not in thread:
                         self._thread_checkpoints[thread_id] = checkpoint_id
@@ -2114,7 +2118,11 @@ class SchemaValidator:
                     self._threads[thread_id].action_ids.append(action_id)
 
                     if "depends_on" in thread:
-                        checkpoint_id = utils.parse_ref_id(thread["depends_on"])
+                        # Normalize to alias (ref could be a different field)
+                        checkpoint = self._resolve_global_ref(thread["depends_on"])
+                        if checkpoint is None or "alias" not in checkpoint:
+                            continue
+                        checkpoint_id = checkpoint["alias"]
                     elif "context" in thread and thread_id in self._thread_checkpoints:
                         checkpoint_id = self._thread_checkpoints[thread_id]
                     else:
