@@ -182,9 +182,21 @@ def initial_matches_type(initial_type_details, var_type):
 def field_type_details_from_initial_value(variable):
     value = variable["initial"]
     if value is None:
+        if variable["type"] in [
+            "BOOLEAN_LIST",
+            "STRING_LIST",
+            "NUMERIC_LIST",
+            "OBJECT_LIST",
+        ]:
+            is_list = True
+            item_type = variable["type"][: -len("_LIST")]
+        else:
+            is_list = False
+            item_type = variable["type"]
+
         return FieldTypeDetails(
-            is_list=False,
-            item_type=variable["type"],
+            is_list=is_list,
+            item_type=item_type,
             item_tag=None,
         )
 

@@ -89,7 +89,7 @@ variable = {
         },
         "type": {
             "type": "enum",
-            "values": list(field_types) + ["EDGE", "EDGE_COLLECTION"],
+            "values": list(field_types) + ["OBJECT", "OBJECT_LIST"],
         },
         "initial": {
             "types": [
@@ -184,7 +184,7 @@ apply = {
                 },
                 {
                     "type": "ref",
-                    "ref_types": ["action", "thread"],
+                    "ref_types": ["action"],
                 },
             ],
         },

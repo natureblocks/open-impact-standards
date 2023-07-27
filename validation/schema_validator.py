@@ -1078,14 +1078,11 @@ class SchemaValidator:
                 apply["from"], path=path
             )
         elif (
-            self._validate_ref("", apply["from"], {"ref_types": ["action", "thread"]})
-            == []
+            is_global_ref(apply["from"])
+            and utils.parse_ref_type(apply["from"]) == "action"
         ):
             # global ref
-            ref_type_details = self._resolve_type_from_object_path(
-                object_tag=self._resolve_global_ref(apply["from"]),
-                path=apply["from"][len(self._resolve_global_ref(apply["from"])) :],
-            )
+            ref_type_details = self._resolve_type_from_global_ref(apply["from"])
         else:
             # pattern validation will have already caught this
             return []
@@ -1112,11 +1109,12 @@ class SchemaValidator:
         left_operand_is_null = (
             not to_pipeline_var.assigned and to_pipeline_var.initial is None
         )
-        right_operand_type = pipeline_utils.determine_right_operand_type(
-            apply, ref_type_details, self
-        )
 
         try:
+            right_operand_type = pipeline_utils.determine_right_operand_type(
+                apply, ref_type_details, self
+            )
+
             pipeline_utils.validate_operation(
                 left_operand_type,
                 apply["method"],
