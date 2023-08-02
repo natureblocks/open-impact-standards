@@ -49,6 +49,10 @@ def validate_operation(
             "NUMERIC_LIST": ["SET"],
         },
         "OBJECT": {"OBJECT": ["SET"]},
+        "OBJECT_LIST": {
+            "OBJECT_LIST": ["SET", "CONCAT"],
+            "OBJECT": ["APPEND", "PREPEND"],
+        },
     }
 
     if (
@@ -61,7 +65,9 @@ def validate_operation(
         )
 
 
-def determine_right_operand_type(operation, ref_type_details, schema_validator):
+def determine_right_operand_type(
+    path, operation, ref_type_details, pipeline_scope, schema_validator
+):
     if "aggregate" in operation:
         field_to_aggregate = operation["aggregate"]["field"]
         operator = operation["aggregate"]["operator"]
@@ -143,13 +149,70 @@ def determine_right_operand_type(operation, ref_type_details, schema_validator):
         if not ref_type_details.is_list:
             raise Exception("cannot filter non-list type")
 
-        # TODO: validate filter where clause
-        return ref_type_details
+        # are left and right comparable by the operator?
+        for i in range(len(operation["filter"]["where"])):
+            comparison = operation["filter"]["where"][i]
+            operand_types = {}
+            for side in ["left", "right"]:
+                operand = comparison[side]
+
+                if isinstance(operand, dict):
+                    if "ref" not in operand:
+                        raise Exception("invalid filter operand")
+
+                    split_ref = operand["ref"].split(".")
+                    if split_ref[0] == "$_item":
+                        # filter variable
+                        if len(split_ref) > 1:
+                            # need to resolve path
+                            if ref_type_details.item_tag is None:
+                                raise Exception(
+                                    "cannot resolve path from non-object type"
+                                )
+
+                            operand_types[
+                                side
+                            ] = schema_validator._resolve_type_from_object_path(
+                                ref_type_details.item_tag, split_ref[1:]
+                            )
+                        else:
+                            # same type as the collection being filtered, but de-listified
+                            operand_types[side] = FieldTypeDetails(
+                                is_list=False,
+                                item_type=ref_type_details.item_type,
+                                item_tag=ref_type_details.item_tag,
+                            )
+                    else:
+                        # some other ref type
+                        operand_types[side] = schema_validator.resolve_ref_type_details(
+                            path,
+                            ref=operand["ref"],
+                            pipeline_scope=pipeline_scope,
+                        )
+                else:
+                    # scalar
+                    operand_types[side] = field_type_details_from_scalar(operand)
+
+                if operand_types[side] is None:
+                    raise Exception(f"invalid filter operand: {json.dumps(operand)}")
+
+            left_type = operand_types["left"].to_string()
+            right_type = operand_types["right"].to_string()
+            if schema_validator.types_are_comparable(
+                left_type,
+                right_type,
+                comparison["operator"],
+            ):
+                return ref_type_details
+
+            raise Exception(
+                f"invalid comparison: {left_type} {comparison['operator']} {right_type}"
+            )
 
     if "select" in operation:
         # ref must be an edge or edge collection
         if ref_type_details.item_tag is None:
-            raise Exception("cannot select from non-edge type")
+            raise Exception("cannot select from non-object type")
 
         # try to resolve the path
         resulting_type = schema_validator._resolve_type_from_object_path(
@@ -160,6 +223,15 @@ def determine_right_operand_type(operation, ref_type_details, schema_validator):
             raise Exception(
                 f"field {json.dumps(operation['select'])} not found on object type {json.dumps(ref_type_details.item_tag)}"
             )
+
+        if ref_type_details.is_list:
+            # selecting from an edge collection,
+            # which means that we are selecting from each item in the list,
+            # so the resulting type is a list of the selected type
+            if resulting_type.is_list:
+                raise Exception(f"nested list types are not supported")
+
+            resulting_type.is_list = True
 
         return resulting_type
 
@@ -179,20 +251,19 @@ def initial_matches_type(initial_type_details, var_type):
     )
 
 
-def field_type_details_from_initial_value(variable):
-    value = variable["initial"]
+def field_type_details_from_scalar(value, expected_type=None):
     if value is None:
-        if variable["type"] in [
+        if expected_type is not None and expected_type in [
             "BOOLEAN_LIST",
             "STRING_LIST",
             "NUMERIC_LIST",
             "OBJECT_LIST",
         ]:
             is_list = True
-            item_type = variable["type"][: -len("_LIST")]
+            item_type = expected_type[: -len("_LIST")]
         else:
             is_list = False
-            item_type = variable["type"]
+            item_type = expected_type
 
         return FieldTypeDetails(
             is_list=is_list,
@@ -219,10 +290,15 @@ def field_type_details_from_initial_value(variable):
                 f"list items must be one of the following types: {json.dumps(valid_list_item_types)}"
             )
 
+    if (
+        item_type is None
+        and expected_type is not None
+        and expected_type.endswith("_LIST")
+    ):
+        item_type = expected_type[: -len("_LIST")]
+
     return FieldTypeDetails(
         is_list=True,
-        item_type=item_type or variable["type"][: -len("_LIST")]
-        if variable["type"].endswith("_LIST")
-        else None,
+        item_type=item_type,
         item_tag=None,
     )

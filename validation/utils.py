@@ -4,8 +4,9 @@ from enums import ref_types
 
 
 def is_path(value):
+    # TODO: make path validation stricter
     return isinstance(value, str) and (
-        "." in value or (value[0] == "{" and value[-1] == "}")
+        "." in value and value[0] != "^" or (value[0] == "{" and value[-1] == "}")
     )
 
 
@@ -27,6 +28,10 @@ def is_variable(value):
 
 def is_local_variable(value):
     return isinstance(value, str) and re.match(patterns.local_variable, value)
+
+
+def is_filter_ref(value):
+    return isinstance(value, str) and re.match(patterns.filter_ref, value)
 
 
 def parse_ref_id(value):

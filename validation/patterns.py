@@ -7,6 +7,9 @@ local_variable = "^\$_.+$"
 # must begin with "$", but not the reserved "$_"
 variable = "^\$(?!_).+$"
 
+# a reference to a collection or field on a collection in an aggregation pipeline filter
+filter_ref = "^\$_item(\..+)?"
+
 # hex color code
 hex_code = "^#(?:[0-9a-fA-F]{3}){1,2}$"
 

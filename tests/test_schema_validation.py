@@ -794,7 +794,7 @@ class TestSchemaValidation:
         assert len(errors) == 1
         assert (
             errors[0]
-            == f"root: expected object, got {str(type(json.loads(invalid_root)))}"
+            == f"root: expected object, got {type(json.loads(invalid_root)).__name__}"
         )
 
         # An empty root object should yield an error for each required property
@@ -1112,7 +1112,7 @@ class TestSchemaValidation:
             assert len(errors) == 1
             assert (
                 errors[0]
-                == f"root.parties[0]: expected object, got {str(type(invalid_array[0]))}"
+                == f"root.parties[0]: expected object, got {type(invalid_array[0]).__name__}"
             )
 
         # Arrays must conform to the specified template

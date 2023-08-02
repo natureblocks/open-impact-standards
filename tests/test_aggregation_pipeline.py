@@ -669,6 +669,110 @@ class TestAggregationPipeline:
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
+    def test_filter(self):
+        validator = SchemaValidator()
+        schema = fixtures.basic_schema_with_actions(1)
+
+        def set_filter_value(key, val):
+            schema["actions"][0]["pipeline"]["apply"][0]["filter"]["where"][0][
+                key
+            ] = val
+
+        # simple filter
+        schema["actions"][0]["pipeline"] = {
+            "context": "TEMPLATE",
+            "variables": [
+                {
+                    "name": "$object_list",
+                    "type": "OBJECT_LIST",
+                    "initial": [],
+                },
+                {
+                    "name": "$numbers_above_tree_fiddy",
+                    "type": "NUMERIC_LIST",
+                    "initial": [],
+                },
+                {
+                    "name": "$some_number",
+                    "type": "NUMERIC",
+                    "initial": 0,
+                },
+            ],
+            "apply": [
+                {
+                    "from": "$_object.objects",
+                    "filter": {
+                        "where": [
+                            {
+                                "left": {
+                                    "ref": "$_item.number",
+                                },
+                                "operator": "GREATER_THAN",
+                                "right": 3.50,
+                            },
+                        ],
+                    },
+                    "method": "CONCAT",
+                    "to": "$object_list",
+                },
+                {
+                    "from": "$object_list",
+                    "select": "number",
+                    "method": "CONCAT",
+                    "to": "$numbers_above_tree_fiddy",
+                },
+            ],
+            "output": [
+                {
+                    "from": "$numbers_above_tree_fiddy",
+                    "to": "numbers",
+                },
+            ],
+        }
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # the filter reference can be the left or right operand
+        set_filter_value("left", 3.50)
+        set_filter_value("operator", "LESS_THAN")
+        set_filter_value("right", {"ref": "$_item.number"})
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # one of the operands must be a filter variable
+        non_filter_variables = [
+            {"ref": "$_object.number"},
+            {"ref": "action:{0}.object.number"},
+            {"ref": "$some_number"},
+            4,
+        ]
+        for var in non_filter_variables:
+            set_filter_value("right", var)
+            errors = validator.validate(json_string=json.dumps(schema))
+            assert (
+                'root.actions[0].pipeline.apply[0].filter.where[0].left (action id: 0): "left" and/or "right" must reference the filter variable ("$_item")'
+                in errors
+            )
+
+        # both operands can be a filter variable
+        set_filter_value("left", {"ref": "$_item.number"})
+        set_filter_value("operator", "LESS_THAN_OR_EQUAL_TO")
+        set_filter_value("right", {"ref": "$_item.edge.number"})
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # operator must be compatible with the operand types
+        set_filter_value("operator", "CONTAINS")
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.actions[0].pipeline.apply[0] (action id: 0): invalid comparison: NUMERIC CONTAINS NUMERIC"
+            in errors
+        )
+
+        set_filter_value("left", {"ref": "$_item.edge.numbers"})
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
     def test_apply(self):
         validator = SchemaValidator()
         schema = fixtures.basic_schema_with_actions(1)

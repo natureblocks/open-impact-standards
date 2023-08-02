@@ -209,7 +209,38 @@ apply = {
         },
         "filter": {
             "type": "object",
-            "template": "pipeline_query",
+            "properties": {
+                "where": {
+                    "type": "array",
+                    "values": {
+                        "type": "object",
+                        "template": "filter_comparison",
+                    },
+                    "constraints": {
+                        "min_length": 1,
+                    },
+                },
+                "gate_type": {
+                    "type": "enum",
+                    "values": gate_types,
+                },
+            },
+            "if": [
+                {
+                    "property": "where",
+                    "attribute": "length",
+                    "operator": "LESS_THAN",
+                    "value": 2,
+                    "then": {
+                        "add_constraints": {
+                            "forbidden": {
+                                "properties": ["gate_type"],
+                                "reason": "gate_type is irrelevant when a query has fewer than 2 comparisons.",
+                            },
+                        },
+                    },
+                },
+            ],
         },
         "sort": {
             "type": "array",
@@ -227,35 +258,23 @@ apply = {
         "select": {"type": "string"},
     },
     "mutually_exclusive": ["aggregate", "filter", "sort", "select"],
+    "property_validation_priority": ["from"],
 }
 
-pipeline_query = {
-    "type": "object",
-    "properties": {
-        "gate": {
-            "type": "enum",
-            "values": gate_types,
-        },
-        "where": {
-            "type": "array",
-            "values": {
-                "type": "object",
-                "any_of_templates": ["comparison", "pipeline_query"],
-            },
-        },
-    },
-}
-
-comparison = {
+filter_comparison = {
     "type": "object",
     "properties": {
         "left": {
             "types": [
-                {"type": "string"},
+                {
+                    "type": "ref",
+                    "ref_types": ["filter_ref"],
+                },
                 {
                     "type": "object",
                     "template": "contextual_ref",
                 },
+                {"type": "scalar"},
             ],
         },
         "operator": {
@@ -264,14 +283,88 @@ comparison = {
         },
         "right": {
             "types": [
-                {"type": "string"},
+                {
+                    "type": "ref",
+                    "ref_types": ["filter_ref"],
+                },
                 {
                     "type": "object",
                     "template": "contextual_ref",
                 },
+                {"type": "scalar"},
             ],
         },
     },
+    "if": [
+        {
+            "conditions": [
+                {
+                    "property": "left",
+                    "operator": "DOES_NOT_CONTAIN_KEY",
+                    "value": "ref",
+                },
+                {
+                    "property": "left.ref",
+                    "operator": "DOES_NOT_MATCH_PATTERN",
+                    "value": patterns.filter_ref,
+                }
+            ],
+            "gate_type": "OR",
+            "then": {
+                "override_properties": {
+                    "right": {
+                        "type": "object",
+                        "properties": {
+                            "ref": {
+                                "type": "ref",
+                                "ref_types": ["filter_ref"],
+                            }
+                        },
+                        "error_replacements": [
+                            {
+                                "pattern": "expected object, got ",
+                                "replace_with": '"left" and/or "right" must reference the filter variable ("$_item")'
+                            },
+                        ],
+                    },
+                },
+            },
+        },
+        {
+            "conditions": [
+                {
+                    "property": "right",
+                    "operator": "DOES_NOT_CONTAIN_KEY",
+                    "value": "ref",
+                },
+                {
+                    "property": "right.ref",
+                    "operator": "DOES_NOT_MATCH_PATTERN",
+                    "value": patterns.filter_ref,
+                },
+            ],
+            "gate_type": "OR",
+            "then": {
+                "override_properties": {
+                    "left": {
+                        "type": "object",
+                        "properties": {
+                            "ref": {
+                                "type": "ref",
+                                "ref_types": ["filter_ref"],
+                            }
+                        },
+                        "error_replacements": [
+                            {
+                                "pattern": "expected object, got ",
+                                "replace_with": '"left" and/or "right" must reference the filter variable ("$_item")'
+                            },
+                        ],
+                    },
+                },
+            },
+        },
+    ],
 }
 
 contextual_ref = {
@@ -281,7 +374,26 @@ contextual_ref = {
             "type": "enum",
             "values": ["TEMPLATE", "RUNTIME"],
         },
-        "ref": {"type": "string"},
+        "ref": {
+            "types": [
+                {
+                    "type": "ref",
+                    "ref_types": ["action"], #TODO: add other ref types after runtime variables have been determined
+                },
+                {
+                    "type": "string",
+                    "pattern": patterns.local_variable,
+                    "pattern_description": "local variable name ",
+                },
+                {
+                    "type": "string",
+                    "pattern": patterns.variable,
+                    "pattern_description": "variable name ",
+                },
+            ],
+        },
     },
-    "optional": ["context"],
+    "constraints": {
+        "optional": ["context"],
+    },
 }
