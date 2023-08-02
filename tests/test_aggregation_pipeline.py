@@ -773,6 +773,118 @@ class TestAggregationPipeline:
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
+        # gate_type is forbidden for single conditions
+        schema["actions"][0]["pipeline"]["apply"][0]["filter"]["gate_type"] = "AND"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.actions[0].pipeline.apply[0].filter (action id: 0): forbidden property specified: gate_type; reason: gate_type is irrelevant when a query has fewer than 2 comparisons."
+            in errors
+        )
+
+        # gate_type is required when there is more than one filter condition
+        del schema["actions"][0]["pipeline"]["apply"][0]["filter"]["gate_type"]
+        schema["actions"][0]["pipeline"]["apply"][0]["filter"]["where"].append(
+            {
+                "left": {
+                    "ref": "$_item.name",
+                },
+                "operator": "CONTAINS",
+                "right": "some string",
+            }
+        )
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.actions[0].pipeline.apply[0].filter (action id: 0): missing required property: gate_type"
+            in errors
+        )
+
+        schema["actions"][0]["pipeline"]["apply"][0]["filter"]["gate_type"] = "AND"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # complex gate combinations are allowed
+        schema["actions"][0]["pipeline"]["apply"][0]["filter"]["where"].append(
+            {
+                "where": [
+                    {
+                        "left": {
+                            "ref": "$_item.completed",
+                        },
+                        "operator": "EQUALS",
+                        "right": True,
+                    },
+                    {
+                        "left": {
+                            "ref": "$_item.edge.numbers",
+                        },
+                        "operator": "DOES_NOT_CONTAIN",
+                        "right": "$_item.number",
+                    },
+                ],
+                "gate_type": "OR",
+            },
+        )
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # nested condition groups must specify at least two conditions
+        schema["actions"][0]["pipeline"]["apply"][0]["filter"]["where"][2][
+            "where"
+        ].pop()
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.actions[0].pipeline.apply[0].filter.where[2].where (action id: 0): must contain at least 2 item(s), got 1"
+            in errors
+        )
+
+        # should be able to nest condition groups to arbitrary depths
+        schema["actions"][0]["pipeline"]["apply"][0]["filter"]["where"][2][
+            "where"
+        ].append(
+            {
+                "where": [
+                    {
+                        "left": {
+                            "ref": "$_item.edge.edge.completed",
+                        },
+                        "operator": "EQUALS",
+                        "right": False,
+                    },
+                    {
+                        "where": [
+                            {
+                                "right": 1,
+                                "operator": "EQUALS",
+                                "left": {
+                                    "ref": "$_item.edge.edge.edge.number",
+                                },
+                            },
+                            {
+                                "left": {
+                                    "ref": "$_item.edge.edge.edge.edge.edge.edge.numbers", # weeeee!
+                                },
+                                "operator": "DOES_NOT_CONTAIN",
+                                "right": {
+                                    "ref": "$_item.number",
+                                },
+                            },
+                        ],
+                        "gate_type": "AND",
+                    },
+                    {
+                        "left": {
+                            "ref": "$_item.objects.number",
+                        },
+                        "operator": "CONTAINS",
+                        "right": "$_item.number",
+                    },
+                ],
+                "gate_type": "OR",
+            }
+        )
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
     def test_apply(self):
         validator = SchemaValidator()
         schema = fixtures.basic_schema_with_actions(1)

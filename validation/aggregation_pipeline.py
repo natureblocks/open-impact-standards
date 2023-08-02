@@ -214,7 +214,7 @@ apply = {
                     "type": "array",
                     "values": {
                         "type": "object",
-                        "template": "filter_comparison",
+                        "any_of_templates": ["filter_comparison", "nested_filter_query"],
                     },
                     "constraints": {
                         "min_length": 1,
@@ -259,6 +259,26 @@ apply = {
     },
     "mutually_exclusive": ["aggregate", "filter", "sort", "select"],
     "property_validation_priority": ["from"],
+}
+
+nested_filter_query = {
+    "type": "object",
+    "properties": {
+        "where": {
+            "type": "array",
+            "values": {
+                "type": "object",
+                "any_of_templates": ["filter_comparison", "nested_filter_query"],
+            },
+            "constraints": {
+                "min_length": 2,
+            },
+        },
+        "gate_type": {
+            "type": "enum",
+            "values": gate_types,
+        },
+    },
 }
 
 filter_comparison = {

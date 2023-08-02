@@ -2068,13 +2068,15 @@ class SchemaValidator:
         # does the field contain the key?
         if operator == "CONTAINS_KEY":
             return (
-                isinstance(field[condition["property"]], dict)
+                condition["property"] in field
+                and isinstance(field[condition["property"]], dict)
                 and value in field[condition["property"]]
             )
 
         if operator == "DOES_NOT_CONTAIN_KEY":
             return (
-                not isinstance(field[condition["property"]], dict)
+                condition["property"] not in field
+                or not isinstance(field[condition["property"]], dict)
                 or value not in field[condition["property"]]
             )
 
