@@ -369,6 +369,100 @@ class TestAggregationPipeline:
             in errors
         )
 
+    def test_variable_is_used(self):
+        validator = SchemaValidator()
+        schema = fixtures.basic_schema_with_actions(1)
+
+        # unused varaibles should throw a warning
+        schema["actions"][0]["pipeline"] = {
+            "context": "TEMPLATE",
+            "variables": [
+                {
+                    "name": "$total",
+                    "type": "NUMERIC",
+                    "initial": 0,
+                },
+                {
+                    "name": "$names",
+                    "type": "STRING_LIST",
+                    "initial": [],
+                },
+            ],
+            "apply": [
+                {
+                    "from": "$_object",
+                    "aggregate": {
+                        "field": "numbers",
+                        "operator": "SUM",
+                    },
+                    "method": "ADD",
+                    "to": "$total",
+                },
+            ],
+            "output": [
+                {
+                    "from": "$total",
+                    "to": "number",
+                },
+            ],
+        }
+        validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.actions[0].pipeline (action id: 0): variable declared but not used: "$names"'
+            in validator.warnings
+        )
+
+        # if a variable from a parent scope is used in a nested traversal scope,
+        # there should be no warning
+        schema["actions"][0]["pipeline"]["traverse"] = [
+            {
+                "ref": "$_object.objects",
+                "foreach": {
+                    "as": "$edge",
+                    "apply": [
+                        {
+                            "from": "$edge",
+                            "select": "name",
+                            "method": "APPEND",
+                            "to": "$names",
+                        },
+                    ],
+                },
+            },
+        ]
+        validator.validate(json_string=json.dumps(schema))
+        assert not validator.warnings
+
+        # unused varables in traversal scopes should throw warnings
+        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"]["variables"] = [
+            {
+                "name": "$average",
+                "type": "NUMERIC",
+                "initial": 0,
+            }
+        ]
+        validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.actions[0].pipeline (action id: 0): variable declared but not used: "$average"'
+            in validator.warnings
+        )
+
+        # As long as the variable is assigned a value somewhere, there should be no warning.
+        # Note that as it stands, validation doesn't care whether a variable contributes to an output.
+        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"]["apply"].append(
+            {
+                "from": "$edge",
+                "method": "ADD",
+                "to": "$average",
+                "aggregate": {
+                    "field": "numbers",
+                    "operator": "AVERAGE",
+                },
+            },
+        )
+        validator.validate(json_string=json.dumps(schema))
+        assert not validator.warnings
+
     def test_variable_scope(self):
         validator = SchemaValidator()
         schema = fixtures.basic_schema_with_actions(1)
@@ -861,7 +955,7 @@ class TestAggregationPipeline:
                             },
                             {
                                 "left": {
-                                    "ref": "$_item.edge.edge.edge.edge.edge.edge.numbers", # weeeee!
+                                    "ref": "$_item.edge.edge.edge.edge.edge.edge.numbers",  # weeeee!
                                 },
                                 "operator": "DOES_NOT_CONTAIN",
                                 "right": {

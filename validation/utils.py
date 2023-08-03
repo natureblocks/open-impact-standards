@@ -54,8 +54,8 @@ def get_template(template_name):
         return getattr(templates, template_name)
     elif hasattr(oisql, template_name):
         return getattr(oisql, template_name)
-    elif hasattr(aggregation_pipeline, template_name):
-        return getattr(aggregation_pipeline, template_name)
+    elif hasattr(pipeline_templates, template_name):
+        return getattr(pipeline_templates, template_name)
 
     raise Exception(f"Template not found: {template_name}")
 

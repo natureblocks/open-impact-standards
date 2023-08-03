@@ -881,6 +881,12 @@ class SchemaValidator:
                     pipeline_scope,
                     apply=field["apply"][i],
                 )
+        
+        # were any variables declared but not used?
+        for variables in pipeline.variables.values():
+            for var_name, var in variables.items():
+                if not var.assigned:
+                    self.warnings.append(f"{self._context(path)}: variable declared but not used: {json.dumps(var_name)}")
 
         return errors
 
