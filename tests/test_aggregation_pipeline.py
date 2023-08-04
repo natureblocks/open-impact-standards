@@ -1257,3 +1257,105 @@ class TestAggregationPipeline:
             validator._resolve_type_from_object_path(
                 "NodeC", "d_collection.numeric_list_field"
             )
+
+    def test_global_ref_refers_to_local_object(self):
+        validator = SchemaValidator()
+        schema = fixtures.basic_schema_with_actions(1)
+
+        # an "apply" object's "from" property may reference the local object...
+        # should throw a warning if a global ref is used to do this.
+        schema["actions"][0]["pipeline"] = {
+            "context": "TEMPLATE",
+            "variables": [
+                {
+                    "name": "$some_var",
+                    "type": "NUMERIC_LIST",
+                    "initial": [],
+                },
+            ],
+            "apply": [
+                {
+                    "from": "action:{0}.object.number",
+                    "method": "APPEND",
+                    "to": "$some_var",
+                },
+            ],
+            "output": [
+                {
+                    "from": "$some_var",
+                    "to": "numbers",
+                },
+            ],
+        }
+        validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.actions[0].pipeline.apply[0].from (action id: 0): global ref refers to the local object -- consider using "$_object" instead to reference the local object.'
+            in validator.warnings
+        )
+
+        schema["actions"][0]["pipeline"]["apply"][0]["from"] = "$_object.number"
+        validator.validate(json_string=json.dumps(schema))
+        assert not validator.warnings
+
+        # a "traverse" object's "ref" property may reference the local object...
+        # should throw a warning if a global ref is used to do this.
+        schema["actions"][0]["pipeline"]["traverse"] = [
+            {
+                "ref": "action:{0}.object.objects",
+                "foreach": {
+                    "as": "$edge",
+                    "apply": [],
+                },
+            },
+        ]
+        validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.actions[0].pipeline.traverse[0].ref (action id: 0): global ref refers to the local object -- consider using "$_object" instead to reference the local object'
+            in validator.warnings
+        )
+
+        schema["actions"][0]["pipeline"]["traverse"][0]["ref"] = "$_object.objects"
+        validator.validate(json_string=json.dumps(schema))
+        assert not validator.warnings
+
+        # an "apply" object nested inside a traversal may also reference the local object
+        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"]["apply"] = [
+            {
+                "from": "action:{0}.object.number",
+                "method": "APPEND",
+                "to": "$some_var",
+            },
+        ]
+        validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.actions[0].pipeline.traverse[0].foreach.apply[0].from (action id: 0): global ref refers to the local object -- consider using "$_object" instead to reference the local object.'
+            in validator.warnings
+        )
+
+        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"]["apply"][0][
+            "from"
+        ] = "$_object.number"
+        validator.validate(json_string=json.dumps(schema))
+        assert not validator.warnings
+
+        # a nested traversal object's "ref" property may reference the local object
+        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"]["traverse"] = [
+            {
+                "ref": "action:{0}.object.objects",
+                "foreach": {
+                    "as": "$edge",
+                    "apply": [],
+                },
+            },
+        ]
+        validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.actions[0].pipeline.traverse[0].foreach.traverse[0].ref (action id: 0): global ref refers to the local object -- consider using "$_object" instead to reference the local object'
+            in validator.warnings
+        )
+
+        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"]["traverse"][0][
+            "ref"
+        ] = "$_object.objects"
+        validator.validate(json_string=json.dumps(schema))
+        assert not validator.warnings

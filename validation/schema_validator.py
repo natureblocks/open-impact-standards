@@ -881,12 +881,14 @@ class SchemaValidator:
                     pipeline_scope,
                     apply=field["apply"][i],
                 )
-        
+
         # were any variables declared but not used?
         for variables in pipeline.variables.values():
             for var_name, var in variables.items():
                 if not var.assigned:
-                    self.warnings.append(f"{self._context(path)}: variable declared but not used: {json.dumps(var_name)}")
+                    self.warnings.append(
+                        f"{self._context(path)}: variable declared but not used: {json.dumps(var_name)}"
+                    )
 
         return errors
 
@@ -941,6 +943,14 @@ class SchemaValidator:
         else:  # ref is not a variable, so it's a global or local ref
             parent_action = self._get_parent_action(path)
             if is_global_ref(ref):
+                # warn if the global ref refers to the local object
+                if utils.has_reference_to_template_object_type(
+                    traversal, "ref", "action"
+                ) and utils.parse_ref_id(ref) == str(parent_action["id"]):
+                    self.warnings.append(
+                        f'{self._context(f"{path}.ref")}: global ref refers to the local object -- consider using "$_object" instead to reference the local object'
+                    )
+
                 ref_type_details = self._resolve_type_from_global_ref(ref)
 
                 if ref_type_details is None:
@@ -1090,6 +1100,19 @@ class SchemaValidator:
             # there will already be validation errors for the missing fields,
             # and we cannot validate further without them.
             return []
+
+        # is apply["from"] a global reference to the local object?
+        if utils.has_reference_to_template_object_type(apply, "from", "action"):
+            parent_action = self._get_parent_action(path)
+            if (
+                parent_action is not None
+                and "id" in parent_action
+                and utils.parse_ref_id(apply["from"]) == str(parent_action["id"])
+            ):
+                self.warnings.append(
+                    f'{self._context(f"{path}.from")}: global ref refers to the local object -- consider using "$_object" instead to reference the local object.'
+                )
+
         try:
             ref_type_details = self.resolve_ref_type_details(
                 path,

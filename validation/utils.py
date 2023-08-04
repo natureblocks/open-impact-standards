@@ -1,6 +1,15 @@
 import re
-from validation import templates, oisql, aggregation_pipeline, patterns
+from validation import templates, oisql, pipeline_templates, patterns
 from enums import ref_types
+
+
+def has_reference_to_template_object_type(obj, key, template_object_type):
+    return (
+        isinstance(obj, dict)
+        and key in obj
+        and is_global_ref(obj[key])
+        and parse_ref_type(obj[key]) == template_object_type
+    )
 
 
 def is_path(value):
