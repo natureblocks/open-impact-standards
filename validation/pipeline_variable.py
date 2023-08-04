@@ -5,4 +5,5 @@ class PipelineVariable:
         self.type_details = type_details
         self.initial = initial  # relevent for checking null initial value, but irrelevant after assingment
         self.assigned = assigned
+        self.used = False
         self.is_loop_variable = is_loop_variable

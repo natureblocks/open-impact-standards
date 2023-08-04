@@ -371,10 +371,10 @@ class TestAggregationPipeline:
 
     def test_variable_is_used(self):
         validator = SchemaValidator()
-        schema = fixtures.basic_schema_with_actions(1)
+        schema = fixtures.basic_schema_with_actions(2)
 
         # unused varaibles should throw a warning
-        schema["actions"][0]["pipeline"] = {
+        schema["actions"][1]["pipeline"] = {
             "context": "TEMPLATE",
             "variables": [
                 {
@@ -408,13 +408,13 @@ class TestAggregationPipeline:
         }
         validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.actions[0].pipeline (action id: 0): variable declared but not used: "$names"'
+            'root.actions[1].pipeline (action id: 1): variable declared but not used: "$names"'
             in validator.warnings
         )
 
         # if a variable from a parent scope is used in a nested traversal scope,
         # there should be no warning
-        schema["actions"][0]["pipeline"]["traverse"] = [
+        schema["actions"][1]["pipeline"]["traverse"] = [
             {
                 "ref": "$_object.objects",
                 "foreach": {
@@ -433,8 +433,39 @@ class TestAggregationPipeline:
         validator.validate(json_string=json.dumps(schema))
         assert not validator.warnings
 
+        # if a traversal loop variable is not used, throw a warning
+        schema["actions"][1]["pipeline"]["traverse"][0]["foreach"]["apply"][0][
+            "from"
+        ] = "action:{0}.object"
+        validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.actions[1].pipeline (action id: 1): loop variable declared but not used: "$edge"'
+            in validator.warnings
+        )
+
+        # loop variables can be used in nested traversal scopes
+        # traveral "ref" counts as a use
+        schema["actions"][1]["pipeline"]["traverse"][0]["foreach"]["traverse"] = [
+            {
+                "ref": "$edge.objects",
+                "foreach": {
+                    "as": "$nested_edge",
+                    "apply": [
+                        {
+                            "from": "$nested_edge",
+                            "select": "name",
+                            "method": "APPEND",
+                            "to": "$names",
+                        },
+                    ],
+                },
+            },
+        ]
+        validator.validate(json_string=json.dumps(schema))
+        assert not validator.warnings
+
         # unused varables in traversal scopes should throw warnings
-        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"]["variables"] = [
+        schema["actions"][1]["pipeline"]["traverse"][0]["foreach"]["variables"] = [
             {
                 "name": "$average",
                 "type": "NUMERIC",
@@ -443,13 +474,13 @@ class TestAggregationPipeline:
         ]
         validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.actions[0].pipeline (action id: 0): variable declared but not used: "$average"'
+            'root.actions[1].pipeline (action id: 1): variable declared but not used: "$average"'
             in validator.warnings
         )
 
         # As long as the variable is assigned a value somewhere, there should be no warning.
         # Note that as it stands, validation doesn't care whether a variable contributes to an output.
-        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"]["apply"].append(
+        schema["actions"][1]["pipeline"]["traverse"][0]["foreach"]["apply"].append(
             {
                 "from": "$edge",
                 "method": "ADD",
@@ -1304,7 +1335,13 @@ class TestAggregationPipeline:
                 "ref": "action:{0}.object.objects",
                 "foreach": {
                     "as": "$edge",
-                    "apply": [],
+                    "apply": [
+                        {
+                            "from": "$edge.number",
+                            "method": "APPEND",
+                            "to": "$some_var",
+                        },
+                    ],
                 },
             },
         ]
@@ -1323,6 +1360,12 @@ class TestAggregationPipeline:
             {
                 "from": "action:{0}.object.number",
                 "method": "APPEND",
+                "to": "$some_var",
+            },
+            {
+                "from": "$edge",  # just using this to avoid another warning
+                "select": "numbers",
+                "method": "CONCAT",
                 "to": "$some_var",
             },
         ]

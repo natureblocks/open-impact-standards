@@ -885,10 +885,18 @@ class SchemaValidator:
         # were any variables declared but not used?
         for variables in pipeline.variables.values():
             for var_name, var in variables.items():
-                if not var.assigned:
-                    self.warnings.append(
-                        f"{self._context(path)}: variable declared but not used: {json.dumps(var_name)}"
-                    )
+                if var.is_loop_variable:
+                    if var.used:
+                        continue
+                    loop = "loop "
+                else:
+                    if var.assigned:
+                        continue
+                    loop = ""
+                
+                self.warnings.append(
+                    f"{self._context(path)}: {loop}variable declared but not used: {json.dumps(var_name)}"
+                )
 
         return errors
 
@@ -914,6 +922,7 @@ class SchemaValidator:
             pipeline_var = pipeline.get_variable(var_name, pipeline_scope)
             if pipeline_var is not None:
                 var_type_details = pipeline_var.type_details
+                pipeline_var.used = True
             else:
                 # look for a thread variable in the current scope
                 parent_action = self._get_parent_action(path)
@@ -1054,7 +1063,7 @@ class SchemaValidator:
 
         return errors
 
-    def resolve_ref_type_details(self, path, ref, pipeline_scope):
+    def resolve_ref_type_details(self, path, ref, pipeline_scope, var_is_being_used=False):
         from_path = ref.split(".")
         if is_variable(from_path[0]):
             var_name = from_path[0]
@@ -1069,6 +1078,8 @@ class SchemaValidator:
                     )
 
                 var_type_details = pipeline_var.type_details
+                if var_is_being_used:
+                    pipeline_var.used = True
             else:
                 var_type_details = self._find_thread_variable(
                     var_name, pipeline.thread_scope
@@ -1118,6 +1129,7 @@ class SchemaValidator:
                 path,
                 ref=apply["from"],
                 pipeline_scope=pipeline_scope,
+                var_is_being_used=True,
             )
         except Exception as e:
             return [f"{self._context(f'{path}.from')}: {str(e)}"]
