@@ -184,7 +184,7 @@ class SchemaValidator:
 
             if "constraints" in template:
                 errors += self._validate_constraints(
-                    path, field, template["constraints"]
+                    path, field, template
                 )
 
             def validate_property(key):
@@ -279,7 +279,7 @@ class SchemaValidator:
                 "unique" in template["constraints"]
                 or "unique_if_not_null" in template["constraints"]
             ):
-                errors += self._validate_unique(path, field, template["constraints"])
+                errors += self._validate_unique(path, field, template)
 
         return errors
 
@@ -291,9 +291,9 @@ class SchemaValidator:
             f"{self._context(path)}: invalid enum value: expected one of {str(template['values'])}, got {json.dumps(field)}"
         ]
 
-    def _validate_constraints(self, path, field, constraints):
+    def _validate_constraints(self, path, field, template):
         errors = []
-
+        constraints = template["constraints"] if "constraints" in template else {}
         if "forbidden" in constraints:
             for key in constraints["forbidden"]["properties"]:
                 if key in field:
@@ -302,7 +302,7 @@ class SchemaValidator:
                     ]
 
         if "unique" in constraints or "unique_if_not_null" in constraints:
-            errors += self._validate_unique(path, field, constraints)
+            errors += self._validate_unique(path, field, template)
 
         if "validation_functions" in constraints:
             for function_call in constraints["validation_functions"]:
@@ -1667,12 +1667,13 @@ class SchemaValidator:
 
         return []
 
-    def _validate_unique(self, path, field, constraints):
+    def _validate_unique(self, path, field, template):
         if not isinstance(field, list) and not isinstance(field, dict):
             raise NotImplementedError(
                 "unique validation not implemented for type " + str(type(field))
             )
 
+        constraints = template["constraints"] if "constraints" in template else {}
         unique_fields = constraints["unique"] if "unique" in constraints else []
         unique_composites = (
             constraints["unique_composites"]
@@ -1748,7 +1749,7 @@ class SchemaValidator:
                     else:
                         error = f"duplicate value provided for unique field {json.dumps(field_name)}: {json.dumps(value)}"
 
-                    errors += [f"{self._context(path)}: {error}"]
+                    errors += [f"{self._context(path)}: {self._template_error(template, error)}"]
 
         return errors
 
@@ -2478,7 +2479,7 @@ class SchemaValidator:
     def _template_error(self, template, error):
         if "error_replacements" in template:
             for replacement in template["error_replacements"]:
-                if re.match(replacement["pattern"], error):
+                if re.search(replacement["pattern"], error):
                     return replacement["replace_with"]
 
         return error

@@ -47,6 +47,15 @@ pipeline = {
                 "type": "object",
                 "template": "traverse",
             },
+            "constraints": {
+                "unique": ["ref"],
+            },
+            "error_replacements": [
+                {
+                    "pattern": "duplicate value provided for unique field \"ref\"",
+                    "replace_with": 'sibling "traverse" objects cannot specify the same "ref"',
+                },
+            ],
         },
         "apply": {
             "type": "array",
@@ -147,6 +156,15 @@ traverse = {
                         "type": "object",
                         "template": "traverse",
                     },
+                    "constraints": {
+                        "unique": ["ref"],
+                    },
+                    "error_replacements": [
+                        {
+                            "pattern": "duplicate value provided for unique field \"ref\"",
+                            "replace_with": 'sibling "traverse" objects cannot specify the same "ref"',
+                        },
+                    ],
                 },
                 "apply": {
                     "type": "array",

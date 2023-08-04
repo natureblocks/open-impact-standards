@@ -361,6 +361,41 @@ class TestAggregationPipeline:
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
+        # "ref" properties of sibling traversal objects must be unique
+        assert schema["actions"][1]["pipeline"]["traverse"][0]["ref"] == "action:{2}"
+        schema["actions"][1]["pipeline"]["traverse"].append(
+            {
+                "ref": "action:{2}",
+                "foreach": {
+                    "as": "$edge",
+                    "apply": [],
+                },
+            }
+        )
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.actions[1].pipeline.traverse (action id: 1): sibling "traverse" objects cannot specify the same "ref"'
+            in errors
+        )
+
+        schema["actions"][1]["pipeline"]["traverse"].pop()
+
+        # the same is true for nested traversal objects
+        schema["actions"][1]["pipeline"]["traverse"][0]["foreach"]["traverse"].append(
+            {
+                "ref": "$action.object.objects",
+                "foreach": {
+                    "as": "$edge",
+                    "apply": [],
+                },
+            }
+        )
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.actions[1].pipeline.traverse[0].foreach.traverse (action id: 1): sibling "traverse" objects cannot specify the same "ref"'
+            in errors
+        )
+
         # should not be able to traverse non-threaded actions
         set_pipeline_value("traverse", "ref", "action:{0}")
         errors = validator.validate(json_string=json.dumps(schema))
