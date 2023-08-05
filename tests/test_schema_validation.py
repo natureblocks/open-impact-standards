@@ -442,6 +442,27 @@ class TestSchemaValidation:
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
+    def test_duplicate_thread_ids(self):
+        # I had a suspicion that thread validation logic might raise an uncaught exception
+        # if the schema contained duplicate thread ids, so I wrote this test.
+        validator = SchemaValidator()
+
+        schema = fixtures.basic_schema_with_actions(2)
+        schema["checkpoints"] = [
+            fixtures.checkpoint(0, "depends-on-0", num_dependencies=1),
+        ]
+        schema["threads"] = [
+            fixtures.thread(0, "depends-on-0"),
+            fixtures.thread(0, "depends-on-0"),
+        ]
+        schema["threads"][1]["spawn"]["as"] = "$thread_variable"
+        schema["actions"][1]["context"] = "thread:{0}"
+
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.threads: duplicate value provided for unique field "id": 0' in errors
+        )
+
     def test_action_context(self):
         validator = SchemaValidator()
 
