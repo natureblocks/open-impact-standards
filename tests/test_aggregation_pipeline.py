@@ -1224,49 +1224,6 @@ class TestAggregationPipeline:
                 errors = validator.validate(json_string=json.dumps(schema))
                 assert not errors
 
-        # referencing a threaded action from the pipeline of an action which shares the same thread context
-        # should not result in a list of threaded actions
-        schema["checkpoints"] = [
-            fixtures.checkpoint(id=0, alias="depends-on-0", num_dependencies=1),
-        ]
-        schema["threads"] = [
-            fixtures.thread(0, "depends-on-0"),
-        ]
-        schema["actions"].append(fixtures.action(1))
-        schema["actions"].append(fixtures.action(2))
-        schema["actions"][1]["context"] = "thread:{0}"
-        schema["actions"][2]["context"] = "thread:{0}"
-        schema["actions"][2]["pipeline"] = {
-            "context": "TEMPLATE",
-            "variables": [
-                {
-                    "name": "$numbers",
-                    "type": "NUMERIC_LIST",
-                    "initial": [],
-                },
-            ],
-            "apply": [
-                {
-                    "from": "action:{1}.object.numbers",
-                    "method": "CONCAT",
-                    "to": "$numbers",
-                },
-                {
-                    "from": "action:{1}.object.edge.numbers",
-                    "method": "CONCAT",
-                    "to": "$numbers",
-                },
-            ],
-            "output": [
-                {
-                    "from": "$numbers",
-                    "to": "numbers",
-                },
-            ],
-        }
-        errors = validator.validate(json_string=json.dumps(schema))
-        assert not errors
-
     def test_resolve_type_from_object_path(self):
         validator = SchemaValidator()
 
@@ -1480,3 +1437,86 @@ class TestAggregationPipeline:
         ] = "$_object.objects"
         validator.validate(json_string=json.dumps(schema))
         assert not validator.warnings
+
+    def test_threaded_action_references(self):
+        validator = SchemaValidator()
+        schema = fixtures.basic_schema_with_actions(4)
+        # referencing a threaded action from the pipeline of an action which shares the same thread context
+        # should not result in a list of threaded actions
+        schema["checkpoints"] = [
+            fixtures.checkpoint(id=0, alias="depends-on-0", num_dependencies=1),
+        ]
+        schema["threads"] = [
+            fixtures.thread(0, "depends-on-0"),
+        ]
+        schema["actions"][1]["context"] = "thread:{0}"
+        schema["actions"][2]["context"] = "thread:{0}"
+        schema["actions"][2]["pipeline"] = {
+            "context": "TEMPLATE",
+            "variables": [
+                {
+                    "name": "$numbers",
+                    "type": "NUMERIC_LIST",
+                    "initial": [],
+                },
+            ],
+            "apply": [
+                {
+                    "from": "action:{1}.object.numbers",
+                    "method": "CONCAT",
+                    "to": "$numbers",
+                },
+                {
+                    "from": "action:{1}.object.edge.numbers",
+                    "method": "CONCAT",
+                    "to": "$numbers",
+                },
+            ],
+            "output": [
+                {
+                    "from": "$numbers",
+                    "to": "numbers",
+                },
+            ],
+        }
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # from outside of the threaded context, referencing a list on a threaded action
+        # should result in an error
+        schema["actions"][3]["pipeline"] = {
+            "context": "TEMPLATE",
+            "variables": [
+                {
+                    "name": "$numbers",
+                    "type": "NUMERIC_LIST",
+                    "initial": [],
+                },
+            ],
+            "apply": [
+                {
+                    "from": "action:{2}.object.numbers",
+                    "method": "CONCAT",
+                    "to": "$numbers",
+                },
+            ],
+            "output": [
+                {
+                    "from": "$numbers",
+                    "to": "numbers",
+                },
+            ],
+        }
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.actions[3].pipeline.apply[0].from (action id: 3): nested list types are not supported"
+            in errors
+        )
+
+        # from outside of the threaded context,
+        # referencing a non-list on a threaded action should be allowed
+        schema["actions"][3]["pipeline"]["apply"][0][
+            "from"
+        ] = "action:{2}.object.number"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
