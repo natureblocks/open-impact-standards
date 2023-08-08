@@ -183,9 +183,7 @@ class SchemaValidator:
                     ]
 
             if "constraints" in template:
-                errors += self._validate_constraints(
-                    path, field, template
-                )
+                errors += self._validate_constraints(path, field, template)
 
             def validate_property(key):
                 return self._validate_field(
@@ -683,7 +681,9 @@ class SchemaValidator:
                 if errors:
                     return errors
             try:
-                from_object_type = self._resolve_type_from_global_ref(ref=spawn["from"])
+                from_object_type = self._resolve_type_from_global_ref(
+                    ref=spawn["from"], resolution_context_thread_id=thread_id
+                )
             except Exception as e:
                 return [f"{self._context(path)}.spawn: {str(e)}"]
 
@@ -893,7 +893,7 @@ class SchemaValidator:
                     if var.assigned:
                         continue
                     loop = ""
-                
+
                 self.warnings.append(
                     f"{self._context(path)}: {loop}variable declared but not used: {json.dumps(var_name)}"
                 )
@@ -960,7 +960,9 @@ class SchemaValidator:
                         f'{self._context(f"{path}.ref")}: global ref refers to the local object -- consider using "$_object" instead to reference the local object'
                     )
 
-                ref_type_details = self._resolve_type_from_global_ref(ref)
+                ref_type_details = self._resolve_type_from_global_ref(
+                    ref, resolution_context_thread_id=pipeline.get_thread_id()
+                )
 
                 if ref_type_details is None:
                     return [
@@ -1063,7 +1065,14 @@ class SchemaValidator:
 
         return errors
 
-    def resolve_ref_type_details(self, path, ref, pipeline_scope, var_is_being_used=False):
+    def resolve_ref_type_details(
+        self,
+        path,
+        ref,
+        pipeline_scope,
+        resolution_context_thread_id=None,
+        var_is_being_used=False,
+    ):
         from_path = ref.split(".")
         if is_variable(from_path[0]):
             var_name = from_path[0]
@@ -1101,7 +1110,10 @@ class SchemaValidator:
             return self._resolve_type_from_local_ref(ref, path=path)
         elif is_global_ref(ref) and utils.parse_ref_type(ref) == "action":
             # global ref
-            return self._resolve_type_from_global_ref(ref)
+
+            return self._resolve_type_from_global_ref(
+                ref, resolution_context_thread_id
+            )
         else:
             # pattern validation will have already caught this
             return []
@@ -1124,11 +1136,13 @@ class SchemaValidator:
                     f'{self._context(f"{path}.from")}: global ref refers to the local object -- consider using "$_object" instead to reference the local object.'
                 )
 
+        pipeline = self._get_pipeline_at_path(path)
         try:
             ref_type_details = self.resolve_ref_type_details(
                 path,
                 ref=apply["from"],
                 pipeline_scope=pipeline_scope,
+                resolution_context_thread_id=pipeline.get_thread_id(),
                 var_is_being_used=True,
             )
         except Exception as e:
@@ -1141,7 +1155,6 @@ class SchemaValidator:
             # pattern validation will have already caught this
             return []
 
-        pipeline = self._get_pipeline_at_path(path)
         to_pipeline_var = pipeline.get_variable(to_var_name, pipeline_scope)
         if to_pipeline_var is None:
             return [
@@ -1160,7 +1173,12 @@ class SchemaValidator:
 
         try:
             right_operand_type = pipeline_utils.determine_right_operand_type(
-                path, apply, ref_type_details, pipeline_scope, self
+                path,
+                apply,
+                ref_type_details,
+                pipeline_scope,
+                resolution_context_thread_id=pipeline.get_thread_id(),
+                schema_validator=self,
             )
 
             pipeline_utils.validate_operation(
@@ -1225,7 +1243,7 @@ class SchemaValidator:
 
         return var_type_details
 
-    def _resolve_type_from_global_ref(self, ref):
+    def _resolve_type_from_global_ref(self, ref, resolution_context_thread_id=None):
         matches = re.findall(patterns.global_ref, ref)
         if len(matches) and len(matches[0]):
             global_ref = matches[0][0]
@@ -1250,10 +1268,21 @@ class SchemaValidator:
                         )
 
                         if is_threaded_action:
-                            if type_details.is_list:
-                                raise Exception("nested list types are not supported")
+                            # If the action's context matches the resolution_context_thread_id,
+                            # then we are dealing with a single threaded action
+                            # that is being referenced from within its own thread.
+                            if (
+                                utils.parse_ref_id(template_object["context"])
+                                != resolution_context_thread_id
+                            ):
+                                # From outside of the thread, referencing a list of threaded actions,
+                                # so ware the nested list...
+                                if type_details.is_list:
+                                    raise Exception(
+                                        "nested list types are not supported"
+                                    )
 
-                            type_details.is_list = True
+                                type_details.is_list = True
 
                         return type_details
                     else:
@@ -1352,7 +1381,7 @@ class SchemaValidator:
 
                     if field_definition["field_type"] == "EDGE_COLLECTION":
                         if type_details.is_list:
-                            raise Exception("nested lists not supported")
+                            raise Exception("nested list types are not supported")
 
                         type_details = FieldTypeDetails(
                             is_list=True,
@@ -1367,7 +1396,7 @@ class SchemaValidator:
                         )
                 elif "_LIST" in field_definition["field_type"]:
                     if type_details.is_list:
-                        raise Exception("nested lists not supported")
+                        raise Exception("nested list types are not supported")
 
                     return FieldTypeDetails(
                         is_list=True,
@@ -1749,7 +1778,9 @@ class SchemaValidator:
                     else:
                         error = f"duplicate value provided for unique field {json.dumps(field_name)}: {json.dumps(value)}"
 
-                    errors += [f"{self._context(path)}: {self._template_error(template, error)}"]
+                    errors += [
+                        f"{self._context(path)}: {self._template_error(template, error)}"
+                    ]
 
         return errors
 

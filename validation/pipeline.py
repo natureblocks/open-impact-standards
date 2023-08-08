@@ -26,3 +26,6 @@ class Pipeline:
                 return self.variables[scope][var_name]
 
         return None
+
+    def get_thread_id(self):
+        return self.thread_scope.split(".")[-1] if self.thread_scope else None

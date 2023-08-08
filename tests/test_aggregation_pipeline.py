@@ -1224,6 +1224,49 @@ class TestAggregationPipeline:
                 errors = validator.validate(json_string=json.dumps(schema))
                 assert not errors
 
+        # referencing a threaded action from the pipeline of an action which shares the same thread context
+        # should not result in a list of threaded actions
+        schema["checkpoints"] = [
+            fixtures.checkpoint(id=0, alias="depends-on-0", num_dependencies=1),
+        ]
+        schema["threads"] = [
+            fixtures.thread(0, "depends-on-0"),
+        ]
+        schema["actions"].append(fixtures.action(1))
+        schema["actions"].append(fixtures.action(2))
+        schema["actions"][1]["context"] = "thread:{0}"
+        schema["actions"][2]["context"] = "thread:{0}"
+        schema["actions"][2]["pipeline"] = {
+            "context": "TEMPLATE",
+            "variables": [
+                {
+                    "name": "$numbers",
+                    "type": "NUMERIC_LIST",
+                    "initial": [],
+                },
+            ],
+            "apply": [
+                {
+                    "from": "action:{1}.object.numbers",
+                    "method": "CONCAT",
+                    "to": "$numbers",
+                },
+                {
+                    "from": "action:{1}.object.edge.numbers",
+                    "method": "CONCAT",
+                    "to": "$numbers",
+                },
+            ],
+            "output": [
+                {
+                    "from": "$numbers",
+                    "to": "numbers",
+                },
+            ],
+        }
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
     def test_resolve_type_from_object_path(self):
         validator = SchemaValidator()
 
