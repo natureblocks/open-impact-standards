@@ -464,7 +464,6 @@ thread = {
         "id": {"type": "integer"},
         "description": {"type": "string"},
         "depends_on": {"type": "ref", "ref_types": ["checkpoint"]},
-        "party": {"type": "ref", "ref_types": ["party"]},
         "spawn": {
             "type": "object",
             "properties": {

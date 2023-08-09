@@ -78,7 +78,6 @@ def thread(id, depends_on_id=None):
     thread = {
         "id": id,
         "description": "",
-        "party": "party:{0}",
         "spawn": {
             "from": "action:{0}.object",
             "foreach": "numbers",
