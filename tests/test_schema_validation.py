@@ -204,7 +204,7 @@ class TestSchemaValidation:
     def test_thread_spawn_collections(self):
         validator = SchemaValidator()
 
-        schema = fixtures.basic_schema_with_actions(3)
+        schema = fixtures.basic_schema_with_actions(4)
         schema["checkpoints"] = [
             fixtures.checkpoint(0, "depends-on-0", num_dependencies=1),
         ]
@@ -233,7 +233,9 @@ class TestSchemaValidation:
             errors = validator.validate(json_string=json.dumps(schema))
             assert not errors
 
-        # field from a threaded action (the threading makes it a list)
+        # field from a threaded action
+        # (the threading DOES NOT make it a list (if it did, why not just continue the same thread?),
+        # so a collection must be referenced)
         schema["threads"].append(fixtures.thread(1))
         schema["threads"][1]["context"] = "thread:{0}"
         schema["actions"][1]["context"] = "thread:{0}"
@@ -246,18 +248,18 @@ class TestSchemaValidation:
         ] = "action:{1}"
         schema["threads"][1]["depends_on"] = "checkpoint:{depends-on-1}"
         schema["threads"][1]["spawn"] = {
-            "from": "action:{1}.object",  # list (threaded action)
-            "foreach": "name",  # non-list
-            "as": "$name",  # should be a list
+            "from": "action:{1}.object",  # non-list (despite it being a threaded action)
+            "foreach": "numbers",  # list
+            "as": "$numbers",  # should be a list
         }
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
         # edge on a threaded action (the threading makes it a list)
         schema["threads"][1]["spawn"] = {
-            "from": "action:{1}.object",  # list (threaded action)
-            "foreach": "edge",  # non-list
-            "as": "$edge",  # should be a list
+            "from": "action:{1}.object",  # non-list (despite it being threaded action)
+            "foreach": "objects",  # list
+            "as": "$edges",  # should be a list
         }
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
@@ -281,27 +283,40 @@ class TestSchemaValidation:
 
         # nested lists are invalid...
         nested_list_sources = [
-            (0, "objects", "numbers"),  # edge_collection->list
-            (0, "objects.edge", "numbers"),  # edge_collection->edge->list
-            (0, "objects.edge", "objects"),  # edge_collection->edge->edge_collection
-            (1, "", "numbers"),  # threaded_action->list
-            (1, "objects", "name"),  # threaded_action->list
+            ("objects", "numbers"),  # edge_collection->list
+            ("objects.edge", "numbers"),  # edge_collection->edge->list
+            ("objects.edge", "objects"),  # edge_collection->edge->edge_collection
         ]
 
-        for thread_action_id, path_completion, field_name in nested_list_sources:
-            schema["threads"][thread_action_id]["spawn"] = {
-                "from": "action:{"
-                + str(thread_action_id)
-                + "}.object"
+        for path_completion, field_name in nested_list_sources:
+            schema["threads"][0]["spawn"] = {
+                "from": "action:{0}.object"
                 + ("." + path_completion if path_completion else ""),
                 "foreach": field_name,
                 "as": "$var",
             }
             errors = validator.validate(json_string=json.dumps(schema))
             assert (
-                f"root.threads[{thread_action_id}].spawn: nested list types are not supported"
-                in errors
+                f"root.threads[0].spawn: nested list types are not supported" in errors
             )
+
+        schema["threads"][0]["spawn"] = {
+            "from": "action:{0}.object",
+            "foreach": "numbers",
+            "as": "$number",
+        }
+
+        # edge case: spawn a nested thread from a collection on an action from a parent thread scope
+        schema["threads"].append(fixtures.thread(2))
+        schema["threads"][2]["context"] = "thread:{1}"
+        schema["threads"][2]["spawn"] = {
+            "from": "action:{1}.object",
+            "foreach": "objects",
+            "as": "$object",
+        }
+        schema["actions"][3]["context"] = "thread:{2}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
 
     def test_thread_dependencies(self):
         validator = SchemaValidator()
@@ -660,7 +675,7 @@ class TestSchemaValidation:
         thread_1 = fixtures.thread(1, "depends-on-1")
         thread_1["spawn"] = {
             "from": "action:{1}.object",
-            "foreach": "name",
+            "foreach": "objects.name",
             "as": "$names",
         }
         schema["threads"].append(thread_1)
@@ -681,7 +696,7 @@ class TestSchemaValidation:
         thread_2["context"] = "thread:{1}"
         thread_2["spawn"] = {
             "from": "action:{1}.object",
-            "foreach": "edge",
+            "foreach": "objects",
             "as": "$edge",
         }
         schema["threads"].append(thread_2)

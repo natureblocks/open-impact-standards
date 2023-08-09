@@ -681,8 +681,15 @@ class SchemaValidator:
                 if errors:
                     return errors
             try:
+                resolution_context_thread_id = (
+                    utils.parse_ref_id(thread["context"])
+                    if utils.has_reference_to_template_object_type(
+                        thread, "context", "thread"
+                    )
+                    else None
+                )
                 from_object_type = self._resolve_type_from_global_ref(
-                    ref=spawn["from"], resolution_context_thread_id=thread_id
+                    spawn["from"], resolution_context_thread_id
                 )
             except Exception as e:
                 return [f"{self._context(path)}.spawn: {str(e)}"]
@@ -1111,9 +1118,7 @@ class SchemaValidator:
         elif is_global_ref(ref) and utils.parse_ref_type(ref) == "action":
             # global ref
 
-            return self._resolve_type_from_global_ref(
-                ref, resolution_context_thread_id
-            )
+            return self._resolve_type_from_global_ref(ref, resolution_context_thread_id)
         else:
             # pattern validation will have already caught this
             return []
@@ -1268,12 +1273,16 @@ class SchemaValidator:
                         )
 
                         if is_threaded_action:
-                            # If the action's context matches the resolution_context_thread_id,
+                            # If the action's context is part of the resolution_context_thread_id scope,
                             # then we are dealing with a single threaded action
                             # that is being referenced from within its own thread.
                             if (
-                                utils.parse_ref_id(template_object["context"])
-                                != resolution_context_thread_id
+                                resolution_context_thread_id is None
+                                or not self._threads[
+                                    resolution_context_thread_id
+                                ].has_descendant_thread(
+                                    utils.parse_ref_id(template_object["context"])
+                                )
                             ):
                                 # From outside of the thread, referencing a list of threaded actions,
                                 # so ware the nested list...
