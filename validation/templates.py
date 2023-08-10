@@ -429,20 +429,14 @@ action = {
     },
     "if": [
         {
-            "property": "context",
-            "operator": "IS_SPECIFIED",
-            "value": True,
+            "property": "operation.type",
+            "operator": "EQUALS",
+            "value": "EDIT",
             "then": {
-                "override_properties": {
-                    "party": {
-                        "type": "ref",
-                        "ref_types": ["party"],
-                        "expected_value": {
-                            "equivalent_ref": {
-                                "from_ref": "{_parent}.context",
-                                "extract": "party",
-                            },
-                        },
+                "add_constraints": {
+                    "forbidden": {
+                        "properties": ["pipeline"],
+                        "reason": "for an action to specify a pipeline, operation.type must be 'CREATE'."
                     },
                 },
             },

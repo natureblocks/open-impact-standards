@@ -509,20 +509,6 @@ class TestSchemaValidation:
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
-        # threaded actions must specify the same party as the thread
-        schema["threads"][0]["party"] = "party:{Project}"
-        schema["parties"].append({"id": 1, "name": "Vandelay Industries"})
-        schema["actions"][1]["party"] = "party:{Vandelay Industries}"
-        errors = validator.validate(json_string=json.dumps(schema))
-        assert (
-            'root.actions[1].party (action id: 1): expected ref equivalent to "party:{Project}", got "party:{Vandelay Industries}"'
-            in errors
-        )
-
-        schema["actions"][1]["party"] = "party:{Project}"
-        errors = validator.validate(json_string=json.dumps(schema))
-        assert not errors
-
     def test_milestones(self):
         validator = SchemaValidator()
 
@@ -778,70 +764,6 @@ class TestSchemaValidation:
 
         schema["checkpoints"][1]["dependencies"][0]["compare"]["right"]["value"] = False
 
-        errors = validator.validate(json_string=json.dumps(schema))
-        assert not errors
-
-    def test_depends_on_threaded_action(self):
-        validator = SchemaValidator()
-
-        schema = fixtures.basic_schema_with_actions(4)
-        depends_on_1 = fixtures.checkpoint(1, "depends-on-1", num_dependencies=1)
-        schema["checkpoints"] = [
-            fixtures.checkpoint(0, "depends-on-0", num_dependencies=1),
-            depends_on_1,
-        ]
-        schema["checkpoints"][1]["dependencies"][0]["compare"]["left"][
-            "ref"
-        ] = "action:{1}"
-        schema["threads"] = [
-            fixtures.thread(0, "depends-on-0"),
-        ]
-
-        # An action cannot depend on a threaded action that is not part of the same context
-        schema["actions"][1]["context"] = "thread:{0}"
-        schema["actions"][2]["depends_on"] = "checkpoint:{depends-on-1}"
-        errors = validator.validate(json_string=json.dumps(schema))
-        assert (
-            'root.actions[2] (action id: 2): cannot depend on threaded action: "action:{1}"'
-            in errors
-        )
-
-        # An action should be able to depend on a threaded action that has the same threaded context
-        schema["actions"][2]["context"] = "thread:{0}"
-        errors = validator.validate(json_string=json.dumps(schema))
-        assert not errors
-
-        # A thread should not be able to depend on an action that is not part of the same context
-        # in which the thread was defined
-        thread_1 = fixtures.thread(1, "depends-on-1")
-        thread_1["spawn"] = {
-            "from": "action:{1}.object",
-            "foreach": "objects.name",
-            "as": "$names",
-        }
-        schema["threads"].append(thread_1)
-
-        schema["actions"][2]["context"] = "thread:{1}"
-        errors = validator.validate(json_string=json.dumps(schema))
-        assert (
-            'root.threads[1]: cannot depend on threaded action: "action:{1}"' in errors
-        )
-
-        # threads should be able to depend on actions that share their context
-        schema["threads"][1]["context"] = "thread:{0}"
-        errors = validator.validate(json_string=json.dumps(schema))
-        assert not errors
-
-        # the same should hold true for nested threads
-        thread_2 = fixtures.thread(2)
-        thread_2["context"] = "thread:{1}"
-        thread_2["spawn"] = {
-            "from": "action:{1}.object",
-            "foreach": "objects",
-            "as": "$edge",
-        }
-        schema["threads"].append(thread_2)
-        schema["actions"][3]["context"] = "thread:{2}"
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 

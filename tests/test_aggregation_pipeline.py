@@ -7,6 +7,59 @@ from enums import valid_list_item_types
 
 
 class TestAggregationPipeline:
+    def test_pipeline_object_association(self):
+        validator = SchemaValidator()
+        schema = fixtures.basic_schema_with_actions(2)
+
+        schema["actions"][0]["operation"] = {
+            "type": "CREATE",
+            "exclude": ["number"],
+        }
+        schema["actions"][1]["operation"] = {
+            "type": "EDIT",
+            "ref": "action:{0}",
+            "exclude": ["number"],
+        }
+
+        # only the action with operation.type = "CREATE" can specify a pipeline
+        schema["actions"][1]["pipeline"] = {
+            "context": "TEMPLATE",
+            "variables": [
+                {
+                    "name": "$average",
+                    "type": "NUMERIC",
+                    "initial": 0,
+                },
+            ],
+            "apply": [
+                {
+                    "from": "$_object.numbers",
+                    "aggregate": {
+                        "field": "$_item",
+                        "operator": "AVERAGE",
+                    },
+                    "method": "ADD",
+                    "to": "$average",
+                },
+            ],
+            "output": [
+                {
+                    "from": "$average",
+                    "to": "number",
+                },
+            ],
+        }
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.actions[1] (action id: 1): forbidden property specified: pipeline; reason: for an action to specify a pipeline, operation.type must be 'CREATE'."
+            in errors
+        )
+
+        schema["actions"][0]["pipeline"] = schema["actions"][1]["pipeline"]
+        del schema["actions"][1]["pipeline"]
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
     def test_depends_on_aggregated_field(self):
         validator = SchemaValidator()
         schema = fixtures.basic_schema_with_actions(6)
