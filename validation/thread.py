@@ -12,7 +12,7 @@ class Thread:
         # checkpoints that specifically reference this thread as their context
         self.checkpoints = []
 
-    def has_descendant_thread(self, thread_id):
+    def has_access_to_context(self, thread_id):
         if self.scope is None:
             return False
 

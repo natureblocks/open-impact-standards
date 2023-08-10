@@ -8,6 +8,14 @@ class FieldTypeDetails:
         self.item_type = item_type
         self.item_tag = item_tag
 
+    def to_field_type_string(self):
+        item_type = self.item_type if self.item_type is not None else "NULL"
+
+        if self.is_list:
+            return f"{item_type}_LIST" if item_type is not "NULL" else "LIST"
+
+        return item_type
+
     def to_string(self, specify_object_tag=False):
         item_type_string = self.item_type if self.item_type is not None else "NULL"
 

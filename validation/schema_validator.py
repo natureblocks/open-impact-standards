@@ -360,7 +360,9 @@ class SchemaValidator:
         ancestor_id = utils.parse_ref_id(ancestor_ref)
 
         def action_id_from_dependency_ref(dependency, left_or_right):
-            if "ref" not in dependency["compare"][left_or_right]:
+            if not utils.has_reference_to_template_object_type(
+                dependency["compare"][left_or_right], "ref", "action"
+            ):
                 return None
             return utils.parse_ref_id(dependency["compare"][left_or_right]["ref"])
 
@@ -427,31 +429,54 @@ class SchemaValidator:
 
         def extract_field_type(operand_object):
             if "ref" in operand_object:
-                referenced_obj = self._resolve_global_ref(operand_object["ref"])
-                if referenced_obj is None:
-                    raise Exception("Failed to resolve ref: " + operand_object["ref"])
+                if is_global_ref(operand_object["ref"]):
+                    referenced_obj = self._resolve_global_ref(operand_object["ref"])
+                    if referenced_obj is None:
+                        raise Exception(
+                            "Failed to resolve ref: " + operand_object["ref"]
+                        )
 
-                ref_type = utils.parse_ref_type(operand_object["ref"])
-                if ref_type != "action":
-                    raise NotImplementedError(
-                        "comparison validation not implemented for ref type: "
-                        + ref_type
+                    ref_type = utils.parse_ref_type(operand_object["ref"])
+                    if ref_type != "action":
+                        raise NotImplementedError(
+                            "comparison validation not implemented for ref type: "
+                            + ref_type
+                        )
+
+                    if "object" not in referenced_obj:
+                        raise Exception(
+                            "Referenced action does not have an 'object' property: "
+                            + operand_object["ref"]
+                        )
+
+                    node_definition = self._get_field(
+                        f"objects.{referenced_obj['object']}"
                     )
+                    if node_definition is None:
+                        raise Exception(
+                            "'object' not found for referenced action: "
+                            + operand_object["ref"]
+                        )
 
-                if "object" not in referenced_obj:
-                    raise Exception(
-                        "Referenced action does not have an 'object' property: "
-                        + operand_object["ref"]
+                    return node_definition[operand_object["field"]]["field_type"]
+                elif is_variable(operand_object["ref"]):
+                    # thread variable
+                    ref_path = operand_object["ref"].split(".")
+                    variable_type_details = self._find_thread_variable(
+                        ref_path[0], self._get_action_thread_scope(path)
                     )
+                    if variable_type_details is None:
+                        raise Exception(
+                            f"Variable not found within thread scope: {json.dumps(operand_object['ref'])}"
+                        )
 
-                node_definition = self._get_field(f"objects.{referenced_obj['object']}")
-                if node_definition is None:
-                    raise Exception(
-                        "'object' not found for referenced action: "
-                        + operand_object["ref"]
-                    )
+                    if len(ref_path) > 1:
+                        return self._resolve_type_from_variable_path(
+                            var_type_details=variable_type_details,
+                            path=ref_path[1:],
+                        )
 
-                return node_definition[operand_object["field"]]["field_type"]
+                    return variable_type_details.to_field_type_string()
             else:
                 field_type = utils.field_type_from_python_type_name(
                     type(operand_object["value"]).__name__
@@ -468,8 +493,11 @@ class SchemaValidator:
 
                 return field_type
 
-        left_type = extract_field_type(left)
-        right_type = extract_field_type(right)
+        try:
+            left_type = extract_field_type(left)
+            right_type = extract_field_type(right)
+        except Exception as e:
+            return [f"{self._context(path)}: {str(e)}"]
 
         if self.types_are_comparable(left_type, right_type, operator):
             return []
@@ -535,84 +563,106 @@ class SchemaValidator:
 
         return False
 
-    def validate_does_not_depend_on_threaded_context(self, path, field):
-        if (
-            field is None
-            or "depends_on" not in field
-            or not is_global_ref(field["depends_on"])
+    def validate_dependency_scope(self, path, field):
+        # field is either an action or a thread
+        if not utils.has_reference_to_template_object_type(
+            field, "depends_on", "checkpoint"
         ):
             return []
 
         checkpoint = self._resolve_global_ref(field["depends_on"])
-        if checkpoint is None:
+        if not utils.has_reference_to_template_object_type(
+            checkpoint, "context", "thread"
+        ):
             return []
 
-        # gather a list of the contexts that would be considered implicit for this field
-        implicit_checkpoints = []
-        context = field["context"] if "context" in field else None
-        while context is not None:
-            if (
-                not is_global_ref(context)
-                or not utils.parse_ref_type(context) == "thread"
+        # checkpoint has threaded context -- it must be within the scope of field's context
+        if not utils.has_reference_to_template_object_type(field, "context", "thread"):
+            return [
+                f"{self._context(path + '.depends_on')}: checkpoint with threaded context referenced out of scope: {json.dumps(field['depends_on'])}"
+            ]
+
+        checkpoint_thread_id = utils.parse_ref_id(checkpoint["context"])
+        field_thread_id = utils.parse_ref_id(field["context"])
+        if not self._threads[field_thread_id].has_access_to_context(
+            checkpoint_thread_id
+        ):
+            return [
+                f"{self._context(path + '.depends_on')}: checkpoint with threaded context referenced out of scope: {json.dumps(field['depends_on'])}"
+            ]
+
+        return []
+
+    def validate_checkpoint_context(self, path, checkpoint):
+        checkpoint_context = (
+            utils.parse_ref_id(checkpoint["context"])
+            if utils.has_reference_to_template_object_type(
+                checkpoint, "context", "thread"
+            )
+            else None
+        )
+
+        context_mismatches = []
+        for dependency in checkpoint["dependencies"]:
+            if utils.has_reference_to_template_object_type(
+                dependency, "checkpoint", "checkpoint"
             ):
-                break
+                referenced_checkpoint = self._resolve_global_ref(
+                    dependency["checkpoint"]
+                )
+                if referenced_checkpoint is None:
+                    continue
 
-            thread = self._resolve_global_ref(context)
-            if thread is None:
-                break
+                # if the referenced_checkpoint has a threaded context...
+                if utils.has_reference_to_template_object_type(
+                    referenced_checkpoint, "context", "thread"
+                ):
+                    if checkpoint_context is None:
+                        context_mismatches += [
+                            f"{self._context(path)}: checkpoint with threaded context referenced out of scope: {json.dumps(dependency['checkpoint'])}"
+                        ]
+                    else:
+                        # the threaded context must be the same as or a parent of the parent checkpoint's context
+                        referenced_checkpoint_context = utils.parse_ref_id(
+                            referenced_checkpoint["context"]
+                        )
 
-            if "depends_on" in thread:
-                implicit_checkpoints.append(utils.parse_ref_id(thread["depends_on"]))
-
-            context = thread["context"] if "context" in thread else None
-
-        def checkpoint_is_implicit(checkpoint):
-            return "alias" in checkpoint and checkpoint["alias"] in implicit_checkpoints
-
-        def find_dependency_context_mismatches_recursive(checkpoint, expected_context):
-            if checkpoint_is_implicit(checkpoint):
-                return []
-
-            context_mismatches = []
-            for dependency in checkpoint["dependencies"]:
-                if "checkpoint" in dependency:
-                    if not is_global_ref(dependency["checkpoint"]):
-                        continue
-
-                    checkpoint = self._resolve_global_ref(dependency["checkpoint"])
-                    if checkpoint is None:
-                        continue
-
-                    context_mismatches += find_dependency_context_mismatches_recursive(
-                        checkpoint, expected_context
-                    )
-                elif "compare" in dependency:
-                    for operand in ["left", "right"]:
-                        if "ref" not in dependency["compare"][operand]:
-                            continue
-
-                        ref = dependency["compare"][operand]["ref"]
-                        if not is_global_ref(ref):
-                            continue
-
-                        referenced_action = self._resolve_global_ref(ref)
-                        if referenced_action is None:
-                            continue
-
-                        if (
-                            "context" in referenced_action
-                            and referenced_action["context"] != expected_context
+                        if not self._threads[checkpoint_context].has_access_to_context(
+                            referenced_checkpoint_context
                         ):
                             context_mismatches += [
-                                f"{self._context(path)}: cannot depend on threaded action: {json.dumps(ref)}"
+                                f"{self._context(path)}: checkpoint with threaded context referenced out of scope: {json.dumps(dependency['checkpoint'])}"
                             ]
+            elif "compare" in dependency:
+                for operand in ["left", "right"]:
+                    if operand not in dependency[
+                        "compare"
+                    ] or not utils.has_reference_to_template_object_type(
+                        dependency["compare"][operand], "ref", "action"
+                    ):
+                        continue
 
-            return context_mismatches
+                    referenced_action = self._resolve_global_ref(
+                        dependency["compare"][operand]["ref"]
+                    )
+                    if (
+                        referenced_action is None
+                        or not utils.has_reference_to_template_object_type(
+                            referenced_action, "context", "thread"
+                        )
+                    ):
+                        continue
 
-        return find_dependency_context_mismatches_recursive(
-            checkpoint,
-            expected_context=field["context"] if "context" in field else None,
-        )
+                    if checkpoint_context is None or not self._threads[
+                        checkpoint_context
+                    ].has_access_to_context(
+                        utils.parse_ref_id(referenced_action["context"])
+                    ):
+                        context_mismatches += [
+                            f"{self._context(path)}: cannot depend on threaded action: {json.dumps(dependency['compare'][operand]['ref'])}"
+                        ]
+
+        return context_mismatches
 
     def validate_thread(self, path, thread):
         spawn = thread["spawn"] if "spawn" in thread else None
@@ -727,6 +777,7 @@ class SchemaValidator:
             ]
         else:
             # from_object_type must be an object or template object
+            variable_type = None
             if from_object_type.item_type == "OBJECT":
                 variable_type = self._resolve_type_from_object_path(
                     from_object_type.item_tag, spawn["foreach"]
@@ -1280,7 +1331,7 @@ class SchemaValidator:
                                 resolution_context_thread_id is None
                                 or not self._threads[
                                     resolution_context_thread_id
-                                ].has_descendant_thread(
+                                ].has_access_to_context(
                                     utils.parse_ref_id(template_object["context"])
                                 )
                             ):
@@ -1737,6 +1788,10 @@ class SchemaValidator:
             if isinstance(field_name, list):
                 # The unique constraint applies to a combination of fields
                 for item in field if isinstance(field, list) else field.values():
+                    if self._bypass_validation_of_object(template["values"], item):
+                        # avoid psuedo-checkpoint errors
+                        continue
+
                     unique_obj = {}
                     for prop in field_name:
                         if prop in item:
@@ -2372,15 +2427,17 @@ class SchemaValidator:
                         else None
                     )
 
-        self._unreferenced_threads = []
-        for thread_id, thread in self._threads.items():
-            if not len(thread.action_ids) and not len(thread.sub_thread_ids):
-                self._unreferenced_threads.append(thread_id)
-
         nested_checkpoints = []
         for checkpoint in self.schema["checkpoints"]:
             if "alias" in checkpoint:
                 self._checkpoints[checkpoint["alias"]] = checkpoint
+
+                if utils.has_reference_to_template_object_type(
+                    checkpoint, "context", "thread"
+                ):
+                    thread_id = utils.parse_ref_id(checkpoint["context"])
+                    if thread_id in self._threads:
+                        self._threads[thread_id].checkpoints.append(checkpoint["alias"])
 
             if "dependencies" in checkpoint:
                 for dependency in checkpoint["dependencies"]:
@@ -2389,6 +2446,15 @@ class SchemaValidator:
                     ):
                         alias = utils.parse_ref_id(dependency["checkpoint"])
                         nested_checkpoints.append(alias)
+
+        self._unreferenced_threads = []
+        for thread_id, thread in self._threads.items():
+            if (
+                not len(thread.action_ids)
+                and not len(thread.sub_thread_ids)
+                # note that a checkpoint referencing the thread does not count
+            ):
+                self._unreferenced_threads.append(thread_id)
 
         self._unreferenced_checkpoints = []
         for checkpoint in self.schema["checkpoints"]:
@@ -2409,13 +2475,42 @@ class SchemaValidator:
                     # Dependency
                     for operand in ["left", "right"]:
                         if "ref" in dependency["compare"][operand]:
-                            errors = _explore_recursive(
-                                utils.parse_ref_id(
-                                    dependency["compare"][operand]["ref"]
-                                ),
-                                visited,
-                                dependency_path.copy(),
-                            )
+                            if is_variable(dependency["compare"][operand]["ref"]):
+                                # It's a thread variable -- use the implicit dependency
+                                if not utils.has_reference_to_template_object_type(
+                                    obj=checkpoint,
+                                    key="context",
+                                    template_object_type="thread",
+                                ):
+                                    continue
+
+                                thread = self._resolve_global_ref(checkpoint["context"])
+                                if utils.has_reference_to_template_object_type(
+                                    obj=thread,
+                                    key="depends_on",
+                                    template_object_type="checkpoint",
+                                ):
+                                    continue
+
+                                thread_checkpoint = self._resolve_global_ref(
+                                    thread["depends_on"]
+                                )
+                                if thread_checkpoint is None:
+                                    continue
+
+                                errors = _explore_checkpoint_recursive(
+                                    thread_checkpoint,
+                                    visited,
+                                    dependency_path.copy(),
+                                )
+                            else:
+                                errors = _explore_recursive(
+                                    utils.parse_ref_id(
+                                        dependency["compare"][operand]["ref"]
+                                    ),
+                                    visited,
+                                    dependency_path.copy(),
+                                )
 
                             if errors:
                                 return errors
@@ -2670,7 +2765,8 @@ class SchemaValidator:
 
     def _bypass_validation_of_object(self, template, field):
         if (
-            "template" in template
+            isinstance(field, dict)
+            and "template" in template
             and template["template"] == "checkpoint"
             and "alias" in field
             and field["alias"] in self._psuedo_checkpoints

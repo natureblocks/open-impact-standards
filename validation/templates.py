@@ -146,8 +146,17 @@ referenced_operand = {
     "type": "object",
     "properties": {
         "ref": {
-            "type": "ref",
-            "ref_types": ["action"],
+            "types": [
+                {
+                    "type": "ref",
+                    "ref_types": ["action"],
+                },
+                {
+                    "type": "string",
+                    "pattern": patterns.variable,
+                    "pattern_description": "variable name"
+                },
+            ],
         },
         "context": {
             "type": "enum",
@@ -217,13 +226,20 @@ checkpoint = {
                 "any_of_templates": ["dependency", "checkpoint_reference"],
             },
         },
+        "context": {
+            "type": "ref",
+            "ref_types": ["thread"],
+        },
     },
     "constraints": {
-        "optional": ["abbreviated_description", "supporting_info"],
+        "optional": ["abbreviated_description", "supporting_info", "context"],
         "validation_functions": [
             {
                 "function": "validate_is_referenced",
                 "args": ["alias", "checkpoints"],
+            },
+            {
+                "function": "validate_checkpoint_context"
             },
         ],
     },
@@ -407,7 +423,7 @@ action = {
         ],
         "validation_functions": [
             {
-                "function": "validate_does_not_depend_on_threaded_context",
+                "function": "validate_dependency_scope",
             }
         ],
     },
@@ -494,7 +510,7 @@ thread = {
                 "args": ["id", "threads"],
             },
             {
-                "function": "validate_does_not_depend_on_threaded_context",
+                "function": "validate_dependency_scope",
             },
             {
                 "function": "validate_thread",

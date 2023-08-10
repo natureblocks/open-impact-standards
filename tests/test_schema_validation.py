@@ -243,6 +243,7 @@ class TestSchemaValidation:
         schema["checkpoints"].append(
             fixtures.checkpoint(1, "depends-on-1", num_dependencies=1)
         )
+        schema["checkpoints"][1]["context"] = "thread:{0}"
         schema["checkpoints"][1]["dependencies"][0]["compare"]["left"][
             "ref"
         ] = "action:{1}"
@@ -373,7 +374,7 @@ class TestSchemaValidation:
         assert len(errors) == 1
         assert (
             errors[0]
-            == 'root.actions[2] (action id: 2): cannot depend on threaded action: "action:{1}"'
+            == 'root.checkpoints[1]: cannot depend on threaded action: "action:{1}"'
         )
 
         # a thread cannot depend on an action that references said thread as its context
@@ -614,6 +615,146 @@ class TestSchemaValidation:
 
         errors = validator.validate(json_string=json.dumps(schema))
         assert "Circular dependency detected (dependency path: [0, 1, 2, 3])" in errors
+
+    def test_checkpoint_context(self):
+        validator = SchemaValidator()
+
+        schema = fixtures.basic_schema_with_actions(8)
+
+        # If a checkpoint has a threaded context,
+        # it can reference a thread variable from that context
+        schema["checkpoints"] = [
+            fixtures.checkpoint(0, "depends-on-0", num_dependencies=1),
+            fixtures.checkpoint(1, "depends-on-thread-variable", num_dependencies=1),
+        ]
+        schema["threads"] = [
+            fixtures.thread(0, "depends-on-0"),
+        ]
+        schema["threads"][0]["spawn"]["as"] = "$thread_variable"
+        schema["checkpoints"][1]["context"] = "thread:{0}"
+        schema["checkpoints"][1]["dependencies"][0]["compare"] = {
+            "left": {"ref": "$thread_variable"},
+            "operator": "GREATER_THAN",
+            "right": {
+                "ref": "action:{0}",
+                "field": "number",
+            },
+        }
+        schema["actions"][1]["context"] = "thread:{0}"
+        schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-thread-variable}"
+
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # it cannot reference a thread variable that's out of scope
+        schema["threads"].append(fixtures.thread(1, "depends-on-0"))
+        schema["actions"][2]["context"] = "thread:{1}"
+        schema["threads"][1]["spawn"]["as"] = "$out_of_scope_thread_variable"
+        schema["checkpoints"][1]["dependencies"][0]["compare"]["left"][
+            "ref"
+        ] = "$out_of_scope_thread_variable"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.checkpoints[1].dependencies[0].compare: Variable not found within thread scope: "$out_of_scope_thread_variable"'
+            in errors
+        )
+
+        schema["checkpoints"][1]["dependencies"][0]["compare"]["left"][
+            "ref"
+        ] = "$thread_variable"
+
+        # it cannot reference a checkpoint that's out of scope
+        schema["checkpoints"].append(
+            fixtures.checkpoint(2, "out-of-scope", num_dependencies=1)
+        )
+        schema["checkpoints"][2]["context"] = "thread:{1}"
+        schema["checkpoints"][2]["dependencies"][0]["compare"]["right"]["value"] = False
+        schema["actions"][2]["depends_on"] = "checkpoint:{out-of-scope}"
+        # using action 5 to avoid a referenceless checkpoint error further down
+        schema["actions"][5]["context"] = "thread:{1}"
+        schema["actions"][5]["depends_on"] = "checkpoint:{out-of-scope}"
+        schema["checkpoints"][1]["dependencies"].append(
+            {"checkpoint": "checkpoint:{out-of-scope}"}
+        )
+        schema["checkpoints"][1]["gate_type"] = "AND"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.checkpoints[1]: checkpoint with threaded context referenced out of scope: "checkpoint:{out-of-scope}"'
+            in errors
+        )
+
+        # it can reference a checkpoint that has the same context
+        schema["checkpoints"].append(
+            fixtures.checkpoint(3, "same-context", num_dependencies=1)
+        )
+        schema["checkpoints"][3]["dependencies"][0]["compare"] = {
+            "left": {"ref": "action:{0}", "field": "number"},
+            "operator": "GREATER_THAN",
+            "right": {"value": 10},
+        }
+        schema["checkpoints"][3]["context"] = "thread:{0}"
+        schema["checkpoints"][1]["dependencies"][1] = {
+            "checkpoint": "checkpoint:{same-context}"
+        }
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # it can reference a checkpoint that has a parent context
+        schema["threads"].append(fixtures.thread(2))
+        schema["threads"][2]["context"] = "thread:{0}"
+        schema["checkpoints"].append(
+            fixtures.checkpoint(4, "references-parent-context", num_dependencies=1)
+        )
+        schema["checkpoints"][4]["context"] = "thread:{2}"
+        schema["checkpoints"][4]["dependencies"].append(
+            {"checkpoint": "checkpoint:{depends-on-thread-variable}"}
+        )
+        schema["checkpoints"][4]["gate_type"] = "OR"
+        schema["actions"][3]["context"] = "thread:{2}"
+        schema["actions"][3]["depends_on"] = "checkpoint:{references-parent-context}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # it can be referenced by an action that specifies a nested threaded context in the same scope
+        schema["actions"][4]["context"] = "thread:{2}"
+        schema["actions"][4]["depends_on"] = "checkpoint:{depends-on-thread-variable}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # it cannot be referenced by an action if it's not within the scope of the action's context
+        initial_value = schema["actions"][2]["depends_on"]
+        assert schema["actions"][2]["context"] == "thread:{1}"
+        schema["actions"][2]["depends_on"] = "checkpoint:{references-parent-context}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.actions[2].depends_on (action id: 2): checkpoint with threaded context referenced out of scope: "checkpoint:{references-parent-context}"'
+            in errors
+        )
+
+        schema["actions"][2]["depends_on"] = initial_value
+
+        # it cannot be referenced by a thread that's not part of the same context
+        schema["threads"].append(fixtures.thread(3, "depends-on-thread-variable"))
+        schema["actions"][6]["context"] = "thread:{3}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.threads[3].depends_on: checkpoint with threaded context referenced out of scope: "checkpoint:{depends-on-thread-variable}"'
+            in errors
+        )
+
+        # it can be referenced by a thread that specifies the same threaded context
+        schema["threads"][3]["context"] = "thread:{0}"
+        schema["threads"][3]["spawn"]["as"] = "$num"  # avoid name collision
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # it can be referenced by a thread that specifies a nested threaded context in the same scope
+        schema["threads"].append(fixtures.thread(4))
+        schema["threads"][4]["context"] = "thread:{3}"
+        schema["threads"][4]["spawn"]["as"] = "$n"  # avoid name collision
+        schema["actions"][7]["context"] = "thread:{4}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
 
     def test_duplicate_checkpoint_dependencies(self):
         validator = SchemaValidator()
