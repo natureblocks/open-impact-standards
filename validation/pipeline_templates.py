@@ -69,13 +69,16 @@ pipeline = {
             "values": {
                 "type": "object",
                 "properties": {
-                    "from": {"type": "string"},
+                    "from": {
+                        "type": "string",
+                        "pattern": patterns.variable,
+                    },
                     "to": {"type": "string"},
                 },
             },
             "constraints": {
                 "min_length": 1,
-            }
+            },
         },
     },
     "constraints": {
@@ -119,12 +122,7 @@ traverse = {
             "types": [
                 {
                     "type": "ref",
-                    "ref_types": ["action", "thread"],
-                },
-                {
-                    "type": "string",
-                    "pattern": patterns.local_variable,
-                    "pattern_description": "local variable name ",
+                    "ref_types": ["object_promise", "thread_group"],
                 },
                 {
                     "type": "string",
@@ -196,13 +194,8 @@ apply = {
                     "pattern_description": "variable name ",
                 },
                 {
-                    "type": "string",
-                    "pattern": patterns.local_variable,
-                    "pattern_description": "local variable ",
-                },
-                {
                     "type": "ref",
-                    "ref_types": ["action"],
+                    "ref_types": ["object_promise"],
                 },
             ],
         },
@@ -416,7 +409,7 @@ contextual_ref = {
             "types": [
                 {
                     "type": "ref",
-                    "ref_types": ["action"], #TODO: add other ref types after runtime variables have been determined
+                    "ref_types": ["object_promise"], #TODO: add other ref types after runtime variables have been determined
                 },
                 {
                     "type": "string",

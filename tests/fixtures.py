@@ -4,6 +4,7 @@ def basic_schema_with_actions(num_actions):
 
     for i in range(num_actions):
         schema["actions"].append(action(i))
+        schema["object_promises"].append(object_promise(i))
 
     return schema
 
@@ -15,29 +16,44 @@ def basic_schema():
         "parties": [],
         "actions": [],
         "checkpoints": [],
-        "objects": {
+        "object_types": {
             "Placeholder": {
                 "completed": {"field_type": "BOOLEAN"},
                 "name": {"field_type": "STRING"},
                 "number": {"field_type": "NUMERIC"},
                 "numbers": {"field_type": "NUMERIC_LIST"},
-                "edge": {"field_type": "EDGE", "object": "Placeholder"},
-                "objects": {"field_type": "EDGE_COLLECTION", "object": "Placeholder"},
+                "edge": {"field_type": "EDGE", "object_type": "Placeholder"},
+                "objects": {
+                    "field_type": "EDGE_COLLECTION",
+                    "object_type": "Placeholder",
+                },
             }
         },
+        "object_promises": [],
     }
 
 
 def action(action_id=None):
+    if action_id is None:
+        action_id = 0
+
     return {
-        "id": action_id if action_id is not None else 0,
-        "object": "Placeholder",
+        "id": action_id,
+        "object_promise": "object_promise:{" + str(action_id) + "}",
         "description": "test action",
         "party": "party:{Project}",
         "operation": {
             "type": "CREATE",
             "include": ["name"],
         },
+    }
+
+
+def object_promise(op_id=0, object_type="Placeholder"):
+    return {
+        "id": op_id,
+        "name": "object_promise_" + str(op_id),
+        "object_type": object_type,
     }
 
 
@@ -79,7 +95,7 @@ def thread(id, depends_on_id=None):
         "id": id,
         "description": "",
         "spawn": {
-            "from": "action:{0}.object",
+            "from": "object_promise:{0}",
             "foreach": "numbers",
             "as": "$number",
         },

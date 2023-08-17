@@ -33,20 +33,88 @@
             "hex_code": "#fffcc7"
         }
     ],
-    "objects": {
+    "object_types": {
         "Placeholder": {
             "completed": {
                 "field_type": "BOOLEAN",
-                "description": "Placeholder node definition"
+                "description": "Placeholder object definition"
             }
         }
     },
+    "object_promises": [
+        {
+            "id": 0,
+            "name": "object promise 0",
+            "description": "Placeholder object promise",
+            "object_type": "Placeholder"
+        },
+        {
+            "id": 1,
+            "name": "object promise 1",
+            "description": "Placeholder object promise",
+            "object_type": "Placeholder"
+        },
+        {
+            "id": 2,
+            "name": "object promise 2",
+            "description": "Placeholder object promise",
+            "object_type": "Placeholder"
+        },
+        {
+            "id": 3,
+            "name": "object promise 3",
+            "description": "Placeholder object promise",
+            "object_type": "Placeholder"
+        },
+        {
+            "id": 4,
+            "name": "object promise 4",
+            "description": "Placeholder object promise",
+            "object_type": "Placeholder"
+        },
+        {
+            "id": 5,
+            "name": "object promise 5",
+            "description": "Placeholder object promise",
+            "object_type": "Placeholder"
+        },
+        {
+            "id": 6,
+            "name": "object promise 6",
+            "description": "Placeholder object promise",
+            "object_type": "Placeholder"
+        },
+        {
+            "id": 7,
+            "name": "object promise 7",
+            "description": "Placeholder object promise",
+            "object_type": "Placeholder"
+        },
+        {
+            "id": 8,
+            "name": "object promise 8",
+            "description": "Placeholder object promise",
+            "object_type": "Placeholder"
+        },
+        {
+            "id": 9,
+            "name": "object promise 9",
+            "description": "Placeholder object promise",
+            "object_type": "Placeholder"
+        },
+        {
+            "id": 10,
+            "name": "object promise 10",
+            "description": "Placeholder object promise",
+            "object_type": "Placeholder"
+        }
+    ],
     "actions": [
         {
             "id": 7,
             "description": "Set up survey",
             "party": "party:{Project Developer}",
-            "object": "Placeholder",
+            "object_promise": "object_promise:{0}",
             "operation": {
                 "type": "CREATE",
                 "fields": ["field_type", "description"]
@@ -56,7 +124,7 @@
             "id": 8,
             "description": "Make contact with them with preliminary set of questions",
             "party": "party:{Project Developer}",
-            "object": "Placeholder",
+            "object_promise": "object_promise:{1}",
             "operation": {
                 "type": "CREATE",
                 "fields": ["field_type", "description"]
@@ -67,7 +135,7 @@
             "id": 9,
             "description": "Agreement decided between tenant and owner.",
             "party": "party:{Land Representative}",
-            "object": "Placeholder",
+            "object_promise": "object_promise:{2}",
             "operation": {
                 "type": "CREATE",
                 "fields": ["field_type", "description"]
@@ -77,7 +145,7 @@
             "id": 10,
             "description": "Guidance on what should be on the contract from Natureblocks",
             "party": "party:{Project Developer}",
-            "object": "Placeholder",
+            "object_promise": "object_promise:{3}",
             "operation": {
                 "type": "CREATE",
                 "fields": ["field_type", "description"]
@@ -87,7 +155,7 @@
             "id": 11,
             "description": "Written agreement to generate Carbon offsets",
             "party": "party:{Land Representative}",
-            "object": "Placeholder",
+            "object_promise": "object_promise:{4}",
             "operation": {
                 "type": "CREATE",
                 "fields": ["field_type", "description"]
@@ -98,7 +166,7 @@
             "id": 12,
             "description": "Laws and contracts adhered to by both parties",
             "party": "party:{Land Representative}",
-            "object": "Placeholder",
+            "object_promise": "object_promise:{5}",
             "operation": {
                 "type": "CREATE",
                 "fields": ["field_type", "description"]
@@ -109,7 +177,7 @@
             "id": 13,
             "description": "Tenant of land",
             "party": "party:{Land Representative}",
-            "object": "Placeholder",
+            "object_promise": "object_promise:{6}",
             "operation": {
                 "type": "CREATE",
                 "fields": ["field_type", "description"]
@@ -120,7 +188,7 @@
             "id": 14,
             "description": "Is the owner of land",
             "party": "party:{Land Representative}",
-            "object": "Placeholder",
+            "object_promise": "object_promise:{7}",
             "operation": {
                 "type": "CREATE",
                 "fields": ["field_type", "description"]
@@ -131,7 +199,7 @@
             "id": 15,
             "description": "Land user has the rights to generate carbon offsets",
             "party": "party:{Project}",
-            "object": "Placeholder",
+            "object_promise": "object_promise:{8}",
             "operation": {
                 "type": "CREATE",
                 "fields": ["field_type", "description"]
@@ -142,7 +210,7 @@
             "id": 16,
             "description": "No local laws would be broken by planting crops / trees / etc",
             "party": "party:{Project}",
-            "object": "Placeholder",
+            "object_promise": "object_promise:{9}",
             "operation": {
                 "type": "CREATE",
                 "fields": ["field_type", "description"]
@@ -153,7 +221,7 @@
             "id": 17,
             "description": "Usable land available",
             "party": "party:{Project}",
-            "object": "Placeholder",
+            "object_promise": "object_promise:{10}",
             "operation": {
                 "type": "CREATE",
                 "fields": ["field_type", "description"]
@@ -161,7 +229,7 @@
             "depends_on": "checkpoint:{Land Rights and Local Laws#0000}"
         }
     ],
-    "threads": [],
+    "thread_groups": [],
     "checkpoints": [
         {
             "id": 0,

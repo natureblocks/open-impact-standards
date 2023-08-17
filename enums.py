@@ -23,4 +23,4 @@ comparison_operators = (
     "IS_SUPERSET_OF",
 )
 
-ref_types = ("party", "action", "checkpoint", "thread")
+ref_types = ("party", "object_promise", "action", "checkpoint", "thread_group")

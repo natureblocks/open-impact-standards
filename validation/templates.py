@@ -42,7 +42,7 @@ root_object = {
                 "unique": ["id", "name"],
             },
         },
-        "objects": {
+        "object_types": {
             "type": "object",
             "keys": {
                 "type": "string",
@@ -50,6 +50,16 @@ root_object = {
             "values": {
                 "type": "object",
                 "template": "object_definition",
+            },
+        },
+        "object_promises": {
+            "type": "array",
+            "values": {
+                "type": "object",
+                "template": "object_promise",
+            },
+            "constraints": {
+                "unique": ["id", "name"],
             },
         },
         "actions": {
@@ -62,11 +72,11 @@ root_object = {
                 "unique": ["id", "milestones"],
             },
         },
-        "threads": {
+        "thread_groups": {
             "type": "array",
             "values": {
                 "type": "object",
-                "template": "thread",
+                "template": "thread_group",
             },
             "constraints": {
                 "unique": ["id"],
@@ -87,9 +97,9 @@ root_object = {
         },
     },
     "constraints": {
-        "optional": ["threads"],
+        "optional": ["thread_groups"],
     },
-    "property_validation_priority": ["threads"],
+    "property_validation_priority": ["thread_groups"],
 }
 
 object_definition = {
@@ -116,11 +126,11 @@ object_definition = {
                 "value": ["EDGE", "EDGE_COLLECTION"],
                 "then": {
                     "add_properties": {
-                        "object": {
+                        "object_type": {
                             "type": "string",
                             "expected_value": {
                                 "one_of": {
-                                    "from": "root.objects",
+                                    "from": "root.object_types",
                                     "extract": "keys",
                                 },
                             },
@@ -129,6 +139,31 @@ object_definition = {
                 },
             },
         ],
+    },
+}
+
+object_promise = {
+    "type": "object",
+    "properties": {
+        "id": {"type": "integer"},
+        "name": {"type": "string"},
+        "description": {"type": "string"},
+        "object_type": {
+            "type": "string",
+            "expected_value": {
+                "one_of": {
+                    "from": "root.object_types",
+                    "extract": "keys",
+                },
+            },
+        },
+    },
+    "constraints": {
+        "optional": ["description"],
+    },
+    "ref_config": {
+        "fields": ["id", "name"],
+        "collection": "root.object_promises",
     },
 }
 
@@ -228,7 +263,7 @@ checkpoint = {
         },
         "context": {
             "type": "ref",
-            "ref_types": ["thread"],
+            "ref_types": ["thread_group"],
         },
     },
     "constraints": {
@@ -281,14 +316,23 @@ action = {
     "type": "object",
     "properties": {
         "id": {"type": "integer"},
-        "context": {"type": "ref", "ref_types": ["thread"]},
-        "object": {"type": "string"},
+        "context": {
+            "type": "ref",
+            "ref_types": ["thread_group"]
+        },
+        "object_promise": {
+            "type": "ref",
+            "ref_types": ["object_promise"],
+        },
         "description": {"type": "string"},
         "party": {
             "type": "ref",
             "ref_types": ["party"],
         },
-        "depends_on": {"type": "ref", "ref_types": ["checkpoint"]},
+        "depends_on": {
+            "type": "ref",
+            "ref_types": ["checkpoint"],
+        },
         "steps": {
             "type": "array",
             "values": {
@@ -309,24 +353,12 @@ action = {
                 "include": {
                     "type": "array",
                     "nullable": True,
-                    "values": {
-                        "type": "string",
-                        "one_of": {
-                            "from": "root.objects.{object}",
-                            "extract": "keys",
-                        },
-                    },
+                    "values": {"type": "string"},
                 },
                 "exclude": {
                     "type": "array",
                     "nullable": True,
-                    "values": {
-                        "type": "string",
-                        "one_of": {
-                            "from": "root.objects.{object}",
-                            "extract": "keys",
-                        },
-                    },
+                    "values": {"type": "string"},
                 },
             },
             "mutually_exclusive": ["include", "exclude"],
@@ -339,64 +371,20 @@ action = {
                         "add_properties": {
                             "default_values": {
                                 "type": "object",
-                                "keys": {
-                                    "type": "string",
-                                    "expected_value": {
-                                        "one_of": {
-                                            "from": "root.objects.{object}",
-                                            "where": {
-                                                "property": "root.objects.{object}.{_item}.field_type",
-                                                "operator": "NOT_IN",
-                                                "value": ["EDGE", "EDGE_COLLECTION"],
-                                            },
-                                            "extract": "keys",
-                                        },
-                                    },
-                                },
-                                "values": {
-                                    "type": "root.objects.{object}.{_corresponding_key}.field_type",
-                                },
+                                "keys": {"type": "string"},
+                                "values": {"type": "any"},
                             },
                             "default_edges": {
                                 "type": "object",
-                                "keys": {
-                                    "type": "string",
-                                    "expected_value": {
-                                        "one_of": {
-                                            "from": "root.objects.{object}",
-                                            "property": "keys",
-                                            "where": {
-                                                "property": "root.objects.{object}.{_item}.field_type",
-                                                "operator": "IN",
-                                                "value": ["EDGE", "EDGE_COLLECTION"],
-                                            },
-                                        },
-                                    },
-                                },
+                                "keys": {"type": "string"},
                                 "values": {
                                     "type": "ref",
-                                    "ref_types": ["action"],
+                                    "ref_types": ["object_promise"],
                                 },
                             },
                         },
                         "add_constraints": {
                             "optional": ["default_values", "default_edges"],
-                        },
-                    },
-                    "else": {
-                        "add_properties": {
-                            "ref": {
-                                "type": "ref",
-                                "ref_types": ["action"],
-                            },
-                        },
-                        "add_constraints": {
-                            "validation_functions": [
-                                {
-                                    "function": "validate_has_ancestor",
-                                    "args": ["{_parent}.id", "action", "{ref}", "ref"],
-                                }
-                            ],
                         },
                     },
                 },
@@ -423,8 +411,11 @@ action = {
         ],
         "validation_functions": [
             {
+                "function": "validate_action_operation",
+            },
+            {
                 "function": "validate_dependency_scope",
-            }
+            },
         ],
     },
     "if": [
@@ -468,7 +459,7 @@ party = {
     },
 }
 
-thread = {
+thread_group = {
     "type": "object",
     "properties": {
         "id": {"type": "integer"},
@@ -479,7 +470,7 @@ thread = {
             "properties": {
                 "from": {
                     "types": [
-                        {"type": "ref", "ref_types": ["action"]},
+                        {"type": "ref", "ref_types": ["object_promise"]},
                         {
                             "type": "string",
                             "pattern": patterns.variable,
@@ -501,7 +492,7 @@ thread = {
         "validation_functions": [
             {
                 "function": "validate_is_referenced",
-                "args": ["id", "threads"],
+                "args": ["id", "thread_groups"],
             },
             {
                 "function": "validate_dependency_scope",
@@ -513,6 +504,6 @@ thread = {
     },
     "ref_config": {
         "fields": ["id"],
-        "collection": "root.threads",
+        "collection": "root.thread_groups",
     },
 }

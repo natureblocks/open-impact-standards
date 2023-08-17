@@ -9,20 +9,20 @@ from enums import valid_list_item_types
 class TestAggregationPipeline:
     def test_pipeline_object_association(self):
         validator = SchemaValidator()
-        schema = fixtures.basic_schema_with_actions(2)
+        schema = fixtures.basic_schema_with_actions(3)
 
-        schema["actions"][0]["operation"] = {
+        schema["actions"][1]["operation"] = {
             "type": "CREATE",
             "exclude": ["number"],
         }
-        schema["actions"][1]["operation"] = {
+        schema["actions"][2]["operation"] = {
             "type": "EDIT",
             "ref": "action:{0}",
             "exclude": ["number"],
         }
 
         # only the action with operation.type = "CREATE" can specify a pipeline
-        schema["actions"][1]["pipeline"] = {
+        schema["actions"][2]["pipeline"] = {
             "context": "TEMPLATE",
             "variables": [
                 {
@@ -33,7 +33,7 @@ class TestAggregationPipeline:
             ],
             "apply": [
                 {
-                    "from": "$_object.numbers",
+                    "from": "object_promise:{0}.numbers",
                     "aggregate": {
                         "field": "$_item",
                         "operator": "AVERAGE",
@@ -51,12 +51,12 @@ class TestAggregationPipeline:
         }
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            "root.actions[1] (action id: 1): forbidden property specified: pipeline; reason: for an action to specify a pipeline, operation.type must be 'CREATE'."
+            "root.actions[2] (action id: 2): forbidden property specified: pipeline; reason: for an action to specify a pipeline, operation.type must be 'CREATE'."
             in errors
         )
 
-        schema["actions"][0]["pipeline"] = schema["actions"][1]["pipeline"]
-        del schema["actions"][1]["pipeline"]
+        schema["actions"][1]["pipeline"] = schema["actions"][2]["pipeline"]
+        del schema["actions"][2]["pipeline"]
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
@@ -83,7 +83,7 @@ class TestAggregationPipeline:
             ],
             "traverse": [
                 {
-                    "ref": "action:{0}.object.numbers",
+                    "ref": "object_promise:{0}.numbers",
                     "foreach": {
                         "as": "$num",
                         "apply": [
@@ -138,10 +138,10 @@ class TestAggregationPipeline:
         schema["checkpoints"].append(
             fixtures.checkpoint(id=1, alias="depends-on-0", num_dependencies=1)
         )
-        schema["threads"] = [
+        schema["thread_groups"] = [
             fixtures.thread(0, "depends-on-0"),
         ]
-        schema["actions"][1]["context"] = "thread:{0}"
+        schema["actions"][1]["context"] = "thread_group:{0}"
         schema["actions"][2]["pipeline"] = {
             "context": "TEMPLATE",
             "variables": [
@@ -158,7 +158,7 @@ class TestAggregationPipeline:
             ],
             "traverse": [
                 {
-                    "ref": "action:{1}.object",
+                    "ref": "object_promise:{1}",
                     "foreach": {
                         "as": "$object",
                         "apply": [
@@ -208,7 +208,7 @@ class TestAggregationPipeline:
         assert not errors
 
         # from inside the thread, aggregate something from a threaded action
-        schema["actions"][4]["context"] = "thread:{0}"
+        schema["actions"][4]["context"] = "thread_group:{0}"
         schema["actions"][4]["pipeline"] = {
             "context": "TEMPLATE",
             "variables": [
@@ -225,7 +225,7 @@ class TestAggregationPipeline:
             ],
             "apply": [
                 {
-                    "from": "action:{3}.object.objects",
+                    "from": "object_promise:{3}.objects",
                     "sort": [
                         {
                             "field": "number",
@@ -266,7 +266,7 @@ class TestAggregationPipeline:
             },
         }
         schema["checkpoints"].append(depends_on_4)
-        schema["actions"][5]["context"] = "thread:{0}"
+        schema["actions"][5]["context"] = "thread_group:{0}"
         schema["actions"][5]["depends_on"] = "checkpoint:{depends-on-4}"
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
@@ -329,7 +329,7 @@ class TestAggregationPipeline:
         schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-0}"
 
         # should be able to traverse an edge collection
-        set_pipeline_value("traverse", "ref", "action:{0}.object.objects")
+        set_pipeline_value("traverse", "ref", "object_promise:{0}.objects")
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
@@ -337,7 +337,7 @@ class TestAggregationPipeline:
         schema["actions"][1]["pipeline"]["traverse"][0]["foreach"]["variables"].append(
             {
                 "name": "$an_object",
-                "type": "EDGE",
+                "type": "OBJECT",
                 "initial": None,
             }
         )
@@ -354,22 +354,24 @@ class TestAggregationPipeline:
             in errors
         )
 
-        # should be able to traverse threads...
-        schema["threads"] = [
+        # should be able to traverse thread groups...
+        schema["thread_groups"] = [
             fixtures.thread(0, "depends-on-0"),
         ]
-        schema["actions"][2]["context"] = "thread:{0}"  # action:{2} is now threaded
+        schema["actions"][2][
+            "context"
+        ] = "thread_group:{0}"  # action:{2} is now threaded
         set_pipeline_value("variables", "name", "$average_minimums")
         set_pipeline_value("variables", "type", "NUMERIC_LIST")
         set_pipeline_value("variables", "initial", [])
         set_pipeline_value(
-            "traverse", "ref", "action:{2}"
+            "traverse", "ref", "object_promise:{2}"
         )  # traversing the threaded action
         set_pipeline_value(
             "traverse",
             "foreach",
             {
-                "as": "$action",
+                "as": "$object",
                 "variables": [
                     {
                         "name": "$minimums",
@@ -379,7 +381,7 @@ class TestAggregationPipeline:
                 ],
                 "traverse": [  # nested traversal
                     {
-                        "ref": "$action.object.objects",
+                        "ref": "$object.objects",
                         "foreach": {
                             "as": "$edge",
                             "apply": [
@@ -415,10 +417,13 @@ class TestAggregationPipeline:
         assert not errors
 
         # "ref" properties of sibling traversal objects must be unique
-        assert schema["actions"][1]["pipeline"]["traverse"][0]["ref"] == "action:{2}"
+        assert (
+            schema["actions"][1]["pipeline"]["traverse"][0]["ref"]
+            == "object_promise:{2}"
+        )
         schema["actions"][1]["pipeline"]["traverse"].append(
             {
-                "ref": "action:{2}",
+                "ref": "object_promise:{2}",
                 "foreach": {
                     "as": "$edge",
                     "apply": [],
@@ -436,7 +441,7 @@ class TestAggregationPipeline:
         # the same is true for nested traversal objects
         schema["actions"][1]["pipeline"]["traverse"][0]["foreach"]["traverse"].append(
             {
-                "ref": "$action.object.objects",
+                "ref": "$object.objects",
                 "foreach": {
                     "as": "$edge",
                     "apply": [],
@@ -450,7 +455,7 @@ class TestAggregationPipeline:
         )
 
         # should not be able to traverse non-threaded actions
-        set_pipeline_value("traverse", "ref", "action:{0}")
+        set_pipeline_value("traverse", "ref", "object_promise:{0}")
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
             "root.actions[1].pipeline.traverse[0].ref (action id: 1): cannot traverse non-list object"
@@ -478,7 +483,7 @@ class TestAggregationPipeline:
             ],
             "apply": [
                 {
-                    "from": "$_object",
+                    "from": "object_promise:{0}",
                     "aggregate": {
                         "field": "numbers",
                         "operator": "SUM",
@@ -494,7 +499,8 @@ class TestAggregationPipeline:
                 },
             ],
         }
-        validator.validate(json_string=json.dumps(schema))
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
         assert (
             'root.actions[1].pipeline (action id: 1): variable declared but not used: "$names"'
             in validator.warnings
@@ -504,7 +510,7 @@ class TestAggregationPipeline:
         # there should be no warning
         schema["actions"][1]["pipeline"]["traverse"] = [
             {
-                "ref": "$_object.objects",
+                "ref": "object_promise:{0}.objects",
                 "foreach": {
                     "as": "$edge",
                     "apply": [
@@ -518,18 +524,9 @@ class TestAggregationPipeline:
                 },
             },
         ]
-        validator.validate(json_string=json.dumps(schema))
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
         assert not validator.warnings
-
-        # if a traversal loop variable is not used, throw a warning
-        schema["actions"][1]["pipeline"]["traverse"][0]["foreach"]["apply"][0][
-            "from"
-        ] = "action:{0}.object"
-        validator.validate(json_string=json.dumps(schema))
-        assert (
-            'root.actions[1].pipeline (action id: 1): loop variable declared but not used: "$edge"'
-            in validator.warnings
-        )
 
         # loop variables can be used in nested traversal scopes
         # traveral "ref" counts as a use
@@ -584,8 +581,8 @@ class TestAggregationPipeline:
 
     def test_variable_scope(self):
         validator = SchemaValidator()
-        schema = fixtures.basic_schema_with_actions(1)
-        schema["actions"][0]["pipeline"] = {
+        schema = fixtures.basic_schema_with_actions(2)
+        schema["actions"][1]["pipeline"] = {
             "context": "TEMPLATE",
             "variables": [
                 {
@@ -601,7 +598,7 @@ class TestAggregationPipeline:
             ],
             "traverse": [
                 {
-                    "ref": "$_object.objects",
+                    "ref": "object_promise:{0}.objects",
                     "foreach": {
                         "as": "$edge",
                         "variables": [
@@ -641,13 +638,13 @@ class TestAggregationPipeline:
         }
 
         def set_pipeline_value(key1, key2, val):
-            schema["actions"][0]["pipeline"][key1][0][key2] = val
+            schema["actions"][1]["pipeline"][key1][0][key2] = val
 
         # should not be able to reference variables out of scope
         set_pipeline_value("apply", "from", "$average")
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.actions[0].pipeline.apply[0].from (action id: 0): variable not found in pipeline scope: "$average"'
+            'root.actions[1].pipeline.apply[0].from (action id: 1): variable not found in pipeline scope: "$average"'
             in errors
         )
 
@@ -658,14 +655,14 @@ class TestAggregationPipeline:
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
         assert (
-            'root.actions[0].pipeline.apply[0].from (action id: 0): variable used before assignment: "$some_var"'
+            'root.actions[1].pipeline.apply[0].from (action id: 1): variable used before assignment: "$some_var"'
             in validator.warnings
         )
 
-        schema["actions"][0]["pipeline"]["apply"].insert(
+        schema["actions"][1]["pipeline"]["apply"].insert(
             0,
             {
-                "from": "$_object.number",
+                "from": "object_promise:{0}.number",
                 "to": "$some_var",
                 "method": "ADD",
             },
@@ -676,16 +673,16 @@ class TestAggregationPipeline:
         set_pipeline_value("apply", "method", "ADD")
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.actions[0].pipeline.apply[0].to (action id: 0): pipeline variable not found in scope: "$average"'
+            'root.actions[1].pipeline.apply[0].to (action id: 1): pipeline variable not found in scope: "$average"'
             in errors
         )
 
     def test_variable_name_collision(self):
         validator = SchemaValidator()
-        schema = fixtures.basic_schema_with_actions(2)
+        schema = fixtures.basic_schema_with_actions(3)
 
         # should not be able to declare variables with the same name
-        schema["actions"][0]["pipeline"] = {
+        schema["actions"][1]["pipeline"] = {
             "context": "TEMPLATE",
             "variables": [
                 {
@@ -709,21 +706,21 @@ class TestAggregationPipeline:
         }
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.actions[0].pipeline.variables[1].name (action id: 0): variable already defined: "$some_var"'
+            'root.actions[1].pipeline.variables[1].name (action id: 1): variable already defined: "$some_var"'
             in errors
         )
 
         # should not be able to use an already-declared variable name in a nested scope
-        schema["actions"][0]["pipeline"]["variables"] = [
+        schema["actions"][1]["pipeline"]["variables"] = [
             {
                 "name": "$some_var",
                 "type": "NUMERIC",
                 "initial": 0,
             },
         ]
-        schema["actions"][0]["pipeline"]["traverse"] = [
+        schema["actions"][1]["pipeline"]["traverse"] = [
             {
-                "ref": "$_object.objects",
+                "ref": "object_promise:{0}.objects",
                 "foreach": {
                     "as": "$edge",
                     "variables": [
@@ -739,11 +736,11 @@ class TestAggregationPipeline:
         ]
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            "root.actions[0].pipeline.traverse[0].foreach.variables[0].name (action id: 0): variable already defined: $some_var"
+            "root.actions[1].pipeline.traverse[0].foreach.variables[0].name (action id: 1): variable already defined: $some_var"
             in errors
         )
 
-        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"]["variables"][0][
+        schema["actions"][1]["pipeline"]["traverse"][0]["foreach"]["variables"][0][
             "name"
         ] = "$another_var"
         errors = validator.validate(json_string=json.dumps(schema))
@@ -752,26 +749,26 @@ class TestAggregationPipeline:
         # loop variable name cannot collide with...
 
         # ...variable name from parent scope
-        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"]["as"] = "$some_var"
+        schema["actions"][1]["pipeline"]["traverse"][0]["foreach"]["as"] = "$some_var"
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            "root.actions[0].pipeline.traverse[0].foreach.as (action id: 0): variable already defined within pipeline scope: $some_var"
+            "root.actions[1].pipeline.traverse[0].foreach.as (action id: 1): variable already defined within pipeline scope: $some_var"
             in errors
         )
 
         # ...variable name from same scope
-        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"][
+        schema["actions"][1]["pipeline"]["traverse"][0]["foreach"][
             "as"
         ] = "$another_var"
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            "root.actions[0].pipeline.traverse[0].foreach.variables[0].name (action id: 0): variable already defined: $another_var"
+            "root.actions[1].pipeline.traverse[0].foreach.variables[0].name (action id: 1): variable already defined: $another_var"
             in errors
         )
 
         # ...nested loop variable name
-        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"]["as"] = "$loop_var"
-        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"]["traverse"] = [
+        schema["actions"][1]["pipeline"]["traverse"][0]["foreach"]["as"] = "$loop_var"
+        schema["actions"][1]["pipeline"]["traverse"][0]["foreach"]["traverse"] = [
             {
                 "ref": "$loop_var.numbers",
                 "foreach": {
@@ -783,12 +780,12 @@ class TestAggregationPipeline:
         ]
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            "root.actions[0].pipeline.traverse[0].foreach.traverse[0].foreach.as (action id: 0): variable already defined within pipeline scope: $loop_var"
+            "root.actions[1].pipeline.traverse[0].foreach.traverse[0].foreach.as (action id: 1): variable already defined within pipeline scope: $loop_var"
             in errors
         )
 
         # should be able to use the same variable name in different scopes (e.g. sibling "traverse" objects)
-        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"]["traverse"] = [
+        schema["actions"][1]["pipeline"]["traverse"][0]["foreach"]["traverse"] = [
             {
                 "ref": "$loop_var.numbers",
                 "foreach": {
@@ -823,19 +820,17 @@ class TestAggregationPipeline:
 
         # pipeline variables cannot conflict with thread variable names in the same scope
 
-        depends_on_1 = fixtures.checkpoint(
-            id=0, alias="depends-on-1", num_dependencies=1
+        schema["checkpoints"].append(
+            fixtures.checkpoint(id=0, alias="depends-on-0", num_dependencies=1)
         )
-        depends_on_1["dependencies"][0]["compare"]["left"]["ref"] = "action:{1}"
-        schema["checkpoints"].append(depends_on_1)
-        schema["threads"] = [
-            fixtures.thread(0, "depends-on-1"),
+        schema["thread_groups"] = [
+            fixtures.thread(0, "depends-on-0"),
         ]
-        schema["threads"][0]["spawn"]["from"] = "action:{1}.object"
-        schema["actions"][0]["context"] = "thread:{0}"
-        schema["threads"][0]["spawn"]["as"] = "$thread_var"
+        schema["thread_groups"][0]["spawn"]["from"] = "object_promise:{0}"
+        schema["actions"][1]["context"] = "thread_group:{0}"
+        schema["thread_groups"][0]["spawn"]["as"] = "$thread_var"
 
-        schema["actions"][0]["pipeline"]["variables"].append(
+        schema["actions"][1]["pipeline"]["variables"].append(
             {
                 "name": "$thread_var",
                 "type": "NUMERIC",
@@ -844,25 +839,25 @@ class TestAggregationPipeline:
         )
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.actions[0].pipeline.variables[1].name (action id: 0): variable already defined within thread scope: "$thread_var"'
+            'root.actions[1].pipeline.variables[1].name (action id: 1): variable already defined within thread scope: "$thread_var"'
             in errors
         )
 
-        schema["actions"][0]["pipeline"]["variables"].pop()
+        schema["actions"][1]["pipeline"]["variables"].pop()
 
         # same for pipeline loop variables
-        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"]["as"] = "$thread_var"
+        schema["actions"][1]["pipeline"]["traverse"][0]["foreach"]["as"] = "$thread_var"
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            "root.actions[0].pipeline.traverse[0].foreach.as (action id: 0): variable already defined within thread scope: $thread_var"
+            "root.actions[1].pipeline.traverse[0].foreach.as (action id: 1): variable already defined within thread scope: $thread_var"
             in errors
         )
 
-        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"]["as"] = "$loop_var"
+        schema["actions"][1]["pipeline"]["traverse"][0]["foreach"]["as"] = "$loop_var"
 
         # should be able to reuse a thread variable name in the
         # pipeline of an action that is outside of the thread scope.
-        schema["actions"][1]["pipeline"] = {
+        schema["actions"][2]["pipeline"] = {
             "context": "TEMPLATE",
             "variables": [
                 {
@@ -884,15 +879,15 @@ class TestAggregationPipeline:
 
     def test_filter(self):
         validator = SchemaValidator()
-        schema = fixtures.basic_schema_with_actions(1)
+        schema = fixtures.basic_schema_with_actions(2)
 
         def set_filter_value(key, val):
-            schema["actions"][0]["pipeline"]["apply"][0]["filter"]["where"][0][
+            schema["actions"][1]["pipeline"]["apply"][0]["filter"]["where"][0][
                 key
             ] = val
 
         # simple filter
-        schema["actions"][0]["pipeline"] = {
+        schema["actions"][1]["pipeline"] = {
             "context": "TEMPLATE",
             "variables": [
                 {
@@ -913,7 +908,7 @@ class TestAggregationPipeline:
             ],
             "apply": [
                 {
-                    "from": "$_object.objects",
+                    "from": "object_promise:{0}.objects",
                     "filter": {
                         "where": [
                             {
@@ -955,7 +950,7 @@ class TestAggregationPipeline:
         # one of the operands must be a filter variable
         non_filter_variables = [
             {"ref": "$_object.number"},
-            {"ref": "action:{0}.object.number"},
+            {"ref": "object_promise:{0}.number"},
             {"ref": "$some_number"},
             4,
         ]
@@ -963,7 +958,7 @@ class TestAggregationPipeline:
             set_filter_value("right", var)
             errors = validator.validate(json_string=json.dumps(schema))
             assert (
-                'root.actions[0].pipeline.apply[0].filter.where[0].left (action id: 0): "left" and/or "right" must reference the filter variable ("$_item")'
+                'root.actions[1].pipeline.apply[0].filter.where[0].left (action id: 1): "left" and/or "right" must reference the filter variable ("$_item")'
                 in errors
             )
 
@@ -978,7 +973,7 @@ class TestAggregationPipeline:
         set_filter_value("operator", "CONTAINS")
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            "root.actions[0].pipeline.apply[0] (action id: 0): invalid comparison: NUMERIC CONTAINS NUMERIC"
+            "root.actions[1].pipeline.apply[0] (action id: 1): invalid comparison: NUMERIC CONTAINS NUMERIC"
             in errors
         )
 
@@ -987,16 +982,16 @@ class TestAggregationPipeline:
         assert not errors
 
         # gate_type is forbidden for single conditions
-        schema["actions"][0]["pipeline"]["apply"][0]["filter"]["gate_type"] = "AND"
+        schema["actions"][1]["pipeline"]["apply"][0]["filter"]["gate_type"] = "AND"
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            "root.actions[0].pipeline.apply[0].filter (action id: 0): forbidden property specified: gate_type; reason: gate_type is irrelevant when a query has fewer than 2 comparisons."
+            "root.actions[1].pipeline.apply[0].filter (action id: 1): forbidden property specified: gate_type; reason: gate_type is irrelevant when a query has fewer than 2 comparisons."
             in errors
         )
 
         # gate_type is required when there is more than one filter condition
-        del schema["actions"][0]["pipeline"]["apply"][0]["filter"]["gate_type"]
-        schema["actions"][0]["pipeline"]["apply"][0]["filter"]["where"].append(
+        del schema["actions"][1]["pipeline"]["apply"][0]["filter"]["gate_type"]
+        schema["actions"][1]["pipeline"]["apply"][0]["filter"]["where"].append(
             {
                 "left": {
                     "ref": "$_item.name",
@@ -1007,16 +1002,16 @@ class TestAggregationPipeline:
         )
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            "root.actions[0].pipeline.apply[0].filter (action id: 0): missing required property: gate_type"
+            "root.actions[1].pipeline.apply[0].filter (action id: 1): missing required property: gate_type"
             in errors
         )
 
-        schema["actions"][0]["pipeline"]["apply"][0]["filter"]["gate_type"] = "AND"
+        schema["actions"][1]["pipeline"]["apply"][0]["filter"]["gate_type"] = "AND"
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
         # complex gate combinations are allowed
-        schema["actions"][0]["pipeline"]["apply"][0]["filter"]["where"].append(
+        schema["actions"][1]["pipeline"]["apply"][0]["filter"]["where"].append(
             {
                 "where": [
                     {
@@ -1041,17 +1036,17 @@ class TestAggregationPipeline:
         assert not errors
 
         # nested condition groups must specify at least two conditions
-        schema["actions"][0]["pipeline"]["apply"][0]["filter"]["where"][2][
+        schema["actions"][1]["pipeline"]["apply"][0]["filter"]["where"][2][
             "where"
         ].pop()
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            "root.actions[0].pipeline.apply[0].filter.where[2].where (action id: 0): must contain at least 2 item(s), got 1"
+            "root.actions[1].pipeline.apply[0].filter.where[2].where (action id: 1): must contain at least 2 item(s), got 1"
             in errors
         )
 
         # should be able to nest condition groups to arbitrary depths
-        schema["actions"][0]["pipeline"]["apply"][0]["filter"]["where"][2][
+        schema["actions"][1]["pipeline"]["apply"][0]["filter"]["where"][2][
             "where"
         ].append(
             {
@@ -1100,12 +1095,17 @@ class TestAggregationPipeline:
 
     def test_apply(self):
         validator = SchemaValidator()
-        schema = fixtures.basic_schema_with_actions(1)
-        schema["actions"][0]["pipeline"] = {
+        schema = fixtures.basic_schema_with_actions(2)
+        schema["actions"][1]["pipeline"] = {
             "context": "TEMPLATE",
             "variables": [
                 {
                     "name": "$some_var",
+                    "type": "NUMERIC",
+                    "initial": 0,
+                },
+                {
+                    "name": "$output_var",
                     "type": "NUMERIC",
                     "initial": 0,
                 },
@@ -1119,37 +1119,37 @@ class TestAggregationPipeline:
             ],
             "output": [
                 {
-                    "from": "$some_var",
+                    "from": "$output_var",
                     "to": "number",
                 }
             ],
         }
 
         def set_pipeline_value(key1, key2, val):
-            schema["actions"][0]["pipeline"][key1][0][key2] = val
+            schema["actions"][1]["pipeline"][key1][0][key2] = val
 
         # referenced variables must exist
         set_pipeline_value("apply", "from", "$non_existent_var")
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.actions[0].pipeline.apply[0].from (action id: 0): variable not found in pipeline scope: "$non_existent_var"'
+            'root.actions[1].pipeline.apply[0].from (action id: 1): variable not found in pipeline scope: "$non_existent_var"'
             in errors
         )
 
         # assigned type must match variable type
-        schema["actions"][0]["pipeline"]["variables"][0] = {
+        schema["actions"][1]["pipeline"]["variables"][0] = {
             "name": "$some_var",
             "type": "NUMERIC",
             "initial": None,
         }
-        schema["actions"][0]["pipeline"]["apply"][0] = {
-            "from": "$_object.name",
+        schema["actions"][1]["pipeline"]["apply"][0] = {
+            "from": "object_promise:{0}.name",
             "method": "SET",
             "to": "$some_var",
         }
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.actions[0].pipeline.apply[0] (action id: 0): cannot set value of type "STRING" to variable of type "NUMERIC"'
+            'root.actions[1].pipeline.apply[0] (action id: 1): cannot set value of type "STRING" to variable of type "NUMERIC"'
             in errors
         )
 
@@ -1158,14 +1158,14 @@ class TestAggregationPipeline:
         assert not errors
 
         # "SET" can only be used for the first operation on a variable
-        schema["actions"][0]["pipeline"]["variables"].append(
+        schema["actions"][1]["pipeline"]["variables"].append(
             {
                 "name": "$another_var",
                 "type": "STRING",
                 "initial": "",
             }
         )
-        schema["actions"][0]["pipeline"]["apply"].append(
+        schema["actions"][1]["pipeline"]["apply"].append(
             {
                 "from": "$another_var",
                 "method": "SET",
@@ -1174,7 +1174,7 @@ class TestAggregationPipeline:
         )
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.actions[0].pipeline.apply[1] (action id: 0): the "SET" method can only be used for the first operation on a variable'
+            'root.actions[1].pipeline.apply[1] (action id: 1): the "SET" method can only be used for the first operation on a variable'
             in errors
         )
 
@@ -1182,19 +1182,19 @@ class TestAggregationPipeline:
         set_pipeline_value("apply", "method", "CONCAT")
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.actions[0].pipeline.apply[0] (action id: 0): when a variable\'s initial value is null, the "SET" method must be used for the first operation on the variable'
+            'root.actions[1].pipeline.apply[0] (action id: 1): when a variable\'s initial value is null, the "SET" method must be used for the first operation on the variable'
             in errors
         )
 
         # method must be valid for types
-        schema["actions"][0]["pipeline"]["variables"][0] = {
+        schema["actions"][1]["pipeline"]["variables"][0] = {
             "name": "$some_var",
             "type": "STRING_LIST",
             "initial": [],
         }
-        schema["actions"][0]["pipeline"]["apply"] = [
+        schema["actions"][1]["pipeline"]["apply"] = [
             {
-                "from": "$_object.name",
+                "from": "object_promise:{0}.name",
                 "method": "ADD",
                 "to": "$some_var",
             }
@@ -1217,10 +1217,15 @@ class TestAggregationPipeline:
                     "type": None,
                     "initial": None,
                 },
+                {
+                    "name": "$output_var",
+                    "type": "NUMERIC",
+                    "initial": 0,
+                },
             ],
             "output": [
                 {
-                    "from": "$some_var",
+                    "from": "$output_var",
                     "to": "number",
                 }
             ],
@@ -1281,13 +1286,13 @@ class TestAggregationPipeline:
         validator = SchemaValidator()
 
         validator.schema = {
-            "objects": {
+            "object_types": {
                 "NodeA": {
                     "string_field": {"field_type": "STRING"},
                     "numeric_list_field": {"field_type": "NUMERIC_LIST"},
                     "b": {
                         "field_type": "EDGE",
-                        "object": "NodeB",
+                        "object_type": "NodeB",
                     },
                 },
                 "NodeB": {
@@ -1295,14 +1300,14 @@ class TestAggregationPipeline:
                     "string_list_field": {"field_type": "STRING_LIST"},
                     "c_collection": {
                         "field_type": "EDGE_COLLECTION",
-                        "object": "NodeC",
+                        "object_type": "NodeC",
                     },
                 },
                 "NodeC": {
                     "boolean_field": {"field_type": "BOOLEAN"},
                     "d_collection": {
                         "field_type": "EDGE_COLLECTION",
-                        "object": "NodeD",
+                        "object_type": "NodeD",
                     },
                 },
                 "NodeD": {
@@ -1377,120 +1382,6 @@ class TestAggregationPipeline:
                 "NodeC", "d_collection.numeric_list_field"
             )
 
-    def test_global_ref_refers_to_local_object(self):
-        validator = SchemaValidator()
-        schema = fixtures.basic_schema_with_actions(1)
-
-        # an "apply" object's "from" property may reference the local object...
-        # should throw a warning if a global ref is used to do this.
-        schema["actions"][0]["pipeline"] = {
-            "context": "TEMPLATE",
-            "variables": [
-                {
-                    "name": "$some_var",
-                    "type": "NUMERIC_LIST",
-                    "initial": [],
-                },
-            ],
-            "apply": [
-                {
-                    "from": "action:{0}.object.number",
-                    "method": "APPEND",
-                    "to": "$some_var",
-                },
-            ],
-            "output": [
-                {
-                    "from": "$some_var",
-                    "to": "numbers",
-                },
-            ],
-        }
-        validator.validate(json_string=json.dumps(schema))
-        assert (
-            'root.actions[0].pipeline.apply[0].from (action id: 0): global ref refers to the local object -- consider using "$_object" instead to reference the local object.'
-            in validator.warnings
-        )
-
-        schema["actions"][0]["pipeline"]["apply"][0]["from"] = "$_object.number"
-        validator.validate(json_string=json.dumps(schema))
-        assert not validator.warnings
-
-        # a "traverse" object's "ref" property may reference the local object...
-        # should throw a warning if a global ref is used to do this.
-        schema["actions"][0]["pipeline"]["traverse"] = [
-            {
-                "ref": "action:{0}.object.objects",
-                "foreach": {
-                    "as": "$edge",
-                    "apply": [
-                        {
-                            "from": "$edge.number",
-                            "method": "APPEND",
-                            "to": "$some_var",
-                        },
-                    ],
-                },
-            },
-        ]
-        validator.validate(json_string=json.dumps(schema))
-        assert (
-            'root.actions[0].pipeline.traverse[0].ref (action id: 0): global ref refers to the local object -- consider using "$_object" instead to reference the local object'
-            in validator.warnings
-        )
-
-        schema["actions"][0]["pipeline"]["traverse"][0]["ref"] = "$_object.objects"
-        validator.validate(json_string=json.dumps(schema))
-        assert not validator.warnings
-
-        # an "apply" object nested inside a traversal may also reference the local object
-        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"]["apply"] = [
-            {
-                "from": "action:{0}.object.number",
-                "method": "APPEND",
-                "to": "$some_var",
-            },
-            {
-                "from": "$edge",  # just using this to avoid another warning
-                "select": "numbers",
-                "method": "CONCAT",
-                "to": "$some_var",
-            },
-        ]
-        validator.validate(json_string=json.dumps(schema))
-        assert (
-            'root.actions[0].pipeline.traverse[0].foreach.apply[0].from (action id: 0): global ref refers to the local object -- consider using "$_object" instead to reference the local object.'
-            in validator.warnings
-        )
-
-        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"]["apply"][0][
-            "from"
-        ] = "$_object.number"
-        validator.validate(json_string=json.dumps(schema))
-        assert not validator.warnings
-
-        # a nested traversal object's "ref" property may reference the local object
-        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"]["traverse"] = [
-            {
-                "ref": "action:{0}.object.objects",
-                "foreach": {
-                    "as": "$edge",
-                    "apply": [],
-                },
-            },
-        ]
-        validator.validate(json_string=json.dumps(schema))
-        assert (
-            'root.actions[0].pipeline.traverse[0].foreach.traverse[0].ref (action id: 0): global ref refers to the local object -- consider using "$_object" instead to reference the local object'
-            in validator.warnings
-        )
-
-        schema["actions"][0]["pipeline"]["traverse"][0]["foreach"]["traverse"][0][
-            "ref"
-        ] = "$_object.objects"
-        validator.validate(json_string=json.dumps(schema))
-        assert not validator.warnings
-
     def test_threaded_action_references(self):
         validator = SchemaValidator()
         schema = fixtures.basic_schema_with_actions(4)
@@ -1499,11 +1390,11 @@ class TestAggregationPipeline:
         schema["checkpoints"] = [
             fixtures.checkpoint(id=0, alias="depends-on-0", num_dependencies=1),
         ]
-        schema["threads"] = [
+        schema["thread_groups"] = [
             fixtures.thread(0, "depends-on-0"),
         ]
-        schema["actions"][1]["context"] = "thread:{0}"
-        schema["actions"][2]["context"] = "thread:{0}"
+        schema["actions"][1]["context"] = "thread_group:{0}"
+        schema["actions"][2]["context"] = "thread_group:{0}"
         schema["actions"][2]["pipeline"] = {
             "context": "TEMPLATE",
             "variables": [
@@ -1515,12 +1406,12 @@ class TestAggregationPipeline:
             ],
             "apply": [
                 {
-                    "from": "action:{1}.object.numbers",
+                    "from": "object_promise:{1}.numbers",
                     "method": "CONCAT",
                     "to": "$numbers",
                 },
                 {
-                    "from": "action:{1}.object.edge.numbers",
+                    "from": "object_promise:{1}.edge.numbers",
                     "method": "CONCAT",
                     "to": "$numbers",
                 },
@@ -1548,7 +1439,7 @@ class TestAggregationPipeline:
             ],
             "apply": [
                 {
-                    "from": "action:{2}.object.numbers",
+                    "from": "object_promise:{2}.numbers",
                     "method": "CONCAT",
                     "to": "$numbers",
                 },
@@ -1570,6 +1461,6 @@ class TestAggregationPipeline:
         # referencing a non-list on a threaded action should be allowed
         schema["actions"][3]["pipeline"]["apply"][0][
             "from"
-        ] = "action:{2}.object.number"
+        ] = "object_promise:{2}.number"
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors

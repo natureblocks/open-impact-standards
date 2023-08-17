@@ -1,5 +1,5 @@
 global_ref_identifier = "^{.+}$"
-global_ref = "(^(action|thread|object):{.+}).?(.*)$"
+global_ref = "(^(action|thread|object|object_promise):{.+}).?(.*)$"
 
 # must begin with "$_", which is reserved for local variables
 local_variable = "^\$_.+$"

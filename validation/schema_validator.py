@@ -26,7 +26,7 @@ class SchemaValidator:
         # { alias: checkpoint}
         self._checkpoints = {}  # to be collected during validation
         self._psuedo_checkpoints = []  # for implicit action dependencies on threads
-        self._threads = {}
+        self._thread_groups = {}
 
         # {action_id: Pipeline}
         self._pipelines = {}
@@ -98,6 +98,9 @@ class SchemaValidator:
             return []
 
         expected_type = template["type"]
+
+        if expected_type == "any":
+            return []
 
         if expected_type == "ref":
             return self._validate_ref(path, field, template)
@@ -343,6 +346,179 @@ class SchemaValidator:
 
         return []
 
+    def validate_action_operation(self, path, action):
+        if (
+            "operation" not in action
+            or not utils.has_reference_to_template_object_type(
+                action, "object_promise", "object_promise"
+            )
+            or "type" not in action["operation"]
+            or ("include" in action["operation"] and "exclude" in action["operation"])
+        ):
+            # validation will have caught this already
+            return []
+
+        object_promise = self._resolve_global_ref(action["object_promise"])
+        if (
+            object_promise is None
+            or "object_type" not in object_promise
+            or object_promise["object_type"] not in self.schema["object_types"]
+        ):
+            # validation will have caught this already
+            return []
+
+        object_type = self._get_field(f"object_types.{object_promise['object_type']}")
+        if object_type is None:
+            # validation will have caught this already
+            return []
+
+        errors = []
+
+        # "include" / "exclude" must only specify fields from the object definition,
+        # or be null.
+        operation = action["operation"]
+        for inclusion_type in ["include", "exclude"]:
+            if inclusion_type not in operation or operation[inclusion_type] is None:
+                continue
+
+            if not isinstance(operation[inclusion_type], list):
+                return [
+                    f"{self._context(path)}.operation.include: expected array or null, got {json.dumps(type(operation['include']).__name__)}"
+                ]
+
+            for field in operation[inclusion_type]:
+                if field not in object_type:
+                    errors += [
+                        f"{self._context(path)}.operation.{inclusion_type}: field does not exist on object type {object_promise['object_type']}: {json.dumps(field)}"
+                    ]
+
+        if operation["type"] == "CREATE":
+            if "default_values" in operation:
+                if not isinstance(operation["default_values"], dict):
+                    return [
+                        f"{self._context(path)}.operation.default_values: expected object, got {json.dumps(type(operation['default_values']).__name__)}"
+                    ]
+
+                for key, val in operation["default_values"].items():
+                    # keys must be non-edge/edge collection fields on the object promise's object definition
+                    if key not in object_type:
+                        errors += [
+                            f"{self._context(path)}.operation.default_values.{key}: field does not exist on object type: {json.dumps(object_promise['object_type'])}"
+                        ]
+                    elif "field_type" not in object_type[key]:
+                        # object type validation will have caught this already
+                        continue
+                    elif object_type[key]["field_type"] == "EDGE":
+                        errors += [
+                            f'{self._context(path)}.operation.default_values.{key}: cannot specify default value for edge here; use "default_edges" instead'
+                        ]
+                    elif object_type[key]["field_type"] == "EDGE_COLLECTION":
+                        errors += [
+                            f"{self._context(path)}.operation.default_values.{key}: setting default values for edge collections is not supported"
+                        ]
+                    else:
+                        # the type of the provided default value must match the type of the field on the object definition
+                        expected_type = object_type[key]["field_type"]
+                        actual_type = pipeline_utils.field_type_details_from_scalar(
+                            val
+                        ).to_field_type_string()
+                        if actual_type != expected_type:
+                            errors += [
+                                f"{self._context(path)}.operation.default_values: expected value of type {expected_type}, got {actual_type}: {json.dumps(val)}"
+                            ]
+            if "default_edges" in operation:
+                if not isinstance(operation["default_edges"], dict):
+                    return [
+                        f"{self._context(path)}.operation.default_edges: expected object, got {json.dumps(type(operation['default_edges']).__name__)}"
+                    ]
+                # keys must be edge/edge collection fields on the object promise's object definition
+                # values must reference an object promise of the applicable object type
+                for key, val in operation["default_edges"].items():
+                    if key not in object_type:
+                        errors += [
+                            f"{self._context(path)}.operation.default_edges.{key}: field does not exist on object type: {json.dumps(object_promise['object_type'])}"
+                        ]
+                    elif "field_type" not in object_type[key]:
+                        # object type validation will have caught this already
+                        continue
+                    elif object_type[key]["field_type"] == "EDGE_COLLECTION":
+                        errors += [
+                            f"{self._context(path)}.operation.default_edges.{key}: setting default values for edge collections is not supported"
+                        ]
+                    elif object_type[key]["field_type"] != "EDGE":
+                        errors += [
+                            f'{self._context(path)}.operation.default_edges.{key}: cannot specify default value for non-edge here; use "default_values" instead'
+                        ]
+                    else:
+                        if not utils.has_reference_to_template_object_type(
+                            operation["default_edges"], key, "object_promise"
+                        ):
+                            # ref validation will have caught this already
+                            continue
+
+                        object_promise_edge = self._resolve_global_ref(val)
+                        if object_promise_edge is None:
+                            errors += [
+                                f"{self._context(path)}.operation.default_edges.{key}: could not resolve object promise reference: {json.dumps(val)}"
+                            ]
+                        elif "object_type" not in object_promise_edge:
+                            # object type validation will have caught this already
+                            continue
+                        elif (
+                            object_promise_edge["object_type"]
+                            != object_type[key]["object_type"]
+                        ):
+                            errors += [
+                                f"{self._context(path)}.operation.default_edges.{key}: object type of referenced object promise does not match the object type definition: {json.dumps(val)}"
+                                + f"; expected {json.dumps(object_type[key]['object_type'])}, got {json.dumps(object_promise_edge['object_type'])}"
+                            ]
+                        elif not self._object_promise_fulfilled_by_ancestor(
+                            path, action, object_promise_edge
+                        ):
+                            errors += [
+                                f"{self._context(path)}.operation.default_edges.{key}: an ancestor of the action must fulfill the referenced object promise: {json.dumps(val)}"
+                            ]
+        elif operation["type"] == "EDIT":
+            if "default_values" in operation:
+                errors += [
+                    f"{self._context(path)}.operation.default_values: default values are not supported for EDIT operations"
+                ]
+            if "default_edges" in operation:
+                errors += [
+                    f"{self._context(path)}.operation.default_edges: default edges are not supported for EDIT operations"
+                ]
+
+            if not self._object_promise_fulfilled_by_ancestor(
+                path, action, object_promise
+            ):
+                errors += [
+                    f"{self._context(path)}.operation.type: for EDIT operations, an ancestor of the action must fulfill the referenced object promise: {json.dumps(action['object_promise'])}"
+                ]
+
+        return errors
+
+    def _object_promise_fulfilled_by_ancestor(self, path, action, object_promise):
+        if "id" not in action or "id" not in object_promise:
+            # object promise validation will have caught this already
+            return True
+
+        if str(object_promise["id"]) not in self._object_promise_fulfillment_actions:
+            return False
+
+        fulfiller_id = self._object_promise_fulfillment_actions[
+            str(object_promise["id"])
+        ]
+        return (
+            self.validate_has_ancestor(
+                path,
+                descendant_id=action["id"],
+                descendant_type="action",
+                ancestor_ref="action:{" + str(fulfiller_id) + "}",
+                ancestor_source="",  # irrelevant
+            )
+            == []
+        )
+
     def validate_has_ancestor(
         self, path, descendant_id, descendant_type, ancestor_ref, ancestor_source
     ):
@@ -401,7 +577,7 @@ class SchemaValidator:
             return validate_has_ancestor_recursive(
                 self._action_checkpoints[descendant_id], []
             )
-        elif descendant_type == "thread":
+        elif descendant_type == "thread_group":
             if descendant_id not in self._thread_checkpoints:
                 return error
 
@@ -443,22 +619,38 @@ class SchemaValidator:
                             + ref_type
                         )
 
-                    if "object" not in referenced_obj:
+                    if not utils.has_reference_to_template_object_type(
+                        referenced_obj, "object_promise", "object_promise"
+                    ):
                         raise Exception(
-                            "Referenced action does not have an 'object' property: "
+                            "Referenced action does not have an 'object_promise' property: "
                             + operand_object["ref"]
                         )
 
-                    node_definition = self._get_field(
-                        f"objects.{referenced_obj['object']}"
+                    object_promise = self._resolve_global_ref(
+                        referenced_obj["object_promise"]
                     )
-                    if node_definition is None:
+                    if object_promise is None:
                         raise Exception(
-                            "'object' not found for referenced action: "
+                            "Failed to resolve object promise: "
+                            + referenced_obj["object_promise"]
+                        )
+                    if "object_type" not in object_promise:
+                        raise Exception(
+                            "Object promise does not have an 'object_type' property: "
+                            + referenced_obj["object_promise"]
+                        )
+
+                    object_type = self._get_field(
+                        f"object_types.{object_promise['object_type']}"
+                    )
+                    if object_type is None:
+                        raise Exception(
+                            "could not resolve object type from referenced action: "
                             + operand_object["ref"]
                         )
 
-                    return node_definition[operand_object["field"]]["field_type"]
+                    return object_type[operand_object["field"]]["field_type"]
                 elif is_variable(operand_object["ref"]):
                     # thread variable
                     ref_path = operand_object["ref"].split(".")
@@ -572,19 +764,21 @@ class SchemaValidator:
 
         checkpoint = self._resolve_global_ref(field["depends_on"])
         if not utils.has_reference_to_template_object_type(
-            checkpoint, "context", "thread"
+            checkpoint, "context", "thread_group"
         ):
             return []
 
         # checkpoint has threaded context -- it must be within the scope of field's context
-        if not utils.has_reference_to_template_object_type(field, "context", "thread"):
+        if not utils.has_reference_to_template_object_type(
+            field, "context", "thread_group"
+        ):
             return [
                 f"{self._context(path + '.depends_on')}: checkpoint with threaded context referenced out of scope: {json.dumps(field['depends_on'])}"
             ]
 
         checkpoint_thread_id = utils.parse_ref_id(checkpoint["context"])
         field_thread_id = utils.parse_ref_id(field["context"])
-        if not self._threads[field_thread_id].has_access_to_context(
+        if not self._thread_groups[field_thread_id].has_access_to_context(
             checkpoint_thread_id
         ):
             return [
@@ -597,7 +791,7 @@ class SchemaValidator:
         checkpoint_context = (
             utils.parse_ref_id(checkpoint["context"])
             if utils.has_reference_to_template_object_type(
-                checkpoint, "context", "thread"
+                checkpoint, "context", "thread_group"
             )
             else None
         )
@@ -615,7 +809,7 @@ class SchemaValidator:
 
                 # if the referenced_checkpoint has a threaded context...
                 if utils.has_reference_to_template_object_type(
-                    referenced_checkpoint, "context", "thread"
+                    referenced_checkpoint, "context", "thread_group"
                 ):
                     if checkpoint_context is None:
                         context_mismatches += [
@@ -627,9 +821,9 @@ class SchemaValidator:
                             referenced_checkpoint["context"]
                         )
 
-                        if not self._threads[checkpoint_context].has_access_to_context(
-                            referenced_checkpoint_context
-                        ):
+                        if not self._thread_groups[
+                            checkpoint_context
+                        ].has_access_to_context(referenced_checkpoint_context):
                             context_mismatches += [
                                 f"{self._context(path)}: checkpoint with threaded context referenced out of scope: {json.dumps(dependency['checkpoint'])}"
                             ]
@@ -648,12 +842,12 @@ class SchemaValidator:
                     if (
                         referenced_action is None
                         or not utils.has_reference_to_template_object_type(
-                            referenced_action, "context", "thread"
+                            referenced_action, "context", "thread_group"
                         )
                     ):
                         continue
 
-                    if checkpoint_context is None or not self._threads[
+                    if checkpoint_context is None or not self._thread_groups[
                         checkpoint_context
                     ].has_access_to_context(
                         utils.parse_ref_id(referenced_action["context"])
@@ -678,23 +872,23 @@ class SchemaValidator:
         def resolve_thread_scope_recursive(thread):
             # get the scope of the thread
             thread_id = str(thread["id"])
-            if self._threads[thread_id].scope is not None:
-                return self._threads[thread_id].scope
+            if self._thread_groups[thread_id].scope is not None:
+                return self._thread_groups[thread_id].scope
 
             if "context" not in thread:
                 # it's a top-level thread
-                self._threads[thread_id].scope = thread_id
+                self._thread_groups[thread_id].scope = thread_id
                 return thread_id
             else:
                 # it's a nested thread
                 if is_global_ref(thread["context"]):
                     # resolve all parent threads first
                     parent_thread_id = utils.parse_ref_id(thread["context"])
-                    if parent_thread_id not in self._threads:
+                    if parent_thread_id not in self._thread_groups:
                         return None  # cannot resolve parent thread scope
 
                     if (
-                        self._threads[parent_thread_id].scope is None
+                        self._thread_groups[parent_thread_id].scope is None
                         and resolve_thread_scope_recursive(
                             thread=self._resolve_global_ref(thread["context"])
                         )
@@ -703,8 +897,8 @@ class SchemaValidator:
                         return None  # could not resolve parent thread scope
 
                     # record the thread and set its scope
-                    scope = f"{self._threads[parent_thread_id].scope}.{thread_id}"
-                    self._threads[thread_id].scope = scope
+                    scope = f"{self._thread_groups[parent_thread_id].scope}.{thread_id}"
+                    self._thread_groups[thread_id].scope = scope
 
                     return scope
 
@@ -719,11 +913,11 @@ class SchemaValidator:
         thread_id = str(thread["id"])
         if is_global_ref(spawn["from"]):
             # if the global ref is an action, it must be an ancestor of the thread
-            if utils.parse_ref_type(spawn["from"]) == "action":
+            if utils.parse_ref_type(spawn["from"]) == "object_promise":
                 errors += self.validate_has_ancestor(
                     path,
                     descendant_id=thread_id,
-                    descendant_type="thread",
+                    descendant_type="thread_group",
                     ancestor_ref=spawn["from"],
                     ancestor_source="spawn.from",
                 )
@@ -734,7 +928,7 @@ class SchemaValidator:
                 resolution_context_thread_id = (
                     utils.parse_ref_id(thread["context"])
                     if utils.has_reference_to_template_object_type(
-                        thread, "context", "thread"
+                        thread, "context", "thread_group"
                     )
                     else None
                 )
@@ -820,21 +1014,18 @@ class SchemaValidator:
             # thread variables are essentially loop variables, so the collection is de-listified here for convenience
             variable_type.is_list = False
             # record the variable type
-            self._threads[thread_id].variables[var_name] = variable_type
+            self._thread_groups[thread_id].variables[var_name] = variable_type
 
         return errors
 
     def _get_action_thread_scope(self, path):
         action = self._get_parent_action(path)
-        if (
-            action is not None
-            and "context" in action
-            and utils.parse_ref_type(action["context"]) == "thread"
-            and is_global_ref(action["context"])
+        if action is not None and utils.has_reference_to_template_object_type(
+            action, "context", "thread_group"
         ):
             thread_id = utils.parse_ref_id(action["context"])
-            if thread_id in self._threads:
-                return self._threads[thread_id].scope
+            if thread_id in self._thread_groups:
+                return self._thread_groups[thread_id].scope
 
         return None
 
@@ -846,18 +1037,18 @@ class SchemaValidator:
         thread_path = scope.split(".")
         thread_path.reverse()
         for thread_id in thread_path:
-            if thread_id not in self._threads:
+            if thread_id not in self._thread_groups:
                 break
 
-            thread_context = self._threads[thread_id]
+            thread_context = self._thread_groups[thread_id]
             if var_name in thread_context.variables:
                 return thread_context.variables[var_name]
 
         if check_nested_scopes:
 
             def check_nested_scopes_recursive(thread_id):
-                for sub_thread_id in self._threads[thread_id].sub_thread_ids:
-                    sub_thread_context = self._threads[sub_thread_id]
+                for sub_thread_id in self._thread_groups[thread_id].sub_thread_ids:
+                    sub_thread_context = self._thread_groups[sub_thread_id]
 
                     if var_name in sub_thread_context.variables:
                         return sub_thread_context.variables[var_name]
@@ -868,6 +1059,81 @@ class SchemaValidator:
             return check_nested_scopes_recursive(thread_id)
 
         return None
+
+    def _record_object_promise_fulfillment_actions(self, action):
+        if (
+            "id" in action
+            and "operation" in action
+            and "type" in action["operation"]
+            and action["operation"]["type"] == "CREATE"
+            and utils.has_reference_to_template_object_type(
+                action, "object_promise", "object_promise"
+            )
+        ):
+            object_promise = self._resolve_global_ref(action["object_promise"])
+            if object_promise is not None and "id" in object_promise:
+                self._object_promise_fulfillment_actions[
+                    str(object_promise["id"])
+                ] = str(action["id"])
+
+    def _record_operation(self, action):
+        if (
+            "id" not in action
+            or "operation" not in action
+            or not utils.has_reference_to_template_object_type(
+                action, "object_promise", "object_promise"
+            )
+        ):
+            return
+
+        object_promise = self._resolve_global_ref(action["object_promise"])
+        if (
+            object_promise is None
+            or "id" not in object_promise
+            or "object_type" not in object_promise
+            or object_promise["object_type"] not in self.schema["object_types"]
+        ):
+            return
+
+        object_promise_id = str(object_promise["id"])
+        object_definition = self.schema["object_types"][object_promise["object_type"]]
+        operation = action["operation"]
+
+        if object_promise_id not in self._settable_fields:
+            self._settable_fields[object_promise_id] = set()
+
+        if "include" in operation:
+            if isinstance(operation["include"], list):
+                for field_name in operation["include"]:
+                    if field_name in object_definition:
+                        self._settable_fields[object_promise_id].add(field_name)
+        elif "exclude" in operation:
+            if operation["exclude"] is None:
+                # include all fields
+                for field_name in object_definition:
+                    self._settable_fields[object_promise_id].add(field_name)
+            elif isinstance(operation["exclude"], list):
+                # deduce included fields
+                for field_name in object_definition:
+                    if field_name not in operation["exclude"]:
+                        self._settable_fields[object_promise_id].add(field_name)
+
+        # default_values can be used to set values
+        if "default_values" in operation:
+            if isinstance(operation["default_values"], dict):
+                for field_name in operation["default_values"]:
+                    if field_name in object_definition:
+                        self._settable_fields[object_promise_id].add(field_name)
+
+        # default_edges can be used to set values
+        if "default_edges" in operation:
+            if isinstance(operation["default_edges"], dict):
+                for field_name in operation["default_edges"]:
+                    if (
+                        field_name in object_definition
+                        and object_definition[field_name]["field_type"] == "EDGE"
+                    ):
+                        self._settable_fields[object_promise_id].add(field_name)
 
     def validate_pipeline(self, path, field):
         pipeline = self._set_pipeline_at_path(path)
@@ -943,17 +1209,11 @@ class SchemaValidator:
         # were any variables declared but not used?
         for variables in pipeline.variables.values():
             for var_name, var in variables.items():
-                if var.is_loop_variable:
-                    if var.used:
-                        continue
-                    loop = "loop "
-                else:
-                    if var.assigned:
-                        continue
-                    loop = ""
+                if var.is_loop_variable or var.assigned or var.used:
+                    continue
 
                 self.warnings.append(
-                    f"{self._context(path)}: {loop}variable declared but not used: {json.dumps(var_name)}"
+                    f"{self._context(path)}: variable declared but not used: {json.dumps(var_name)}"
                 )
 
         return errors
@@ -980,6 +1240,10 @@ class SchemaValidator:
             pipeline_var = pipeline.get_variable(var_name, pipeline_scope)
             if pipeline_var is not None:
                 var_type_details = pipeline_var.type_details
+                # You may be asking, "What if it's not a loop variable? How can a non-loop variable be used as a traversal ref?"
+                # While it's true that such a variable will not have been assigned a value,
+                # it may be initialized as a traversable list of values.
+                # Note, however, that a traversed variable may not be modified within the traversal or its nested scopes.
                 pipeline_var.used = True
             else:
                 # look for a thread variable in the current scope
@@ -987,7 +1251,7 @@ class SchemaValidator:
                 if "context" in parent_action:
                     parent_thread_id = utils.parse_ref_id(parent_action["context"])
                     var_type_details = self._find_thread_variable(
-                        var_name, self._threads[parent_thread_id].scope
+                        var_name, self._thread_groups[parent_thread_id].scope
                     )
                 else:
                     var_type_details = None
@@ -1008,6 +1272,10 @@ class SchemaValidator:
             else:
                 ref_type_details = copy.deepcopy(var_type_details)
         else:  # ref is not a variable, so it's a global or local ref
+            local_input_error = [
+                f"{self._context(f'{path}.ref')}: cannot use local object as pipeline input"
+            ]
+
             parent_action = self._get_parent_action(path)
             if is_global_ref(ref):
                 # warn if the global ref refers to the local object
@@ -1017,6 +1285,8 @@ class SchemaValidator:
                     self.warnings.append(
                         f'{self._context(f"{path}.ref")}: global ref refers to the local object -- consider using "$_object" instead to reference the local object'
                     )
+
+                    return local_input_error
 
                 ref_type_details = self._resolve_type_from_global_ref(
                     ref, resolution_context_thread_id=pipeline.get_thread_id()
@@ -1041,9 +1311,7 @@ class SchemaValidator:
                     ]
 
             elif is_local_variable(ref):
-                ref_type_details = self._resolve_type_from_local_ref(
-                    local_ref=ref, obj=parent_action
-                )
+                return local_input_error
             else:
                 return [
                     f"{self._context(f'{path}.ref')}: "
@@ -1166,21 +1434,26 @@ class SchemaValidator:
                 return copy.deepcopy(var_type_details)
         elif re.match(patterns.local_variable, ref):
             return self._resolve_type_from_local_ref(ref, path=path)
-        elif is_global_ref(ref) and utils.parse_ref_type(ref) == "action":
+        elif is_global_ref(ref) and utils.parse_ref_type(ref) == "object_promise":
             # global ref
 
             return self._resolve_type_from_global_ref(ref, resolution_context_thread_id)
         else:
             # pattern validation will have already caught this
-            return []
+            return None
 
     def _validate_pipeline_application(self, path, pipeline_scope, apply):
         if "from" not in apply or "to" not in apply or "method" not in apply:
             # there will already be validation errors for the missing fields,
             # and we cannot validate further without them.
-            return []
+            return None
+
+        pipeline = self._get_pipeline_at_path(path)
 
         # is apply["from"] a global reference to the local object?
+        local_input_error = [
+            f"{self._context(f'{path}.from')}: cannot use local object as pipeline input"
+        ]
         if utils.has_reference_to_template_object_type(apply, "from", "action"):
             parent_action = self._get_parent_action(path)
             if (
@@ -1192,7 +1465,10 @@ class SchemaValidator:
                     f'{self._context(f"{path}.from")}: global ref refers to the local object -- consider using "$_object" instead to reference the local object.'
                 )
 
-        pipeline = self._get_pipeline_at_path(path)
+                return local_input_error
+        elif is_local_variable(apply["from"]):
+            return local_input_error
+
         try:
             ref_type_details = self.resolve_ref_type_details(
                 path,
@@ -1203,6 +1479,9 @@ class SchemaValidator:
             )
         except Exception as e:
             return [f"{self._context(f'{path}.from')}: {str(e)}"]
+
+        if ref_type_details is None:
+            return [f"{self._context(f'{path}.from')}: could not resolve type"]
 
         self._type_details_at_path[path + ".from"] = ref_type_details
 
@@ -1289,7 +1568,7 @@ class SchemaValidator:
                 )
 
             return self._resolve_type_from_object_path(
-                object_tag=referenced_object["object"],
+                object_tag=self._resolve_tag_from_action(referenced_object),
                 path=path[1:],
             )
         elif path:
@@ -1300,6 +1579,7 @@ class SchemaValidator:
         return var_type_details
 
     def _resolve_type_from_global_ref(self, ref, resolution_context_thread_id=None):
+        type_details = None
         matches = re.findall(patterns.global_ref, ref)
         if len(matches) and len(matches[0]):
             global_ref = matches[0][0]
@@ -1308,59 +1588,62 @@ class SchemaValidator:
 
             template_object = self._resolve_global_ref(global_ref)
 
-            if ref_type == "action":
-                is_threaded_action = (
-                    "context" in template_object
-                    and is_global_ref(template_object["context"])
-                    and utils.parse_ref_type(template_object["context"]) == "thread"
+            if ref_type == "object_promise":
+                fulfiller_action = self._resolve_global_ref(
+                    "action:{"
+                    + self._object_promise_fulfillment_actions[
+                        str(template_object["id"])
+                    ]
+                    + "}"
+                )
+                is_threaded_object = utils.has_reference_to_template_object_type(
+                    fulfiller_action, "context", "thread_group"
+                )
+
+                # If the object promise's context is part of the resolution_context_thread_id scope,
+                # then we are dealing with a single threaded object promise
+                # that is being referenced from within the thread.
+                # Otherwise we are dealing with a list of object promises, because the promise is
+                # fulfilled in the context of a thread.
+                is_list_of_object_promises = is_threaded_object and (
+                    resolution_context_thread_id is None
+                    or not self._thread_groups[
+                        resolution_context_thread_id
+                    ].has_access_to_context(
+                        utils.parse_ref_id(fulfiller_action["context"])
+                    )
                 )
 
                 if len(ref_path):
-                    split_ref_path = ref_path.split(".")
-                    if split_ref_path[0] == "object":
-                        type_details = self._resolve_type_from_object_path(
-                            object_tag=template_object["object"],
-                            path=split_ref_path[1:],
-                        )
+                    type_details = self._resolve_type_from_object_path(
+                        object_tag=template_object["object_type"],
+                        path=ref_path,
+                    )
+                    if is_list_of_object_promises:
+                        if type_details.is_list:
+                            raise Exception("nested list types are not supported")
 
-                        if is_threaded_action:
-                            # If the action's context is part of the resolution_context_thread_id scope,
-                            # then we are dealing with a single threaded action
-                            # that is being referenced from within its own thread.
-                            if (
-                                resolution_context_thread_id is None
-                                or not self._threads[
-                                    resolution_context_thread_id
-                                ].has_access_to_context(
-                                    utils.parse_ref_id(template_object["context"])
-                                )
-                            ):
-                                # From outside of the thread, referencing a list of threaded actions,
-                                # so ware the nested list...
-                                if type_details.is_list:
-                                    raise Exception(
-                                        "nested list types are not supported"
-                                    )
-
-                                type_details.is_list = True
-
-                        return type_details
-                    else:
-                        raise NotImplementedError(
-                            "global ref resolution not implemented for action properties"
-                        )
+                        type_details.is_list = True
+                elif (
+                    "object_type" in template_object
+                    and template_object["object_type"] in self.schema["object_types"]
+                ):
+                    type_details = FieldTypeDetails(
+                        is_list=is_list_of_object_promises,
+                        item_type="OBJECT",
+                        item_tag=template_object["object_type"],
+                    )
                 else:
-                    return FieldTypeDetails(
-                        is_list=is_threaded_action,
-                        item_type=global_ref,
-                        item_tag=None,
+                    raise Exception(
+                        "could not resolve object type of object promise: "
+                        + str(template_object["id"])
                     )
             else:
                 raise NotImplementedError(
                     "global ref resolution not implemented for ref type: " + ref_type
                 )
 
-        return None
+        return type_details
 
     def _resolve_type_from_local_ref(self, local_ref, obj=None, path=None):
         if obj is None:
@@ -1372,10 +1655,12 @@ class SchemaValidator:
         # what are the possible types of local_ref?
         split_ref = local_ref.split(".")
         if split_ref[0] == "$_object":
-            return self._resolve_type_from_object_path(obj["object"], split_ref[1:])
+            return self._resolve_type_from_object_path(
+                obj["object_type"], split_ref[1:]
+            )
             # follow the path to resolve edges/edge collections until the last item
         elif split_ref[0] == "$_party":
-            # obj = self._resolve_party(obj["object"])
+            # obj = self._resolve_party(obj["object_type"])
             raise NotImplementedError("local ref type not implemented: " + split_ref[0])
         else:
             raise NotImplementedError("local ref type not implemented: " + split_ref[0])
@@ -1415,8 +1700,20 @@ class SchemaValidator:
 
         return type_details
 
+    def _resolve_tag_from_action(self, action):
+        if not utils.has_reference_to_template_object_type(
+            action, "object_promise", "object_promise"
+        ):
+            return None
+
+        object_promise = self._resolve_global_ref(action["object_promise"])
+        if object_promise is None or "object_type" not in object_promise:
+            return None
+
+        return object_promise["object_type"]
+
     def _resolve_type_from_object_path(self, object_tag, path):
-        object_definition = self._get_field("root.objects." + object_tag)
+        object_definition = self._get_field("root.object_types." + object_tag)
 
         if object_definition is None:
             return None
@@ -1436,7 +1733,7 @@ class SchemaValidator:
                 field_definition = object_definition[segment]
                 if field_definition["field_type"][:4] == "EDGE":
                     object_definition = self._get_field(
-                        "root.objects." + field_definition["object"]
+                        "root.object_types." + field_definition["object_type"]
                     )
 
                     if field_definition["field_type"] == "EDGE_COLLECTION":
@@ -1446,13 +1743,13 @@ class SchemaValidator:
                         type_details = FieldTypeDetails(
                             is_list=True,
                             item_type="OBJECT",
-                            item_tag=field_definition["object"],
+                            item_tag=field_definition["object_type"],
                         )
                     elif field_definition["field_type"] == "EDGE":
                         type_details = FieldTypeDetails(
                             is_list=type_details.is_list,
                             item_type="OBJECT",
-                            item_tag=field_definition["object"],
+                            item_tag=field_definition["object_type"],
                         )
                 elif "_LIST" in field_definition["field_type"]:
                     if type_details.is_list:
@@ -2300,28 +2597,32 @@ class SchemaValidator:
         self._checkpoints = {}
         self._thread_checkpoints = {}
         self._threaded_action_ids = []
-        self._threads = {}
+        self._thread_groups = {}
+        self._settable_fields = {}
+        self._object_promise_fulfillment_actions = {}
 
-        if "threads" in self.schema:
-            for thread in self.schema["threads"]:
+        if "thread_groups" in self.schema:
+            for thread in self.schema["thread_groups"]:
                 thread_id = str(thread["id"])
-                if thread_id not in self._threads:
-                    self._threads[thread_id] = Thread()
+                if thread_id not in self._thread_groups:
+                    self._thread_groups[thread_id] = Thread()
 
                 if "context" in thread:
                     parent_thread = self._resolve_global_ref(thread["context"])
                     if (
                         parent_thread is None
-                        or utils.parse_ref_type(thread["context"]) != "thread"
+                        or utils.parse_ref_type(thread["context"]) != "thread_group"
                         or "depends_on" not in parent_thread
                     ):
                         continue
 
                     parent_thread_id = str(parent_thread["id"])
-                    if parent_thread_id not in self._threads:
-                        self._threads[parent_thread_id] = Thread()
+                    if parent_thread_id not in self._thread_groups:
+                        self._thread_groups[parent_thread_id] = Thread()
 
-                    self._threads[parent_thread_id].sub_thread_ids.append(thread_id)
+                    self._thread_groups[parent_thread_id].sub_thread_ids.append(
+                        thread_id
+                    )
 
                     # Normalize to alias (ref could be a different field)
                     checkpoint = self._resolve_global_ref(parent_thread["depends_on"])
@@ -2359,73 +2660,78 @@ class SchemaValidator:
                     )
 
         for action in self.schema["actions"]:
-            if "id" in action:
-                action_id = str(action["id"])
-                # if the action has a threaded context...
-                if "context" in action:
-                    # the action implicitly depends on the thread's checkpoint
-                    thread = self._resolve_global_ref(action["context"])
+            if "id" not in action:
+                continue
 
-                    if (
-                        thread is None
-                        or utils.parse_ref_type(action["context"]) != "thread"
-                    ):
+            self._record_object_promise_fulfillment_actions(action)
+            self._record_operation(action)
+
+            action_id = str(action["id"])
+            # if the action has a threaded context...
+            if "context" in action:
+                # the action implicitly depends on the thread's checkpoint
+                thread = self._resolve_global_ref(action["context"])
+
+                if (
+                    thread is None
+                    or utils.parse_ref_type(action["context"]) != "thread_group"
+                ):
+                    continue
+
+                thread_id = str(thread["id"])
+
+                if thread_id not in self._thread_groups:
+                    self._thread_groups[thread_id] = Thread()
+
+                self._thread_groups[thread_id].action_ids.append(action_id)
+
+                if "depends_on" in thread:
+                    # Normalize to alias (ref could be a different field)
+                    checkpoint = self._resolve_global_ref(thread["depends_on"])
+                    if checkpoint is None or "alias" not in checkpoint:
                         continue
-
-                    thread_id = str(thread["id"])
-
-                    if thread_id not in self._threads:
-                        self._threads[thread_id] = Thread()
-
-                    self._threads[thread_id].action_ids.append(action_id)
-
-                    if "depends_on" in thread:
-                        # Normalize to alias (ref could be a different field)
-                        checkpoint = self._resolve_global_ref(thread["depends_on"])
-                        if checkpoint is None or "alias" not in checkpoint:
-                            continue
-                        checkpoint_id = checkpoint["alias"]
-                    elif "context" in thread and thread_id in self._thread_checkpoints:
-                        checkpoint_id = self._thread_checkpoints[thread_id]
-                    else:
-                        continue
-
-                    self._thread_checkpoints[thread_id] = checkpoint_id
-                    self._threaded_action_ids.append(action_id)
-
-                    if "depends_on" not in action:
-                        # the action implicitly depends on the thread's checkpoint
-                        self._action_checkpoints[action_id] = checkpoint_id
-                    else:
-                        # a psuedo-checkpoint is needed to combine the action's checkpoint with the thread's checkpoint
-                        alias = f"_psuedo-checkpoint-{str(action['id'])}"
-
-                        thread_checkpoint_ref = "checkpoint:{" + checkpoint_id + "}"
-                        if action["depends_on"] == thread_checkpoint_ref:
-                            # the action's checkpoint is the same as the thread's checkpoint
-                            # TODO: decide whther to raise en error here
-                            continue
-
-                        self.schema["checkpoints"].append(
-                            {
-                                "alias": alias,
-                                "gate_type": "AND",
-                                "dependencies": [
-                                    {"checkpoint": thread_checkpoint_ref},
-                                    {"checkpoint": action["depends_on"]},
-                                ],
-                            }
-                        )
-                        self._action_checkpoints[action_id] = alias
-
-                        # bypass validation of psuedo-checkpoint fields
-                        self._psuedo_checkpoints.append(alias)
+                    checkpoint_id = checkpoint["alias"]
+                elif "context" in thread and thread_id in self._thread_checkpoints:
+                    checkpoint_id = self._thread_checkpoints[thread_id]
                 else:
-                    self._action_checkpoints[action_id] = (
-                        utils.parse_ref_id(action["depends_on"])
-                        if "depends_on" in action
-                        else None
+                    continue
+
+                self._thread_checkpoints[thread_id] = checkpoint_id
+                self._threaded_action_ids.append(action_id)
+
+                if "depends_on" not in action:
+                    # the action implicitly depends on the thread's checkpoint
+                    self._action_checkpoints[action_id] = checkpoint_id
+                else:
+                    # a psuedo-checkpoint is needed to combine the action's checkpoint with the thread's checkpoint
+                    alias = f"_psuedo-checkpoint-{str(action['id'])}"
+
+                    thread_checkpoint_ref = "checkpoint:{" + checkpoint_id + "}"
+                    if action["depends_on"] == thread_checkpoint_ref:
+                        # the action's checkpoint is the same as the thread's checkpoint
+                        # TODO: decide whether to raise en error here
+                        continue
+
+                    self.schema["checkpoints"].append(
+                        {
+                            "alias": alias,
+                            "gate_type": "AND",
+                            "dependencies": [
+                                {"checkpoint": thread_checkpoint_ref},
+                                {"checkpoint": action["depends_on"]},
+                            ],
+                        }
                     )
+                    self._action_checkpoints[action_id] = alias
+
+                    # bypass validation of psuedo-checkpoint fields
+                    self._psuedo_checkpoints.append(alias)
+            else:
+                self._action_checkpoints[action_id] = (
+                    utils.parse_ref_id(action["depends_on"])
+                    if "depends_on" in action
+                    else None
+                )
 
         nested_checkpoints = []
         for checkpoint in self.schema["checkpoints"]:
@@ -2433,11 +2739,13 @@ class SchemaValidator:
                 self._checkpoints[checkpoint["alias"]] = checkpoint
 
                 if utils.has_reference_to_template_object_type(
-                    checkpoint, "context", "thread"
+                    checkpoint, "context", "thread_group"
                 ):
                     thread_id = utils.parse_ref_id(checkpoint["context"])
-                    if thread_id in self._threads:
-                        self._threads[thread_id].checkpoints.append(checkpoint["alias"])
+                    if thread_id in self._thread_groups:
+                        self._thread_groups[thread_id].checkpoints.append(
+                            checkpoint["alias"]
+                        )
 
             if "dependencies" in checkpoint:
                 for dependency in checkpoint["dependencies"]:
@@ -2447,14 +2755,14 @@ class SchemaValidator:
                         alias = utils.parse_ref_id(dependency["checkpoint"])
                         nested_checkpoints.append(alias)
 
-        self._unreferenced_threads = []
-        for thread_id, thread in self._threads.items():
+        self._unreferenced_thread_groups = []
+        for thread_id, thread in self._thread_groups.items():
             if (
                 not len(thread.action_ids)
                 and not len(thread.sub_thread_ids)
                 # note that a checkpoint referencing the thread does not count
             ):
-                self._unreferenced_threads.append(thread_id)
+                self._unreferenced_thread_groups.append(thread_id)
 
         self._unreferenced_checkpoints = []
         for checkpoint in self.schema["checkpoints"]:
@@ -2480,7 +2788,7 @@ class SchemaValidator:
                                 if not utils.has_reference_to_template_object_type(
                                     obj=checkpoint,
                                     key="context",
-                                    template_object_type="thread",
+                                    template_object_type="thread_group",
                                 ):
                                     continue
 

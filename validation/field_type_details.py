@@ -33,3 +33,10 @@ class FieldTypeDetails:
             )
 
         return item_type_string
+
+    def matches_type(self, field_type_details):
+        return (
+            self.is_list == field_type_details.is_list
+            and self.item_type == field_type_details.item_type
+            and self.item_tag == field_type_details.item_tag
+        )
