@@ -62,6 +62,16 @@ root_object = {
                 "unique": ["id", "name"],
             },
         },
+        "pipelines": {
+            "type": "array",
+            "values": {
+                "type": "object",
+                "template": "pipeline",  # see aggregation_pipeline.py
+            },
+            "constraints": {
+                "unique": ["object_promise"],
+            },
+        },
         "actions": {
             "type": "array",
             "values": {
@@ -99,7 +109,7 @@ root_object = {
     "constraints": {
         "optional": ["thread_groups"],
     },
-    "property_validation_priority": ["thread_groups"],
+    "property_validation_priority": ["thread_groups", "pipelines"],
 }
 
 object_definition = {
@@ -160,6 +170,11 @@ object_promise = {
     },
     "constraints": {
         "optional": ["description"],
+        "validation_functions": [
+            {
+                "function": "validate_object_promise_fulfillment",
+            },
+        ],
     },
     "ref_config": {
         "fields": ["id", "name"],
@@ -346,10 +361,6 @@ action = {
         "operation": {
             "type": "object",
             "properties": {
-                "type": {
-                    "type": "enum",
-                    "values": ["CREATE", "EDIT"],
-                },
                 "include": {
                     "type": "array",
                     "nullable": True,
@@ -362,43 +373,12 @@ action = {
                 },
             },
             "mutually_exclusive": ["include", "exclude"],
-            "if": [
-                {
-                    "property": "type",
-                    "operator": "EQUALS",
-                    "value": "CREATE",
-                    "then": {
-                        "add_properties": {
-                            "default_values": {
-                                "type": "object",
-                                "keys": {"type": "string"},
-                                "values": {"type": "any"},
-                            },
-                            "default_edges": {
-                                "type": "object",
-                                "keys": {"type": "string"},
-                                "values": {
-                                    "type": "ref",
-                                    "ref_types": ["object_promise"],
-                                },
-                            },
-                        },
-                        "add_constraints": {
-                            "optional": ["default_values", "default_edges"],
-                        },
-                    },
-                },
-            ],
         },
         "milestones": {
             "type": "array",
             "values": {"type": "enum", "values": milestones},
         },
         "supporting_info": {"type": "array", "values": {"type": "string"}},
-        "pipeline": {
-            "type": "object",
-            "template": "pipeline",  # see aggregation_pipeline.py
-        },
     },
     "constraints": {
         "optional": [
@@ -418,21 +398,6 @@ action = {
             },
         ],
     },
-    "if": [
-        {
-            "property": "operation.type",
-            "operator": "EQUALS",
-            "value": "EDIT",
-            "then": {
-                "add_constraints": {
-                    "forbidden": {
-                        "properties": ["pipeline"],
-                        "reason": "for an action to specify a pipeline, operation.type must be 'CREATE'."
-                    },
-                },
-            },
-        },
-    ],
     "ref_config": {
         "fields": ["id"],
         "collection": "root.actions",
@@ -498,7 +463,7 @@ thread_group = {
                 "function": "validate_dependency_scope",
             },
             {
-                "function": "validate_thread",
+                "function": "validate_thread_group",
             },
         ],
     },

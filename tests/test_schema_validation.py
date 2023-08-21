@@ -2,7 +2,7 @@ import json
 import logging
 
 from tests import fixtures
-from validation import templates
+from validation import templates, utils
 from validation.schema_validator import SchemaValidator
 from enums import milestones
 
@@ -514,17 +514,21 @@ class TestSchemaValidation:
     def test_action_operations(self):
         validator = SchemaValidator()
 
-        schema = fixtures.basic_schema_with_actions(2)
+        schema = fixtures.basic_schema_with_actions(3)
+        schema["checkpoints"] = [
+            fixtures.checkpoint(0, "depends-on-0", num_dependencies=1),
+        ]
+        schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-0}"
+        schema["actions"][1]["object_promise"] = "object_promise:{0}"
+        schema["actions"][2]["object_promise"] = "object_promise:{1}"
+        schema["object_promises"].pop()
 
         def set_operation_value(action_idx, key, val):
             schema["actions"][action_idx]["operation"][key] = val
 
         for action_idx, operation_type in {0: "CREATE", 1: "EDIT"}.items():
-            schema["actions"][action_idx]["object_promise"] = "object_promise:{0}"
-
             for inclusion_type in ["include", "exclude"]:
                 # should be able to specify fields that exist on the object type
-                set_operation_value(action_idx, "type", operation_type)
                 set_operation_value(
                     action_idx,
                     inclusion_type,
@@ -542,7 +546,7 @@ class TestSchemaValidation:
                 set_operation_value(action_idx, inclusion_type, ["not_a_field"])
                 errors = validator.validate(json_string=json.dumps(schema))
                 assert (
-                    f'root.actions[{action_idx}] (action id: {action_idx}).operation.{inclusion_type}: field does not exist on object type Placeholder: "not_a_field"'
+                    f'root.actions[{action_idx}].operation.{inclusion_type} (action id: {action_idx}): field does not exist on object type Placeholder: "not_a_field"'
                     in errors
                 )
 
@@ -592,9 +596,9 @@ class TestSchemaValidation:
                 )
                 errors = validator.validate(json_string=json.dumps(schema))
                 assert {
-                    f'root.actions[{action_idx}] (action id: {action_idx}).operation.default_values.not_a_field: field does not exist on object type: "Placeholder"',
-                    f'root.actions[{action_idx}] (action id: {action_idx}).operation.default_values.edge: cannot specify default value for edge here; use "default_edges" instead',
-                    f"root.actions[{action_idx}] (action id: {action_idx}).operation.default_values.objects: setting default values for edge collections is not supported",
+                    f'root.actions[{action_idx}].operation.default_values.not_a_field (action id: {action_idx}): field does not exist on object type: "Placeholder"',
+                    f"root.actions[{action_idx}].operation.default_values.edge (action id: {action_idx}): cannot specify default value for edge here; use default_edges instead",
+                    f"root.actions[{action_idx}].operation.default_values.objects (action id: {action_idx}): setting default values for edge collections is not supported",
                 }.issubset(errors)
 
                 # specified values must match the type defined by the object_type
@@ -610,10 +614,10 @@ class TestSchemaValidation:
                 )
                 errors = validator.validate(json_string=json.dumps(schema))
                 assert {
-                    f'root.actions[{action_idx}] (action id: {action_idx}).operation.default_values: expected value of type BOOLEAN, got STRING: "yes"',
-                    f"root.actions[{action_idx}] (action id: {action_idx}).operation.default_values: expected value of type STRING, got BOOLEAN: true",
-                    f"root.actions[{action_idx}] (action id: {action_idx}).operation.default_values: expected value of type NUMERIC, got NUMERIC_LIST: [1]",
-                    f"root.actions[{action_idx}] (action id: {action_idx}).operation.default_values: expected value of type NUMERIC_LIST, got NUMERIC: 2",
+                    f'root.actions[{action_idx}].operation.default_values (action id: {action_idx}): expected value of type BOOLEAN, got STRING: "yes"',
+                    f"root.actions[{action_idx}].operation.default_values (action id: {action_idx}): expected value of type STRING, got BOOLEAN: true",
+                    f"root.actions[{action_idx}].operation.default_values (action id: {action_idx}): expected value of type NUMERIC, got NUMERIC_LIST: [1]",
+                    f"root.actions[{action_idx}].operation.default_values (action id: {action_idx}): expected value of type NUMERIC_LIST, got NUMERIC: 2",
                 }.issubset(errors)
 
                 del schema["actions"][action_idx]["operation"]["default_values"]
@@ -629,46 +633,51 @@ class TestSchemaValidation:
                 errors = validator.validate(json_string=json.dumps(schema))
                 assert not errors
 
-                # should not be able to specify default edges for edges that do not exist on the object type,
-                # and should not be able to specify default values for edge collections
+                # - should not be able to specify default edges for edges that do not exist on the object type,
+                # - should not be able to specify default values for edge collections
+                # - should not be able to specify a default edge if the object promise is not fulfilled by an ancestor
                 set_operation_value(
                     action_idx,
                     "default_edges",
                     {
                         "corner": "object_promise:{0}",
                         "objects": ["object_promise:{0}", "object_promise:{1}"],
+                        "edge": "object_promise:{1}",
                     },
                 )
                 errors = validator.validate(json_string=json.dumps(schema))
                 assert {
-                    f'root.actions[{action_idx}] (action id: {action_idx}).operation.default_edges.corner: field does not exist on object type: "Placeholder"',
-                    f'root.actions[{action_idx}] (action id: {action_idx}).operation.default_edges.corner: field does not exist on object type: "Placeholder"',
+                    f'root.actions[{action_idx}].operation.default_edges.corner (action id: {action_idx}): field does not exist on object type: "Placeholder"',
+                    f"root.actions[{action_idx}].operation.default_edges.objects (action id: {action_idx}): setting default values for edge collections is not supported",
+                    f'root.actions[{action_idx}].operation.default_edges.edge (action id: {action_idx}): an ancestor of the action must fulfill the referenced object promise: "{utils.as_ref(1, "object_promise")}"',
                 }.issubset(errors)
 
                 # specified values must be of the tag defined by the object_type
                 schema["object_types"]["SomeOtherType"] = {
                     "some_field": {"field_type": "STRING"}
                 }
+                object_promise_count = len(schema["object_promises"])
                 schema["object_promises"].append(
-                    fixtures.object_promise(2, "SomeOtherType")
+                    fixtures.object_promise(object_promise_count, "SomeOtherType")
                 )
                 set_operation_value(
                     action_idx,
                     "default_edges",
                     {
-                        "edge": "object_promise:{2}",
+                        "edge": "object_promise:{" + str(object_promise_count) + "}",
                     },
                 )
                 errors = validator.validate(json_string=json.dumps(schema))
                 expected_error = (
-                    f'root.actions[{action_idx}] (action id: {action_idx}).operation.default_edges.edge: object type of referenced object promise does not match the object type definition: "object_promise:'
-                    + '{2}"; expected "Placeholder", got "SomeOtherType"'
+                    f'root.actions[{action_idx}].operation.default_edges.edge (action id: {action_idx}): object type of referenced object promise does not match the object type definition: "object_promise:'
+                    + "{"
+                    + str(object_promise_count)
+                    + '}"; expected "Placeholder", got "SomeOtherType"'
                 )
                 assert expected_error in errors
 
-                # TODO: check ancestry for default edges
-
                 del schema["actions"][action_idx]["operation"]["default_edges"]
+                schema["object_promises"].pop()
             elif operation_type == "EDIT":
                 # should not be able to specify default values
                 set_operation_value(
@@ -690,8 +699,8 @@ class TestSchemaValidation:
                 )
                 errors = validator.validate(json_string=json.dumps(schema))
                 assert {
-                    f"root.actions[{action_idx}] (action id: {action_idx}).operation.default_values: default values are not supported for EDIT operations",
-                    f"root.actions[{action_idx}] (action id: {action_idx}).operation.default_edges: default edges are not supported for EDIT operations",
+                    f"root.actions[{action_idx}].operation.default_values (action id: {action_idx}): default values are not supported for EDIT operations",
+                    f"root.actions[{action_idx}].operation.default_edges (action id: {action_idx}): default edges are not supported for EDIT operations",
                 }.issubset(errors)
 
                 # TODO: check ancestry...
@@ -1456,9 +1465,12 @@ class TestSchemaValidation:
         assert not errors
 
         # Should not be able to specify null for a non-nullable property (Action.operation.type)
-        schema["actions"][0]["operation"]["type"] = None
+        schema["actions"][0]["object_promise"] = None
         errors = validator.validate(json_string=json.dumps(schema))
-        assert errors
+        assert (
+            "root.actions[0].object_promise (action id: 0): expected ref, got null"
+            in errors
+        )
 
     def test_mutually_exclusive_properties(self):
         validator = SchemaValidator()

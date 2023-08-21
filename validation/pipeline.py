@@ -1,5 +1,6 @@
 class Pipeline:
-    def __init__(self, thread_scope):
+    def __init__(self, object_promise_ref, thread_scope):
+        self.object_promise_ref = object_promise_ref
         self.thread_scope = thread_scope
 
         # {pipeline_scope: {var_name: PipelineVariable}}

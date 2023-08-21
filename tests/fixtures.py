@@ -30,6 +30,7 @@ def basic_schema():
             }
         },
         "object_promises": [],
+        "pipelines": [],
     }
 
 
@@ -43,7 +44,6 @@ def action(action_id=None):
         "description": "test action",
         "party": "party:{Project}",
         "operation": {
-            "type": "CREATE",
             "include": ["name"],
         },
     }

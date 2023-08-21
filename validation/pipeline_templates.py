@@ -27,6 +27,10 @@ aggregation_operators = [
 pipeline = {
     "type": "object",
     "properties": {
+        "object_promise": {
+            "type": "ref",
+            "ref_types": ["object_promise"],
+        },
         "context": {
             "type": "enum",
             "values": ["TEMPLATE", "RUNTIME"],

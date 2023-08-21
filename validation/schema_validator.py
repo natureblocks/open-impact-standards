@@ -346,13 +346,30 @@ class SchemaValidator:
 
         return []
 
+    def validate_object_promise_fulfillment(self, path, object_promise):
+        if "id" not in object_promise:
+            return []
+
+        errors = []
+        if str(object_promise["id"]) not in self._object_promise_fulfillment_actions:
+            errors += [
+                f"{self._context(path)}: object promise is never fulfilled by an action"
+            ]
+
+        if str(object_promise["id"]) in self._duplicate_object_promise_fulfillments:
+            errors += [
+                f"{self._context(path)}: object promise is fulfilled by more than one action"
+            ]
+
+        return errors
+
     def validate_action_operation(self, path, action):
         if (
-            "operation" not in action
+            "id" not in action
+            or "operation" not in action
             or not utils.has_reference_to_template_object_type(
                 action, "object_promise", "object_promise"
             )
-            or "type" not in action["operation"]
             or ("include" in action["operation"] and "exclude" in action["operation"])
         ):
             # validation will have caught this already
@@ -361,6 +378,7 @@ class SchemaValidator:
         object_promise = self._resolve_global_ref(action["object_promise"])
         if (
             object_promise is None
+            or "id" not in object_promise
             or "object_type" not in object_promise
             or object_promise["object_type"] not in self.schema["object_types"]
         ):
@@ -383,117 +401,149 @@ class SchemaValidator:
 
             if not isinstance(operation[inclusion_type], list):
                 return [
-                    f"{self._context(path)}.operation.include: expected array or null, got {json.dumps(type(operation['include']).__name__)}"
+                    f"{self._context(f'{path}.operation.include')}: expected array or null, got {json.dumps(type(operation['include']).__name__)}"
                 ]
 
             for field in operation[inclusion_type]:
                 if field not in object_type:
                     errors += [
-                        f"{self._context(path)}.operation.{inclusion_type}: field does not exist on object type {object_promise['object_type']}: {json.dumps(field)}"
+                        f"{self._context(f'{path}.operation.{inclusion_type}')}: field does not exist on object type {object_promise['object_type']}: {json.dumps(field)}"
                     ]
 
-        if operation["type"] == "CREATE":
-            if "default_values" in operation:
-                if not isinstance(operation["default_values"], dict):
-                    return [
-                        f"{self._context(path)}.operation.default_values: expected object, got {json.dumps(type(operation['default_values']).__name__)}"
-                    ]
+        object_promise_id = str(object_promise["id"])
+        action_id = str(action["id"])
+        if object_promise_id in self._object_promise_fulfillment_actions:
+            if self._object_promise_fulfillment_actions[object_promise_id] == action_id:
+                # CREATE operation
+                if "default_values" in operation:
+                    if not isinstance(operation["default_values"], dict):
+                        return [
+                            f"{self._context(f'{path}.operation.default_values')}: expected object, got {json.dumps(type(operation['default_values']).__name__)}"
+                        ]
 
-                for key, val in operation["default_values"].items():
-                    # keys must be non-edge/edge collection fields on the object promise's object definition
-                    if key not in object_type:
-                        errors += [
-                            f"{self._context(path)}.operation.default_values.{key}: field does not exist on object type: {json.dumps(object_promise['object_type'])}"
-                        ]
-                    elif "field_type" not in object_type[key]:
-                        # object type validation will have caught this already
-                        continue
-                    elif object_type[key]["field_type"] == "EDGE":
-                        errors += [
-                            f'{self._context(path)}.operation.default_values.{key}: cannot specify default value for edge here; use "default_edges" instead'
-                        ]
-                    elif object_type[key]["field_type"] == "EDGE_COLLECTION":
-                        errors += [
-                            f"{self._context(path)}.operation.default_values.{key}: setting default values for edge collections is not supported"
-                        ]
-                    else:
-                        # the type of the provided default value must match the type of the field on the object definition
-                        expected_type = object_type[key]["field_type"]
-                        actual_type = pipeline_utils.field_type_details_from_scalar(
-                            val
-                        ).to_field_type_string()
-                        if actual_type != expected_type:
+                    for key, val in operation["default_values"].items():
+                        # keys must be non-edge/edge collection fields on the object promise's object definition
+                        if key not in object_type:
                             errors += [
-                                f"{self._context(path)}.operation.default_values: expected value of type {expected_type}, got {actual_type}: {json.dumps(val)}"
+                                f"{self._context(f'{path}.operation.default_values.{key}')}: field does not exist on object type: {json.dumps(object_promise['object_type'])}"
                             ]
-            if "default_edges" in operation:
-                if not isinstance(operation["default_edges"], dict):
-                    return [
-                        f"{self._context(path)}.operation.default_edges: expected object, got {json.dumps(type(operation['default_edges']).__name__)}"
-                    ]
-                # keys must be edge/edge collection fields on the object promise's object definition
-                # values must reference an object promise of the applicable object type
-                for key, val in operation["default_edges"].items():
-                    if key not in object_type:
-                        errors += [
-                            f"{self._context(path)}.operation.default_edges.{key}: field does not exist on object type: {json.dumps(object_promise['object_type'])}"
-                        ]
-                    elif "field_type" not in object_type[key]:
-                        # object type validation will have caught this already
-                        continue
-                    elif object_type[key]["field_type"] == "EDGE_COLLECTION":
-                        errors += [
-                            f"{self._context(path)}.operation.default_edges.{key}: setting default values for edge collections is not supported"
-                        ]
-                    elif object_type[key]["field_type"] != "EDGE":
-                        errors += [
-                            f'{self._context(path)}.operation.default_edges.{key}: cannot specify default value for non-edge here; use "default_values" instead'
-                        ]
-                    else:
-                        if not utils.has_reference_to_template_object_type(
-                            operation["default_edges"], key, "object_promise"
-                        ):
-                            # ref validation will have caught this already
-                            continue
-
-                        object_promise_edge = self._resolve_global_ref(val)
-                        if object_promise_edge is None:
-                            errors += [
-                                f"{self._context(path)}.operation.default_edges.{key}: could not resolve object promise reference: {json.dumps(val)}"
-                            ]
-                        elif "object_type" not in object_promise_edge:
+                        elif "field_type" not in object_type[key]:
                             # object type validation will have caught this already
                             continue
-                        elif (
-                            object_promise_edge["object_type"]
-                            != object_type[key]["object_type"]
-                        ):
+                        elif object_type[key]["field_type"] == "EDGE":
                             errors += [
-                                f"{self._context(path)}.operation.default_edges.{key}: object type of referenced object promise does not match the object type definition: {json.dumps(val)}"
-                                + f"; expected {json.dumps(object_type[key]['object_type'])}, got {json.dumps(object_promise_edge['object_type'])}"
+                                f"{self._context(f'{path}.operation.default_values.{key}')}: cannot specify default value for edge here; use default_edges instead"
                             ]
-                        elif not self._object_promise_fulfilled_by_ancestor(
-                            path, action, object_promise_edge
-                        ):
+                        elif object_type[key]["field_type"] == "EDGE_COLLECTION":
                             errors += [
-                                f"{self._context(path)}.operation.default_edges.{key}: an ancestor of the action must fulfill the referenced object promise: {json.dumps(val)}"
+                                f"{self._context(f'{path}.operation.default_values.{key}')}: setting default values for edge collections is not supported"
                             ]
-        elif operation["type"] == "EDIT":
-            if "default_values" in operation:
-                errors += [
-                    f"{self._context(path)}.operation.default_values: default values are not supported for EDIT operations"
-                ]
-            if "default_edges" in operation:
-                errors += [
-                    f"{self._context(path)}.operation.default_edges: default edges are not supported for EDIT operations"
-                ]
+                        else:
+                            # the type of the provided default value must match the type of the field on the object definition
+                            expected_type = object_type[key]["field_type"]
+                            actual_type = pipeline_utils.field_type_details_from_scalar(
+                                val
+                            ).to_field_type_string()
+                            if actual_type != expected_type:
+                                errors += [
+                                    f"{self._context(f'{path}.operation.default_values')}: expected value of type {expected_type}, got {actual_type}: {json.dumps(val)}"
+                                ]
+                if "default_edges" in operation:
+                    if not isinstance(operation["default_edges"], dict):
+                        return [
+                            f"{self._context(f'{path}.operation.default_edges')}: expected object, got {json.dumps(type(operation['default_edges']).__name__)}"
+                        ]
+                    # keys must be edge/edge collection fields on the object promise's object definition
+                    # values must reference an object promise of the applicable object type
+                    for key, val in operation["default_edges"].items():
+                        if key not in object_type:
+                            errors += [
+                                f"{self._context(f'{path}.operation.default_edges.{key}')}: field does not exist on object type: {json.dumps(object_promise['object_type'])}"
+                            ]
+                        elif "field_type" not in object_type[key]:
+                            # object type validation will have caught this already
+                            continue
+                        elif object_type[key]["field_type"] == "EDGE_COLLECTION":
+                            errors += [
+                                f"{self._context(f'{path}.operation.default_edges.{key}')}: setting default values for edge collections is not supported"
+                            ]
+                        elif object_type[key]["field_type"] != "EDGE":
+                            errors += [
+                                f"{self._context(f'{path}.operation.default_edges.{key}')}: cannot specify default value for non-edge here; use default_values instead"
+                            ]
+                        else:
+                            if not utils.has_reference_to_template_object_type(
+                                operation["default_edges"], key, "object_promise"
+                            ):
+                                # ref validation will have caught this already
+                                continue
 
-            if not self._object_promise_fulfilled_by_ancestor(
-                path, action, object_promise
-            ):
-                errors += [
-                    f"{self._context(path)}.operation.type: for EDIT operations, an ancestor of the action must fulfill the referenced object promise: {json.dumps(action['object_promise'])}"
-                ]
+                            object_promise_edge = self._resolve_global_ref(val)
+                            if object_promise_edge is None:
+                                errors += [
+                                    f"{self._context(f'{path}.operation.default_edges.{key}')}: could not resolve object promise reference: {json.dumps(val)}"
+                                ]
+                            elif (
+                                "id" not in object_promise_edge
+                                or "object_type" not in object_promise_edge
+                            ):
+                                # object type validation will have caught this already
+                                continue
+                            elif (
+                                object_promise_edge["object_type"]
+                                != object_type[key]["object_type"]
+                            ):
+                                errors += [
+                                    f"{self._context(f'{path}.operation.default_edges.{key}')}: object type of referenced object promise does not match the object type definition: {json.dumps(val)}"
+                                    + f"; expected {json.dumps(object_type[key]['object_type'])}, got {json.dumps(object_promise_edge['object_type'])}"
+                                ]
+                            else:
+                                fulfiller_id = str(object_promise_edge["id"])
+                                if action_id != fulfiller_id and (
+                                    fulfiller_id
+                                    not in self._object_promise_fulfillment_actions
+                                    or self.validate_has_ancestor(
+                                        path,
+                                        descendant_id=action_id,
+                                        descendant_type="action",
+                                        ancestor_ref=utils.as_ref(
+                                            self._object_promise_fulfillment_actions[
+                                                str(object_promise_edge["id"])
+                                            ],
+                                            "action",
+                                        ),
+                                    )
+                                ):
+                                    errors += [
+                                        f"{self._context(f'{path}.operation.default_edges.{key}')}: an ancestor of the action must fulfill the referenced object promise: {json.dumps(val)}"
+                                    ]
+            else:
+                # EDIT operation
+                if "default_values" in operation:
+                    errors += [
+                        f"{self._context(f'{path}.operation.default_values')}: default values are not supported for EDIT operations"
+                    ]
+                if "default_edges" in operation:
+                    errors += [
+                        f"{self._context(f'{path}.operation.default_edges')}: default edges are not supported for EDIT operations"
+                    ]
+
+                if (
+                    object_promise_id not in self._object_promise_fulfillment_actions
+                    or self.validate_has_ancestor(
+                        path,
+                        descendant_id=action_id,
+                        descendant_type="action",
+                        ancestor_ref=utils.as_ref(
+                            self._object_promise_fulfillment_actions[object_promise_id],
+                            "action",
+                        ),
+                    )
+                    != []
+                ):
+                    errors += [
+                        f"{self._context(f'{path}.operation')}: for EDIT operations, an ancestor of the action must fulfill the referenced object promise: {json.dumps(action['object_promise'])}"
+                    ]
 
         return errors
 
@@ -514,26 +564,42 @@ class SchemaValidator:
                 descendant_id=action["id"],
                 descendant_type="action",
                 ancestor_ref="action:{" + str(fulfiller_id) + "}",
-                ancestor_source="",  # irrelevant
             )
             == []
         )
 
     def validate_has_ancestor(
-        self, path, descendant_id, descendant_type, ancestor_ref, ancestor_source
+        self,
+        path,
+        descendant_id,
+        descendant_type,
+        ancestor_ref=None,
+        ancestor_source=None,
+        ancestor_ids=None,
     ):
         error = [
             f"{self._context(path)}: the value of property {json.dumps(ancestor_source)} must reference an ancestor of {descendant_type} id {json.dumps(descendant_id)}, got {json.dumps(ancestor_ref)}"
         ]
 
         descendant_id = str(descendant_id)
-        if ancestor_ref is None or (
+        if (
             descendant_id not in self._action_checkpoints
             and descendant_id not in self._thread_checkpoints
         ):
             return error
 
-        ancestor_id = utils.parse_ref_id(ancestor_ref)
+        if ancestor_ref is not None:
+            if ancestor_ids is not None:
+                raise Exception("cannot specify both ancestor_ref and ancestor_ids")
+            ancestor_id = utils.parse_ref_id(ancestor_ref)
+        else:
+            ancestor_id = None
+            if ancestor_ids is None:
+                raise Exception("must specify either ancestor_ref or ancestor_ids")
+            else:
+                ancestor_ids.remove(
+                    descendant_id
+                )  # prevent circular dependency false positive
 
         def action_id_from_dependency_ref(dependency, left_or_right):
             if not utils.has_reference_to_template_object_type(
@@ -543,24 +609,57 @@ class SchemaValidator:
             return utils.parse_ref_id(dependency["compare"][left_or_right]["ref"])
 
         def validate_has_ancestor_recursive(checkpoint_alias, visited_checkpoints):
+            if checkpoint_alias is None or checkpoint_alias in visited_checkpoints:
+                return error
+
             if checkpoint_alias not in self._checkpoints:
                 # pattern validation will have caught this
                 return []
-
-            if checkpoint_alias is None or checkpoint_alias in visited_checkpoints:
-                return error
 
             visited_checkpoints.append(checkpoint_alias)
 
             checkpoint = self._checkpoints[checkpoint_alias]
             for dependency in checkpoint["dependencies"]:
                 if "compare" in dependency:
-                    if (
-                        action_id_from_dependency_ref(dependency, "left") == ancestor_id
-                        or action_id_from_dependency_ref(dependency, "right")
-                        == ancestor_id
-                    ):
-                        return []
+                    for referenced_action_id in [
+                        action_id_from_dependency_ref(dependency, "left"),
+                        action_id_from_dependency_ref(dependency, "right"),
+                    ]:
+                        if ancestor_id is not None:
+                            if referenced_action_id == ancestor_id:
+                                # found ancestor
+                                return []
+
+                            # continue searching for ancestor if possible
+                            if (
+                                referenced_action_id is not None
+                                and str(referenced_action_id)
+                                in self._action_checkpoints
+                                and validate_has_ancestor_recursive(
+                                    self._action_checkpoints[str(referenced_action_id)],
+                                    visited_checkpoints,
+                                )
+                                == []
+                            ):
+                                return []
+                        elif (
+                            ancestor_ids is not None
+                            and referenced_action_id is not None
+                        ):
+                            if str(referenced_action_id) in ancestor_ids:
+                                # found ancestor
+                                return []
+
+                            # continue searching for ancestor if possible
+                            if (
+                                str(referenced_action_id) in self._action_checkpoints
+                                and validate_has_ancestor_recursive(
+                                    self._action_checkpoints[str(referenced_action_id)],
+                                    visited_checkpoints,
+                                )
+                                == []
+                            ):
+                                return []
 
                 elif "checkpoint" in dependency:
                     if validate_has_ancestor_recursive(
@@ -571,7 +670,10 @@ class SchemaValidator:
             return error
 
         if descendant_type == "action":
-            if descendant_id not in self._action_checkpoints:
+            if (
+                descendant_id not in self._action_checkpoints
+                or self._action_checkpoints[descendant_id] is None
+            ):
                 return error
 
             return validate_has_ancestor_recursive(
@@ -858,7 +960,7 @@ class SchemaValidator:
 
         return context_mismatches
 
-    def validate_thread(self, path, thread):
+    def validate_thread_group(self, path, thread):
         spawn = thread["spawn"] if "spawn" in thread else None
         if (
             spawn is None
@@ -1060,23 +1162,7 @@ class SchemaValidator:
 
         return None
 
-    def _record_object_promise_fulfillment_actions(self, action):
-        if (
-            "id" in action
-            and "operation" in action
-            and "type" in action["operation"]
-            and action["operation"]["type"] == "CREATE"
-            and utils.has_reference_to_template_object_type(
-                action, "object_promise", "object_promise"
-            )
-        ):
-            object_promise = self._resolve_global_ref(action["object_promise"])
-            if object_promise is not None and "id" in object_promise:
-                self._object_promise_fulfillment_actions[
-                    str(object_promise["id"])
-                ] = str(action["id"])
-
-    def _record_operation(self, action):
+    def _record_settable_fields(self, action):
         if (
             "id" not in action
             or "operation" not in action
@@ -1136,7 +1222,34 @@ class SchemaValidator:
                         self._settable_fields[object_promise_id].add(field_name)
 
     def validate_pipeline(self, path, field):
-        pipeline = self._set_pipeline_at_path(path)
+        if not utils.has_reference_to_template_object_type(
+            field, "object_promise", "object_promise"
+        ):
+            # there will already be validation errors for the missing field
+            return []
+
+        object_promise = self._resolve_global_ref(field["object_promise"])
+        if object_promise is None:
+            return [
+                f"{self._context(path)}.object_promise: could not resolve object promise"
+            ]
+        if "id" not in object_promise:
+            # there will already be validation errors for the missing field
+            return []
+
+        object_promise_context = self._object_promise_contexts[
+            str(object_promise["id"])
+        ]
+        pipeline = Pipeline(
+            object_promise_ref=field["object_promise"],
+            thread_scope=self._thread_groups[
+                utils.parse_ref_id(object_promise_context)
+            ].scope
+            if utils.is_global_ref(object_promise_context)
+            else None,
+        )
+        self._pipelines[path] = pipeline
+
         pipeline_scope = "0"
         errors = []
 
@@ -1206,6 +1319,13 @@ class SchemaValidator:
                     apply=field["apply"][i],
                 )
 
+        if not errors and "output" in field and isinstance(field["output"], list):
+            for i in range(len(field["output"])):
+                errors += self._validate_pipeline_output(
+                    f"{path}.output[{str(i)}]",
+                    output_obj=field["output"][i],
+                )
+
         # were any variables declared but not used?
         for variables in pipeline.variables.values():
             for var_name, var in variables.items():
@@ -1273,15 +1393,17 @@ class SchemaValidator:
                 ref_type_details = copy.deepcopy(var_type_details)
         else:  # ref is not a variable, so it's a global or local ref
             local_input_error = [
-                f"{self._context(f'{path}.ref')}: cannot use local object as pipeline input"
+                f"{self._context(f'{path}.ref')}: cannot use field from local object as pipeline input"
             ]
 
             parent_action = self._get_parent_action(path)
             if is_global_ref(ref):
                 # warn if the global ref refers to the local object
                 if utils.has_reference_to_template_object_type(
-                    traversal, "ref", "action"
-                ) and utils.parse_ref_id(ref) == str(parent_action["id"]):
+                    traversal, "ref", "object_promise"
+                ) and utils.parse_ref_id(ref) == utils.parse_ref_id(
+                    pipeline.object_promise_ref
+                ):
                     self.warnings.append(
                         f'{self._context(f"{path}.ref")}: global ref refers to the local object -- consider using "$_object" instead to reference the local object'
                     )
@@ -1446,7 +1568,7 @@ class SchemaValidator:
         if "from" not in apply or "to" not in apply or "method" not in apply:
             # there will already be validation errors for the missing fields,
             # and we cannot validate further without them.
-            return None
+            return []
 
         pipeline = self._get_pipeline_at_path(path)
 
@@ -1454,12 +1576,13 @@ class SchemaValidator:
         local_input_error = [
             f"{self._context(f'{path}.from')}: cannot use local object as pipeline input"
         ]
-        if utils.has_reference_to_template_object_type(apply, "from", "action"):
-            parent_action = self._get_parent_action(path)
+        if utils.has_reference_to_template_object_type(apply, "from", "object_promise"):
+            object_promise = self._resolve_global_ref(apply["from"])
             if (
-                parent_action is not None
-                and "id" in parent_action
-                and utils.parse_ref_id(apply["from"]) == str(parent_action["id"])
+                object_promise is not None
+                and "id" in object_promise
+                and utils.parse_ref_id(apply["from"])
+                == utils.parse_ref_id(pipeline.object_promise_ref)
             ):
                 self.warnings.append(
                     f'{self._context(f"{path}.from")}: global ref refers to the local object -- consider using "$_object" instead to reference the local object.'
@@ -1541,17 +1664,75 @@ class SchemaValidator:
 
         return []
 
-    def _set_pipeline_at_path(self, path):
-        pipline = Pipeline(thread_scope=self._get_action_thread_scope(path))
-        self._pipelines[self._action_id_from_path(path)] = pipline
-        return pipline
+    def _validate_pipeline_output(self, path, output_obj):
+        pipeline = self._get_pipeline_at_path(path)
+        errors = []
+
+        # output.from must be a pipeline variable from the top-level scope
+        from_var = None
+        if "from" in output_obj and is_variable(output_obj["from"]):
+            from_var = pipeline.get_variable(
+                var_name=output_obj["from"],
+                within_scope="0",  # top-level scope
+            )
+            if from_var is None:
+                errors += [
+                    f"{self._context(f'{path}.from')}: variable not found in top-level pipeline scope: {output_obj['from']}"
+                ]
+            else:
+                from_var.used = True
+
+        if pipeline.object_promise_ref is None:
+            # can't validate further without the object promise
+            return errors
+
+        # output.to must be a field on the promised object
+        object_promise = self._resolve_global_ref(pipeline.object_promise_ref)
+        if object_promise is not None:
+            if (
+                "to" in output_obj
+                and "object_type" in object_promise
+                and object_promise["object_type"] in self.schema["object_types"]
+            ):
+                if "id" in object_promise:
+                    if str(object_promise["id"]) not in self._aggregated_fields:
+                        self._aggregated_fields[str(object_promise["id"])] = set()
+
+                    self._aggregated_fields[str(object_promise["id"])].add(
+                        output_obj["to"]
+                    )
+
+                field_type = self._resolve_type_from_object_path(
+                    object_tag=object_promise["object_type"], path=output_obj["to"]
+                )
+                if field_type is None:
+                    errors += [
+                        f"{self._context(f'{path}.to')}: field {json.dumps(output_obj['to'])} not found on object type: {object_promise['object_type']}"
+                    ]
+                elif from_var is not None:
+                    if not field_type.matches_type(from_var.type_details):
+                        errors += [
+                            f'{self._context(path)}: "from" type does not match "to" type ({from_var.type_details.to_string()} != {field_type.to_string()})'
+                        ]
+
+            # aggregation output fields cannot be made settable by action operations
+            if (
+                "id" in object_promise
+                and str(object_promise["id"]) in self._settable_fields
+                and output_obj["to"] in self._settable_fields[str(object_promise["id"])]
+            ):
+                errors += [
+                    f"{self._context(f'{path}.to')}: cannot use field for aggregation output because the field is included in an action's operation"
+                ]
+
+        return errors
 
     def _get_pipeline_at_path(self, path):
-        action_id = self._action_id_from_path(path)
-        if action_id not in self._pipelines:
-            raise Exception("no pipeline exists at path: " + path)
+        split_path = path.split(".")
+        if split_path[0] != "root" or not re.match("^pipelines\[\d+\]$", split_path[1]):
+            return None
 
-        return self._pipelines[action_id]
+        return self._pipelines[f"{split_path[0]}.{split_path[1]}"]
 
     def _resolve_type_from_variable_path(self, var_type_details, path):
         if var_type_details.item_type == "OBJECT":
@@ -1589,28 +1770,26 @@ class SchemaValidator:
             template_object = self._resolve_global_ref(global_ref)
 
             if ref_type == "object_promise":
-                fulfiller_action = self._resolve_global_ref(
-                    "action:{"
-                    + self._object_promise_fulfillment_actions[
-                        str(template_object["id"])
-                    ]
-                    + "}"
-                )
-                is_threaded_object = utils.has_reference_to_template_object_type(
-                    fulfiller_action, "context", "thread_group"
-                )
-
                 # If the object promise's context is part of the resolution_context_thread_id scope,
                 # then we are dealing with a single threaded object promise
                 # that is being referenced from within the thread.
                 # Otherwise we are dealing with a list of object promises, because the promise is
                 # fulfilled in the context of a thread.
+                object_promise_id = str(template_object["id"])
+                if object_promise_id not in self._object_promise_contexts:
+                    # cannot resolve type
+                    return None
+                is_threaded_object = (
+                    self._object_promise_contexts[object_promise_id] is not None
+                )
                 is_list_of_object_promises = is_threaded_object and (
                     resolution_context_thread_id is None
                     or not self._thread_groups[
                         resolution_context_thread_id
                     ].has_access_to_context(
-                        utils.parse_ref_id(fulfiller_action["context"])
+                        utils.parse_ref_id(
+                            self._object_promise_contexts[object_promise_id]
+                        )
                     )
                 )
 
@@ -2599,7 +2778,10 @@ class SchemaValidator:
         self._threaded_action_ids = []
         self._thread_groups = {}
         self._settable_fields = {}
+        self._object_promise_actions = {}
         self._object_promise_fulfillment_actions = {}
+        self._duplicate_object_promise_fulfillments = {}
+        self._object_promise_contexts = {}
 
         if "thread_groups" in self.schema:
             for thread in self.schema["thread_groups"]:
@@ -2663,8 +2845,20 @@ class SchemaValidator:
             if "id" not in action:
                 continue
 
-            self._record_object_promise_fulfillment_actions(action)
-            self._record_operation(action)
+            # Track which actions reference object promises...
+            # Ancestry will be used to determine operation types.
+            if "id" in action and utils.has_reference_to_template_object_type(
+                action, "object_promise", "object_promise"
+            ):
+                object_promise = self._resolve_global_ref(action["object_promise"])
+                if object_promise is not None and "id" in object_promise:
+                    if str(object_promise["id"]) not in self._object_promise_actions:
+                        self._object_promise_actions[str(object_promise["id"])] = []
+                    self._object_promise_actions[str(object_promise["id"])].append(
+                        str(action["id"])
+                    )
+
+            self._record_settable_fields(action)
 
             action_id = str(action["id"])
             # if the action has a threaded context...
@@ -2774,6 +2968,46 @@ class SchemaValidator:
                     and alias not in nested_checkpoints
                 ):
                     self._unreferenced_checkpoints.append(checkpoint["alias"])
+
+        # determine which actions fulfill object promises (CREATE operations)
+        for object_promise_id, action_ids in self._object_promise_actions.items():
+            for action_id in action_ids:
+                action = self._resolve_global_ref("action:{" + action_id + "}")
+                if action is None or "operation" not in action:
+                    continue
+
+                if (
+                    len(action_ids) == 1
+                    or self.validate_has_ancestor(
+                        path="",
+                        descendant_id=action_id,
+                        descendant_type="action",
+                        ancestor_ids=action_ids,
+                    )
+                    != []
+                ):
+                    # no ancestor references the same object promise...
+                    if (
+                        object_promise_id
+                        not in self._object_promise_fulfillment_actions
+                    ):
+                        # this action fulfills the object promise
+                        self._object_promise_fulfillment_actions[
+                            object_promise_id
+                        ] = action_id
+                        # and therefore the object promise inherits the action's thread scope
+                        self._object_promise_contexts[object_promise_id] = (
+                            action["context"]
+                            if utils.has_reference_to_template_object_type(
+                                action, "context", "thread_group"
+                            )
+                            else None
+                        )
+                    else:
+                        # another action already fulfills the same object promise
+                        self._duplicate_object_promise_fulfillments.add(
+                            object_promise_id
+                        )
 
     def _detect_circular_dependencies(self):
         def _explore_checkpoint_recursive(checkpoint, visited, dependency_path):

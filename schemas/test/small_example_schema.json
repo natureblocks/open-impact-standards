@@ -37,7 +37,15 @@
         "Placeholder": {
             "completed": {
                 "field_type": "BOOLEAN",
-                "description": "Placeholder object definition"
+                "description": "Placeholder field definition"
+            },
+            "number": {
+                "field_type": "NUMERIC",
+                "description": "Another placeholder field definition"
+            },
+            "numbers": {
+                "field_type": "NUMERIC_LIST",
+                "description": "Yet another placeholder field definition"
             }
         }
     },
@@ -107,6 +115,36 @@
             "name": "object promise 10",
             "description": "Placeholder object promise",
             "object_type": "Placeholder"
+        }
+    ],
+    "pipelines": [
+        {
+            "object_promise": "object_promise:{0}",
+            "context": "TEMPLATE",
+            "variables": [
+                {
+                    "name": "$average",
+                    "type": "NUMERIC",
+                    "initial": 0
+                }
+            ],
+            "apply": [
+                {
+                    "from": "object_promise:{10}",
+                    "aggregate": {
+                        "operator": "AVERAGE",
+                        "field": "numbers"
+                    },
+                    "method": "ADD",
+                    "to": "$average"
+                }
+            ],
+            "output": [
+                {
+                    "from": "$average",
+                    "to": "number"
+                }
+            ]
         }
     ],
     "actions": [

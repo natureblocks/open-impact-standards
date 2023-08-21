@@ -51,6 +51,13 @@ def parse_ref_id(value):
     return framed_ref_id[1:-1]
 
 
+def as_ref(value, ref_type):
+    if ref_type not in ref_types:
+        raise Exception(f"Invalid ref type: {ref_type}")
+
+    return ref_type + ":{" + str(value) + "}"
+
+
 def parse_ref_type(value):
     if not is_global_ref(value):
         raise Exception(f"Invalid ref: {value}")
