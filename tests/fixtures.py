@@ -12,7 +12,7 @@ def basic_schema_with_actions(num_actions):
 def basic_schema():
     return {
         "standard": "basic_test_schema",
-        "term_definitions": [],
+        "terms": [],
         "parties": [],
         "actions": [],
         "checkpoints": [],

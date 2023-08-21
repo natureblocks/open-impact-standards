@@ -16,7 +16,7 @@ root_object = {
     "type": "object",
     "properties": {
         "standard": {"type": "string"},
-        "term_definitions": {
+        "terms": {
             "type": "array",
             "values": {
                 "type": "object",
@@ -49,7 +49,7 @@ root_object = {
             },
             "values": {
                 "type": "object",
-                "template": "object_definition",
+                "template": "object_type",
             },
         },
         "object_promises": {
@@ -112,7 +112,7 @@ root_object = {
     "property_validation_priority": ["thread_groups", "pipelines"],
 }
 
-object_definition = {
+object_type = {
     "type": "object",
     "keys": {
         "type": "string",
@@ -371,8 +371,30 @@ action = {
                     "nullable": True,
                     "values": {"type": "string"},
                 },
+                "default_values": {
+                    "type": "object",
+                    "keys": {
+                        "type": "string",
+                    },
+                    "values": {
+                        "type": "scalar",
+                    },
+                },
+                "default_edges": {
+                    "type": "object",
+                    "keys": {
+                        "type": "string",
+                    },
+                    "values": {
+                        "type": "ref",
+                        "ref_types": ["object_promise"],
+                    },
+                },
             },
             "mutually_exclusive": ["include", "exclude"],
+            "constraints": {
+                "optional": ["default_values", "default_edges"],
+            },
         },
         "milestones": {
             "type": "array",

@@ -1072,7 +1072,7 @@ class SchemaValidator:
                 f"{self._context(path)}.spawn.from: could not resolve object type"
             ]
         else:
-            # from_object_type must be an object or template object
+            # from_object_type must be an object or template entity
             variable_type = None
             if from_object_type.item_type == "OBJECT":
                 variable_type = self._resolve_type_from_object_path(

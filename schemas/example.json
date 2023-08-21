@@ -11,7 +11,7 @@
             "hex_code": "#dfb7e6"
         }
     ],
-    "term_definitions": [
+    "terms": [
         {
             "name": "The name of a term that is used within the schema.",
             "description": "A description of the term, possibly referring to one or more of the following attributes.",
