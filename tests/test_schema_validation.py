@@ -976,7 +976,7 @@ class TestSchemaValidation:
     def test_dependency_operand_rules(self):
         validator = SchemaValidator()
 
-        schema = fixtures.basic_schema_with_actions(2)
+        schema = fixtures.basic_schema_with_actions(3)
         checkpoint = fixtures.checkpoint(0, "test-ds", num_dependencies=0)
 
         # Both operands cannot be LiteralOperand objects
@@ -984,8 +984,8 @@ class TestSchemaValidation:
             {
                 "compare": {
                     "left": {"value": True},
-                    "right": {"value": False},
                     "operator": "EQUALS",
+                    "right": {"value": False},
                 },
             },
         )
@@ -1001,8 +1001,8 @@ class TestSchemaValidation:
         schema["checkpoints"][0]["dependencies"][0] = {
             "compare": {
                 "left": {"ref": "action:{0}.object_promise.completed"},
-                "right": {"ref": "action:{0}.object_promise.completed"},
                 "operator": "EQUALS",
+                "right": {"ref": "action:{0}.object_promise.completed"},
             },
         }
         errors = validator.validate(json_string=json.dumps(schema))
@@ -1025,6 +1025,33 @@ class TestSchemaValidation:
         schema["checkpoints"][0]["dependencies"][0]["compare"]["left"][
             "ref"
         ] = "action:{0}.object_promise.edge.completed"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # should be able to compare two edges
+        schema["checkpoints"][0]["dependencies"][0]["compare"] = {
+            "left": {"ref": "action:{0}.object_promise.edge"},
+            "operator": "EQUALS",
+            "right": {"ref": "action:{2}.object_promise.edge"},
+        }
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # should be able to compare edge collections
+        schema["checkpoints"][0]["dependencies"][0]["compare"] = {
+            "left": {"ref": "action:{0}.object_promise.objects"},
+            "operator": "IS_SUBSET_OF",
+            "right": {"ref": "action:{2}.object_promise.objects"},
+        }
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # should be able to compare edges with edge collections
+        schema["checkpoints"][0]["dependencies"][0]["compare"] = {
+            "left": {"ref": "action:{2}.object_promise.objects"},
+            "operator": "CONTAINS",
+            "right": {"ref": "action:{0}.object_promise.edge"},
+        }
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 

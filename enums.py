@@ -18,7 +18,7 @@ comparison_operators = (
     "CONTAINS",
     "DOES_NOT_CONTAIN",
     "CONTAINS_ANY_OF",
-    "CONTAINS_NONE_OF"
+    "CONTAINS_NONE_OF",
     "IS_SUBSET_OF",
     "IS_SUPERSET_OF",
 )
