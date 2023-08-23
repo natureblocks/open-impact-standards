@@ -401,7 +401,7 @@ class SchemaValidator:
 
             if not isinstance(operation[inclusion_type], list):
                 return [
-                    f"{self._context(f'{path}.operation.include')}: expected array or null, got {json.dumps(type(operation['include']).__name__)}"
+                    f"{self._context(f'{path}.operation.{inclusion_type}')}: expected array or null, got {json.dumps(type(operation[inclusion_type]).__name__)}"
                 ]
 
             for field in operation[inclusion_type]:
@@ -2472,7 +2472,24 @@ class SchemaValidator:
 
         for prop in modified_template["mutually_exclusive"]:
             if prop not in included_props:
-                modified_template["constraints"]["forbidden"]["properties"].append(prop)
+                modified_template["constraints"]["forbidden"]["properties"].append(
+                    prop
+                )
+
+        if len(included_props) == 0:
+            # unless all of the properties are optional, at least one must be specified
+            error_msg = [
+                f"{self._context(path)}: must specify one of the mutually exclusive properties: {modified_template['mutually_exclusive']}"
+            ]
+            if (
+                "constraints" not in modified_template
+                or "optional" not in modified_template["constraints"]
+            ):
+                return (error_msg, modified_template)
+
+            for prop in modified_template["mutually_exclusive"]:
+                if prop not in modified_template["constraints"]["optional"]:
+                    return (error_msg, modified_template)
 
         if len(included_props) > 1:
             return (

@@ -154,8 +154,7 @@
             "party": "party:{Project Developer}",
             "object_promise": "object_promise:{0}",
             "operation": {
-                "type": "CREATE",
-                "fields": ["field_type", "description"]
+                "exclude": ["number"]
             }
         },
         {
@@ -164,8 +163,7 @@
             "party": "party:{Project Developer}",
             "object_promise": "object_promise:{1}",
             "operation": {
-                "type": "CREATE",
-                "fields": ["field_type", "description"]
+                "exclude": null
             },
             "depends_on": "checkpoint:{Set up survey#0000}"
         },
@@ -175,8 +173,7 @@
             "party": "party:{Land Representative}",
             "object_promise": "object_promise:{2}",
             "operation": {
-                "type": "CREATE",
-                "fields": ["field_type", "description"]
+                "exclude": null
             }
         },
         {
@@ -185,8 +182,7 @@
             "party": "party:{Project Developer}",
             "object_promise": "object_promise:{3}",
             "operation": {
-                "type": "CREATE",
-                "fields": ["field_type", "description"]
+                "exclude": null
             }
         },
         {
@@ -195,8 +191,7 @@
             "party": "party:{Land Representative}",
             "object_promise": "object_promise:{4}",
             "operation": {
-                "type": "CREATE",
-                "fields": ["field_type", "description"]
+                "exclude": null
             },
             "depends_on": "checkpoint:{Agreement and Guidance#0000}"
         },
@@ -206,8 +201,7 @@
             "party": "party:{Land Representative}",
             "object_promise": "object_promise:{5}",
             "operation": {
-                "type": "CREATE",
-                "fields": ["field_type", "description"]
+                "exclude": null
             },
             "depends_on": "checkpoint:{8}"
         },
@@ -217,8 +211,7 @@
             "party": "party:{Land Representative}",
             "object_promise": "object_promise:{6}",
             "operation": {
-                "type": "CREATE",
-                "fields": ["field_type", "description"]
+                "exclude": null
             },
             "depends_on": "checkpoint:{Written Agreement, Laws and Contracts#0000}"
         },
@@ -228,8 +221,7 @@
             "party": "party:{Land Representative}",
             "object_promise": "object_promise:{7}",
             "operation": {
-                "type": "CREATE",
-                "fields": ["field_type", "description"]
+                "exclude": null
             },
             "depends_on": "checkpoint:{8}"
         },
@@ -239,8 +231,7 @@
             "party": "party:{Project}",
             "object_promise": "object_promise:{8}",
             "operation": {
-                "type": "CREATE",
-                "fields": ["field_type", "description"]
+                "exclude": null
             },
             "depends_on": "checkpoint:{Land owner or Tenant#0000}"
         },
@@ -250,8 +241,7 @@
             "party": "party:{Project}",
             "object_promise": "object_promise:{9}",
             "operation": {
-                "type": "CREATE",
-                "fields": ["field_type", "description"]
+                "exclude": null
             },
             "depends_on": "checkpoint:{Land owner or Tenant#0000}"
         },
@@ -261,8 +251,7 @@
             "party": "party:{Project}",
             "object_promise": "object_promise:{10}",
             "operation": {
-                "type": "CREATE",
-                "fields": ["field_type", "description"]
+                "exclude": null
             },
             "depends_on": "checkpoint:{Land Rights and Local Laws#0000}"
         }

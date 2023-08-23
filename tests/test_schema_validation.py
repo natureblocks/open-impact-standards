@@ -1546,6 +1546,15 @@ class TestSchemaValidation:
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
+        # Unless all of the mutually exclusive properties are optional,
+        # at least one of them must be specified
+        del schema["actions"][0]["operation"]["exclude"]
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.actions[0].operation (action id: 0): must specify one of the mutually exclusive properties: ['include', 'exclude']"
+            in errors
+        )
+
     def test_enum(self):
         validator = SchemaValidator()
 
