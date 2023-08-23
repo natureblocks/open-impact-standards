@@ -92,3 +92,78 @@ def field_type_from_python_type_name(python_type_name):
     raise NotImplementedError(
         f"Field type not found for python type: {python_type_name}"
     )
+
+
+def types_are_comparable(left_type, right_type, operator):
+    # {left_types: {valid_operators: valid_right_type}}
+    valid_comparisons = {
+        "STRING": {
+            "EQUALS": "STRING",
+            "DOES_NOT_EQUAL": "STRING",
+            "CONTAINS": "STRING",
+            "DOES_NOT_CONTAIN": "STRING",
+            "ONE_OF": "STRING_LIST",
+            "NONE_OF": "STRING_LIST",
+        },
+        "NUMERIC": {
+            "EQUALS": "NUMERIC",
+            "DOES_NOT_EQUAL": "NUMERIC",
+            "GREATER_THAN": "NUMERIC",
+            "LESS_THAN": "NUMERIC",
+            "GREATER_THAN_OR_EQUAL_TO": "NUMERIC",
+            "LESS_THAN_OR_EQUAL_TO": "NUMERIC",
+            "ONE_OF": "NUMERIC_LIST",
+            "NONE_OF": "NUMERIC_LIST",
+        },
+        "BOOLEAN": {"EQUALS": "BOOLEAN"},
+        "STRING_LIST": {
+            "CONTAINS": "STRING",
+            "DOES_NOT_CONTAIN": "STRING",
+            "EQUALS": "STRING_LIST",
+            "DOES_NOT_EQUAL": "STRING_LIST",
+            "CONTAINS_ANY_OF": "STRING_LIST",
+            "IS_SUBSET_OF": "STRING_LIST",
+            "IS_SUPERSET_OF": "STRING_LIST",
+            "CONTAINS_NONE_OF": "STRING_LIST",
+        },
+        "NUMERIC_LIST": {
+            "CONTAINS": "NUMERIC",
+            "DOES_NOT_CONTAIN": "NUMERIC",
+            "EQUALS": "NUMERIC_LIST",
+            "DOES_NOT_EQUAL": "NUMERIC_LIST",
+            "CONTAINS_ANY_OF": "NUMERIC_LIST",
+            "IS_SUBSET_OF": "NUMERIC_LIST",
+            "IS_SUPERSET_OF": "NUMERIC_LIST",
+            "CONTAINS_NONE_OF": "NUMERIC_LIST",
+        },
+        "BOOLEAN_LIST": {
+            "CONTAINS": "BOOLEAN",
+            "DOES_NOT_CONTAIN": "BOOLEAN",
+            "EQUALS": "BOOLEAN_LIST",
+            "DOES_NOT_EQUAL": "BOOLEAN_LIST",
+            "IS_SUBSET_OF": "BOOLEAN_LIST",
+            "IS_SUPERSET_OF": "BOOLEAN_LIST",
+        },
+        "OBJECT": {
+            "EQUALS": "OBJECT",
+            "DOES_NOT_EQUAL": "OBJECT",
+            "ONE_OF": "OBJECT_LIST",
+            "NONE_OF": "OBJECT_LIST",
+        },
+        "OBJECT_LIST": {
+            "CONTAINS": "OBJECT",
+            "DOES_NOT_CONTAIN": "OBJECT",
+            "EQUALS": "OBJECT_LIST",
+            "DOES_NOT_EQUAL": "OBJECT_LIST",
+            "CONTAINS_ANY_OF": "OBJECT_LIST",
+            "IS_SUBSET_OF": "OBJECT_LIST",
+            "IS_SUPERSET_OF": "OBJECT_LIST",
+            "CONTAINS_NONE_OF": "OBJECT_LIST",
+        },
+    }
+
+    return (
+        left_type in valid_comparisons
+        and operator in valid_comparisons[left_type]
+        and right_type == valid_comparisons[left_type][operator]
+    )

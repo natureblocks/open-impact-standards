@@ -204,7 +204,7 @@ def determine_right_operand_type(
 
             left_type = operand_types["left"].to_string()
             right_type = operand_types["right"].to_string()
-            if schema_validator.types_are_comparable(
+            if utils.types_are_comparable(
                 left_type,
                 right_type,
                 comparison["operator"],

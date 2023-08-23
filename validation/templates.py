@@ -250,6 +250,9 @@ dependency = {
                         "function": "validate_comparison",
                         "args": ["{left}", "{right}", "{operator}"],
                     },
+                    {
+                        "function": "validate_does_not_depend_on_aggregated_field",
+                    },
                 ],
             },
         },

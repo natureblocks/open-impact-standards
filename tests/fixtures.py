@@ -77,20 +77,20 @@ def checkpoint(id, alias, gate_type="AND", num_dependencies=2):
 
 def dependency(
     ref,
-    field="completed",
+    path_from_ref="object_promise.completed",
     operator="EQUALS",
     comparison_value=True,
 ):
     return {
         "compare": {
-            "left": {"ref": ref, "field": field},
+            "left": {"ref": f"{ref}.{path_from_ref}"},
             "right": {"value": comparison_value},
             "operator": operator,
         },
     }
 
 
-def thread(id, depends_on_id=None):
+def thread_group(id, depends_on_id=None):
     thread = {
         "id": id,
         "description": "",

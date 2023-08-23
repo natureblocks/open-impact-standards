@@ -277,8 +277,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{8}",
-                            "field": "completed"
+                            "ref": "action:{8}.object_promise.completed"
                         },
                         "right": {
                             "value": true
@@ -297,8 +296,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{11}",
-                            "field": "completed"
+                            "ref": "action:{11}.object_promise.completed"
                         },
                         "right": {
                             "value": true
@@ -309,8 +307,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{12}",
-                            "field": "completed"
+                            "ref": "action:{12}.object_promise.completed"
                         },
                         "right": {
                             "value": true
@@ -328,8 +325,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{7}",
-                            "field": "completed"
+                            "ref": "action:{7}.object_promise.completed"
                         },
                         "right": {
                             "value": true
@@ -348,8 +344,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{9}",
-                            "field": "completed"
+                            "ref": "action:{9}.object_promise.completed"
                         },
                         "right": {
                             "value": true
@@ -360,8 +355,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{10}",
-                            "field": "completed"
+                            "ref": "action:{10}.object_promise.completed"
                         },
                         "right": {
                             "value": true
@@ -380,8 +374,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{13}",
-                            "field": "completed"
+                            "ref": "action:{13}.object_promise.completed"
                         },
                         "right": {
                             "value": true
@@ -393,8 +386,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{14}",
-                            "field": "completed"
+                            "ref": "action:{14}.object_promise.completed"
                         },
                         "right": {
                             "value": true
@@ -413,8 +405,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{15}",
-                            "field": "completed"
+                            "ref": "action:{15}.object_promise.completed"
                         },
                         "right": {
                             "value": true
@@ -425,8 +416,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{16}",
-                            "field": "completed"
+                            "ref": "action:{16}.object_promise.completed"
                         },
                         "right": {
                             "value": true

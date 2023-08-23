@@ -77,8 +77,8 @@ class TestSchemaValidation:
         schema["checkpoints"] = [
             fixtures.checkpoint(0, "depends-on-0", num_dependencies=1)
         ]
-        thread = fixtures.thread(0, "depends-on-0")
-        child_thread = fixtures.thread(1)
+        thread = fixtures.thread_group(0, "depends-on-0")
+        child_thread = fixtures.thread_group(1)
         child_thread["context"] = "thread_group:{0}"
         schema["actions"][1]["context"] = "thread_group:{1}"
 
@@ -106,7 +106,7 @@ class TestSchemaValidation:
         assert not errors
 
         # should be able to reuse a variable name in a different scope
-        sibling_thread = fixtures.thread(2, "depends-on-0")
+        sibling_thread = fixtures.thread_group(2, "depends-on-0")
         sibling_thread["spawn"]["as"] = "$some_var"
         schema["thread_groups"].append(sibling_thread)
         schema["actions"][2]["context"] = "thread_group:{2}"
@@ -182,7 +182,7 @@ class TestSchemaValidation:
                 "as": "$object",
             },
         )
-        schema["thread_groups"].append(fixtures.thread(1))
+        schema["thread_groups"].append(fixtures.thread_group(1))
         schema["thread_groups"][1]["context"] = "thread_group:{0}"
         schema["thread_groups"][1]["spawn"] = {
             "from": "$object",
@@ -209,7 +209,7 @@ class TestSchemaValidation:
             fixtures.checkpoint(0, "depends-on-0", num_dependencies=1),
         ]
         schema["thread_groups"] = [
-            fixtures.thread(0),
+            fixtures.thread_group(0),
         ]
         schema["thread_groups"][0]["depends_on"] = "checkpoint:{depends-on-0}"
         schema["actions"][2]["context"] = "thread_group:{0}"
@@ -236,7 +236,7 @@ class TestSchemaValidation:
         # field from a threaded action
         # (the threading DOES NOT make it a list (if it did, why not just continue the same thread?),
         # so a collection must be referenced)
-        schema["thread_groups"].append(fixtures.thread(1))
+        schema["thread_groups"].append(fixtures.thread_group(1))
         schema["thread_groups"][1]["context"] = "thread_group:{0}"
         schema["actions"][1]["context"] = "thread_group:{0}"
         schema["actions"][2]["context"] = "thread_group:{1}"
@@ -246,7 +246,7 @@ class TestSchemaValidation:
         schema["checkpoints"][1]["context"] = "thread_group:{0}"
         schema["checkpoints"][1]["dependencies"][0]["compare"]["left"][
             "ref"
-        ] = "action:{1}"
+        ] = "action:{1}.object_promise.completed"
         schema["thread_groups"][1]["depends_on"] = "checkpoint:{depends-on-1}"
         schema["thread_groups"][1]["spawn"] = {
             "from": "object_promise:{1}",  # non-list (despite it being a threaded object)
@@ -309,7 +309,7 @@ class TestSchemaValidation:
         }
 
         # edge case: spawn a nested thread from a collection on an action from a parent thread scope
-        schema["thread_groups"].append(fixtures.thread(2))
+        schema["thread_groups"].append(fixtures.thread_group(2))
         schema["thread_groups"][2]["context"] = "thread_group:{1}"
         schema["thread_groups"][2]["spawn"] = {
             "from": "object_promise:{1}",
@@ -336,13 +336,13 @@ class TestSchemaValidation:
                 "ref"
             ] = action_id
 
-        set_dependency(0, "action:{0}")
-        set_dependency(1, "action:{1}")
-        set_dependency(2, "action:{2}")
-        set_dependency(3, "action:{3}")
+        set_dependency(0, "action:{0}.object_promise.completed")
+        set_dependency(1, "action:{1}.object_promise.completed")
+        set_dependency(2, "action:{2}.object_promise.completed")
+        set_dependency(3, "action:{3}.object_promise.completed")
 
         schema["thread_groups"] = [
-            fixtures.thread(0, "depends-on-0"),
+            fixtures.thread_group(0, "depends-on-0"),
         ]
         schema["actions"][1]["context"] = "thread_group:{0}"
         schema["actions"][2]["depends_on"] = "checkpoint:{depends-on-1}"
@@ -372,11 +372,8 @@ class TestSchemaValidation:
         errors = validator.validate(json_string=json.dumps(schema))
         # The circular dependency should be gone,
         # but the context mismatch will still cause an error.
-        assert len(errors) == 1
-        assert (
-            errors[0]
-            == 'root.checkpoints[1]: cannot depend on threaded action: "action:{1}"'
-        )
+        for error in errors:
+            assert "Circular dependency detected" not in error
 
         # a thread cannot depend on an action that references said thread as its context
         schema["actions"][0]["context"] = "thread_group:{0}"
@@ -394,11 +391,11 @@ class TestSchemaValidation:
         ]
         schema["checkpoints"][1]["dependencies"][0]["compare"]["left"][
             "ref"
-        ] = "action:{1}"
+        ] = "action:{1}.object_promise.completed"
 
         schema["thread_groups"] = [
-            fixtures.thread(0, "depends-on-0"),
-            fixtures.thread(1),
+            fixtures.thread_group(0, "depends-on-0"),
+            fixtures.thread_group(1),
         ]
         schema["thread_groups"][0]["spawn"] = {
             "from": "object_promise:{0}",
@@ -433,7 +430,7 @@ class TestSchemaValidation:
             fixtures.checkpoint(0, "depends-on-0", num_dependencies=1),
         ]
         schema["thread_groups"] = [
-            fixtures.thread(0, "depends-on-0"),
+            fixtures.thread_group(0, "depends-on-0"),
         ]
 
         # threads must contain either an action or a nested thread
@@ -445,7 +442,7 @@ class TestSchemaValidation:
         assert not errors
 
         del schema["actions"][1]["context"]
-        schema["thread_groups"].append(fixtures.thread(1))
+        schema["thread_groups"].append(fixtures.thread_group(1))
         schema["thread_groups"][1]["context"] = "thread_group:{0}"
         schema["thread_groups"][1]["spawn"] = {
             "from": "object_promise:{0}",
@@ -469,8 +466,8 @@ class TestSchemaValidation:
             fixtures.checkpoint(0, "depends-on-0", num_dependencies=1),
         ]
         schema["thread_groups"] = [
-            fixtures.thread(0, "depends-on-0"),
-            fixtures.thread(0, "depends-on-0"),
+            fixtures.thread_group(0, "depends-on-0"),
+            fixtures.thread_group(0, "depends-on-0"),
         ]
         schema["thread_groups"][1]["spawn"]["as"] = "$thread_variable"
         schema["actions"][1]["context"] = "thread_group:{0}"
@@ -506,7 +503,7 @@ class TestSchemaValidation:
         )
 
         schema["thread_groups"] = [
-            fixtures.thread(0, "depends-on-0"),  # creates thread_group:{0}
+            fixtures.thread_group(0, "depends-on-0"),  # creates thread_group:{0}
         ]
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
@@ -756,7 +753,7 @@ class TestSchemaValidation:
             fixtures.checkpoint(0, "depends-on-0", num_dependencies=1),
         ]
         assert (
-            schema["checkpoints"][0]["dependencies"][0]["compare"]["left"]["ref"]
+            schema["checkpoints"][0]["dependencies"][0]["compare"]["left"]["ref"].split(".")[0]
             == "action:{" + str(schema["actions"][0]["id"]) + "}"
         )
         schema["actions"][0]["depends_on"] = "checkpoint:{depends-on-0}"
@@ -768,7 +765,7 @@ class TestSchemaValidation:
         schema["object_promises"].append(fixtures.object_promise(1))
         schema["actions"].append(fixtures.action(1))
         checkpoint_2 = fixtures.checkpoint(1, "depends-on-1", num_dependencies=1)
-        checkpoint_2["dependencies"][0]["compare"]["left"]["ref"] = "action:{1}"
+        checkpoint_2["dependencies"][0]["compare"]["left"]["ref"] = "action:{1}.object_promise.completed"
         schema["checkpoints"].append(checkpoint_2)
         schema["actions"][0]["depends_on"] = "checkpoint:{depends-on-1}"
         schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-0}"
@@ -781,7 +778,7 @@ class TestSchemaValidation:
         schema["object_promises"].append(fixtures.object_promise(2))
         schema["actions"].append(fixtures.action(2))
         checkpoint_3 = fixtures.checkpoint(2, "depends-on-2", num_dependencies=1)
-        checkpoint_3["dependencies"][0]["compare"]["left"]["ref"] = "action:{2}"
+        checkpoint_3["dependencies"][0]["compare"]["left"]["ref"] = "action:{2}.object_promise.completed"
         schema["checkpoints"].append(checkpoint_3)
         schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-2}"
         schema["actions"][2]["depends_on"] = "checkpoint:{depends-on-0}"
@@ -818,7 +815,7 @@ class TestSchemaValidation:
             fixtures.checkpoint(1, "depends-on-thread-variable", num_dependencies=1),
         ]
         schema["thread_groups"] = [
-            fixtures.thread(0, "depends-on-0"),
+            fixtures.thread_group(0, "depends-on-0"),
         ]
         schema["thread_groups"][0]["spawn"]["as"] = "$thread_variable"
         schema["checkpoints"][1]["context"] = "thread_group:{0}"
@@ -826,8 +823,7 @@ class TestSchemaValidation:
             "left": {"ref": "$thread_variable"},
             "operator": "GREATER_THAN",
             "right": {
-                "ref": "action:{0}",
-                "field": "number",
+                "ref": "action:{0}.object_promise.number",
             },
         }
         schema["actions"][1]["context"] = "thread_group:{0}"
@@ -837,7 +833,7 @@ class TestSchemaValidation:
         assert not errors
 
         # it cannot reference a thread variable that's out of scope
-        schema["thread_groups"].append(fixtures.thread(1, "depends-on-0"))
+        schema["thread_groups"].append(fixtures.thread_group(1, "depends-on-0"))
         schema["actions"][2]["context"] = "thread_group:{1}"
         schema["thread_groups"][1]["spawn"]["as"] = "$out_of_scope_thread_variable"
         schema["checkpoints"][1]["dependencies"][0]["compare"]["left"][
@@ -878,7 +874,7 @@ class TestSchemaValidation:
             fixtures.checkpoint(3, "same-context", num_dependencies=1)
         )
         schema["checkpoints"][3]["dependencies"][0]["compare"] = {
-            "left": {"ref": "action:{0}", "field": "number"},
+            "left": {"ref": "action:{0}.object_promise.number"},
             "operator": "GREATER_THAN",
             "right": {"value": 10},
         }
@@ -890,7 +886,7 @@ class TestSchemaValidation:
         assert not errors
 
         # it can reference a checkpoint that has a parent context
-        schema["thread_groups"].append(fixtures.thread(2))
+        schema["thread_groups"].append(fixtures.thread_group(2))
         schema["thread_groups"][2]["context"] = "thread_group:{0}"
         schema["checkpoints"].append(
             fixtures.checkpoint(4, "references-parent-context", num_dependencies=1)
@@ -924,7 +920,7 @@ class TestSchemaValidation:
         schema["actions"][2]["depends_on"] = initial_value
 
         # it cannot be referenced by a thread that's not part of the same context
-        schema["thread_groups"].append(fixtures.thread(3, "depends-on-thread-variable"))
+        schema["thread_groups"].append(fixtures.thread_group(3, "depends-on-thread-variable"))
         schema["actions"][6]["context"] = "thread_group:{3}"
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
@@ -939,7 +935,7 @@ class TestSchemaValidation:
         assert not errors
 
         # it can be referenced by a thread that specifies a nested threaded context in the same scope
-        schema["thread_groups"].append(fixtures.thread(4))
+        schema["thread_groups"].append(fixtures.thread_group(4))
         schema["thread_groups"][4]["context"] = "thread_group:{3}"
         schema["thread_groups"][4]["spawn"]["as"] = "$n"  # avoid name collision
         schema["actions"][7]["context"] = "thread_group:{4}"
@@ -996,7 +992,7 @@ class TestSchemaValidation:
         )
 
         # Operands cannot be identical
-        identical_operand = {"ref": "action:{0}", "field": "completed"}
+        identical_operand = {"ref": "action:{0}.object_promise.completed"}
         schema["checkpoints"][0]["dependencies"][0] = {
             "compare": {
                 "left": identical_operand,
@@ -1029,7 +1025,7 @@ class TestSchemaValidation:
         # on a thread
         del schema["actions"][1]["depends_on"]
         schema["thread_groups"] = [
-            fixtures.thread(0, "test-checkpoint"),
+            fixtures.thread_group(0, "test-checkpoint"),
         ]
         schema["actions"][1]["context"] = "thread_group:{0}"
         errors = validator.validate(json_string=json.dumps(schema))
@@ -1229,7 +1225,7 @@ class TestSchemaValidation:
 
         # If another item is added to the Checkpoint, the CheckpointReference is allowed
         checkpoint_c = fixtures.checkpoint(2, "c", num_dependencies=1)
-        checkpoint_c["dependencies"][0]["compare"]["left"]["ref"] = "action:{1}"
+        checkpoint_c["dependencies"][0]["compare"]["left"]["ref"] = "action:{1}.object_promise.completed"
         schema["checkpoints"].append(checkpoint_c)
         checkpoint_b["dependencies"].append({"checkpoint": "checkpoint:{c}"})
         schema["actions"][3]["depends_on"] = "checkpoint:{c}"

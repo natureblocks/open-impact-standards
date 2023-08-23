@@ -16,7 +16,7 @@ class TestAggregationPipeline:
         ]
         schema["checkpoints"][1]["dependencies"][0]["compare"]["left"][
             "ref"
-        ] = "action:{1}"
+        ] = "action:{1}.object_promise.completed"
         schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-0}"
         schema["actions"][2]["depends_on"] = "checkpoint:{depends-on-1}"
         schema["actions"][1]["object_promise"] = "object_promise:{0}"
@@ -131,138 +131,63 @@ class TestAggregationPipeline:
             in errors
         )
 
-        schema["thread_groups"] = [
-            fixtures.thread(0, "depends-on-0"),
+    def test_depends_on_aggregated_field(self):
+        validator = SchemaValidator()
+        schema = fixtures.basic_schema_with_actions(3)
+        schema["checkpoints"] = [
+            fixtures.checkpoint(id=0, alias="depends-on-0", num_dependencies=1),
+            fixtures.checkpoint(
+                id=1, alias="depends-on-aggregated-field", num_dependencies=1
+            ),
         ]
-        schema["actions"][1]["context"] = "thread_group:{0}"
-        schema["actions"][2]["pipeline"] = {
-            "context": "TEMPLATE",
-            "variables": [
-                {
-                    "name": "$all_numbers",
-                    "type": "NUMERIC_LIST",
-                    "initial": [],
-                },
-                {
-                    "name": "$average",
-                    "type": "NUMERIC",
-                    "initial": 0,
-                },
-            ],
-            "traverse": [
-                {
-                    "ref": "object_promise:{1}",
-                    "foreach": {
-                        "as": "$object",
-                        "apply": [
-                            {
-                                "from": "$object.number",
-                                "method": "APPEND",
-                                "to": "$all_numbers",
-                            },
-                        ],
+        schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-0}"
+        schema["pipelines"].append(
+            {
+                "object_promise": "object_promise:{1}",
+                "context": "TEMPLATE",
+                "variables": [
+                    {
+                        "name": "$sum",
+                        "type": "NUMERIC",
+                        "initial": 0,
                     },
-                },
-            ],
-            "apply": [
-                {
-                    "from": "$all_numbers",
-                    "aggregate": {
-                        "field": "$_item",
-                        "operator": "AVERAGE",
+                ],
+                "apply": [
+                    {
+                        "from": "object_promise:{0}.numbers",
+                        "aggregate": {
+                            "field": "$_item",
+                            "operator": "SUM",
+                        },
+                        "method": "ADD",
+                        "to": "$sum",
                     },
-                    "method": "ADD",
-                    "to": "$average",
-                },
-            ],
-            "output": [
-                {
-                    "from": "$average",
-                    "to": "number",
-                },
-            ],
-        }
-        depends_on_2 = fixtures.checkpoint(
-            id=2, alias="depends-on-2", num_dependencies=1
+                ],
+                "output": [
+                    {
+                        "from": "$sum",
+                        "to": "number",
+                    },
+                ],
+            }
         )
-        depends_on_2["dependencies"][0]["compare"] = {
-            "left": {
-                "ref": "action:{2}",
-                "field": "number",
-            },
-            "operator": "LESS_THAN",
-            "right": {
-                "value": 10,
-            },
-        }
-        schema["checkpoints"].append(depends_on_2)
-        schema["actions"][3]["depends_on"] = "checkpoint:{depends-on-2}"
-        errors = validator.validate(json_string=json.dumps(schema))
-        assert not errors
 
-        # from inside the thread, aggregate something from a threaded action
-        schema["actions"][4]["context"] = "thread_group:{0}"
-        schema["actions"][4]["pipeline"] = {
-            "context": "TEMPLATE",
-            "variables": [
-                {
-                    "name": "$edges_by_number",
-                    "type": "OBJECT_LIST",
-                    "initial": None,
-                },
-                {
-                    "name": "$first_edge",
-                    "type": "OBJECT",
-                    "initial": None,
-                },
-            ],
-            "apply": [
-                {
-                    "from": "object_promise:{3}.objects",
-                    "sort": [
-                        {
-                            "field": "number",
-                            "order": "DESC",
-                        }
-                    ],
-                    "method": "SET",
-                    "to": "$edges_by_number",
-                },
-                {
-                    "from": "$edges_by_number",
-                    "aggregate": {
-                        "field": "$_item",
-                        "operator": "FIRST",
-                    },
-                    "method": "SET",
-                    "to": "$first_edge",
-                },
-            ],
-            "output": [
-                {
-                    "from": "$first_edge",
-                    "to": "edge",
-                },
-            ],
-        }
-        depends_on_4 = fixtures.checkpoint(
-            id=3, alias="depends-on-4", num_dependencies=1
-        )
-        depends_on_4["dependencies"][0]["compare"] = {
+        # should not be able to depend on an aggregated field
+        schema["checkpoints"][1]["dependencies"][0]["compare"] = {
             "left": {
-                "ref": "action:{4}.edge",
-                "field": "name",
+                "ref": "action:{1}.object_promise.number",
             },
-            "operator": "EQUALS",
+            "operator": "GREATER_THAN",
             "right": {
-                "value": "David Michaeloff",
+                "value": 0,
             },
         }
-        schema["checkpoints"].append(depends_on_4)
-        schema["actions"][5]["context"] = "thread_group:{0}"
-        schema["actions"][5]["depends_on"] = "checkpoint:{depends-on-4}"
+        schema["actions"][2]["depends_on"] = "checkpoint:{depends-on-aggregated-field}"
         errors = validator.validate(json_string=json.dumps(schema))
-        assert not errors
+        assert (
+            'root.checkpoints[1].dependencies[0].compare: cannot depend on aggregated field: "action:{1}.object_promise.number"'
+            in errors
+        )
 
     def test_traverse(self):
         validator = SchemaValidator()
@@ -352,7 +277,7 @@ class TestAggregationPipeline:
 
         # should be able to traverse thread groups...
         schema["thread_groups"] = [
-            fixtures.thread(0, "depends-on-0"),
+            fixtures.thread_group(0, "depends-on-0"),
         ]
         schema["actions"][2][
             "context"
@@ -824,7 +749,7 @@ class TestAggregationPipeline:
             fixtures.checkpoint(id=0, alias="depends-on-0", num_dependencies=1)
         )
         schema["thread_groups"] = [
-            fixtures.thread(0, "depends-on-0"),
+            fixtures.thread_group(0, "depends-on-0"),
         ]
         schema["thread_groups"][0]["spawn"]["from"] = "object_promise:{0}"
         schema["actions"][1]["context"] = "thread_group:{0}"
@@ -1392,7 +1317,7 @@ class TestAggregationPipeline:
             fixtures.checkpoint(id=0, alias="depends-on-0", num_dependencies=1),
         ]
         schema["thread_groups"] = [
-            fixtures.thread(0, "depends-on-0"),
+            fixtures.thread_group(0, "depends-on-0"),
         ]
         schema["actions"][1]["context"] = "thread_group:{0}"
         schema["actions"][2]["context"] = "thread_group:{0}"

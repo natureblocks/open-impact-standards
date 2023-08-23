@@ -14,6 +14,7 @@ from validation.utils import (
     is_variable,
     is_local_variable,
     is_filter_ref,
+    types_are_comparable,
 )
 
 
@@ -30,6 +31,8 @@ class SchemaValidator:
 
         # {action_id: Pipeline}
         self._pipelines = {}
+        # {object_promise_id: [field_name]}
+        self._aggregated_fields = {}
 
         # once a ref is resolved, it can be cached here.
         # currently only used for action.pipeline.apply.from
@@ -101,9 +104,6 @@ class SchemaValidator:
 
         if expected_type == "any":
             return []
-
-        if expected_type == "ref":
-            return self._validate_ref(path, field, template)
 
         if is_path(expected_type):
             if "{_corresponding_key}" in expected_type:
@@ -705,72 +705,45 @@ class SchemaValidator:
                 f"{self._context(path)}: invalid comparison: {left} {operator} {right}: operands are identical"
             ]
 
-        def extract_field_type(operand_object):
+        def extract_field_type(path, operand_object):
             if "ref" in operand_object:
-                if is_global_ref(operand_object["ref"]):
-                    referenced_obj = self._resolve_global_ref(operand_object["ref"])
-                    if referenced_obj is None:
-                        raise Exception(
-                            "Failed to resolve ref: " + operand_object["ref"]
-                        )
-
-                    ref_type = utils.parse_ref_type(operand_object["ref"])
-                    if ref_type != "action":
-                        raise NotImplementedError(
-                            "comparison validation not implemented for ref type: "
-                            + ref_type
-                        )
-
-                    if not utils.has_reference_to_template_object_type(
-                        referenced_obj, "object_promise", "object_promise"
+                resolution_context_thread_id = None
+                # resolve checkpoint context from path
+                if re.match("^root\.checkpoints\[\d+\]", ".".join(path.split(".")[:2])):
+                    checkpoint = self._get_field(path.split(".")[:2])
+                    if utils.has_reference_to_template_object_type(
+                        checkpoint, "context", "thread_group"
                     ):
-                        raise Exception(
-                            "Referenced action does not have an 'object_promise' property: "
-                            + operand_object["ref"]
+                        resolution_context_thread_id = utils.parse_ref_id(
+                            checkpoint["context"]
                         )
 
-                    object_promise = self._resolve_global_ref(
-                        referenced_obj["object_promise"]
+                if is_global_ref(operand_object["ref"]):
+                    type_details = self._resolve_type_from_global_ref(
+                        operand_object["ref"], resolution_context_thread_id
                     )
-                    if object_promise is None:
-                        raise Exception(
-                            "Failed to resolve object promise: "
-                            + referenced_obj["object_promise"]
-                        )
-                    if "object_type" not in object_promise:
-                        raise Exception(
-                            "Object promise does not have an 'object_type' property: "
-                            + referenced_obj["object_promise"]
-                        )
-
-                    object_type = self._get_field(
-                        f"object_types.{object_promise['object_type']}"
-                    )
-                    if object_type is None:
-                        raise Exception(
-                            "could not resolve object type from referenced action: "
-                            + operand_object["ref"]
-                        )
-
-                    return object_type[operand_object["field"]]["field_type"]
                 elif is_variable(operand_object["ref"]):
                     # thread variable
                     ref_path = operand_object["ref"].split(".")
-                    variable_type_details = self._find_thread_variable(
+                    type_details = self._find_thread_variable(
                         ref_path[0], self._get_action_thread_scope(path)
                     )
-                    if variable_type_details is None:
+                    if type_details is None:
                         raise Exception(
                             f"Variable not found within thread scope: {json.dumps(operand_object['ref'])}"
                         )
 
                     if len(ref_path) > 1:
-                        return self._resolve_type_from_variable_path(
-                            var_type_details=variable_type_details,
+                        type_details = self._resolve_type_from_variable_path(
+                            var_type_details=type_details,
                             path=ref_path[1:],
                         )
 
-                    return variable_type_details.to_field_type_string()
+                return (
+                    type_details.to_field_type_string()
+                    if type_details is not None
+                    else None
+                )
             else:
                 field_type = utils.field_type_from_python_type_name(
                     type(operand_object["value"]).__name__
@@ -788,74 +761,58 @@ class SchemaValidator:
                 return field_type
 
         try:
-            left_type = extract_field_type(left)
-            right_type = extract_field_type(right)
+            left_type = extract_field_type(path, left)
+            right_type = extract_field_type(path, right)
         except Exception as e:
             return [f"{self._context(path)}: {str(e)}"]
 
-        if self.types_are_comparable(left_type, right_type, operator):
+        if types_are_comparable(left_type, right_type, operator):
             return []
 
-        return [f"{self._context(path)}: invalid comparison: {left} {operator} {right}"]
-
-    def types_are_comparable(self, left_type, right_type, operator):
-        # recurring operator subsets
-        scalar_with_list = ["ONE_OF", "NONE_OF"]
-        list_with_scalar = ["CONTAINS", "DOES_NOT_CONTAIN"]
-        list_with_list = [
-            "EQUALS",
-            "DOES_NOT_EQUAL",
-            "CONTAINS_ANY_OF",
-            "IS_SUBSET_OF",
-            "IS_SUPERSET_OF",
-            "CONTAINS_NONE_OF",
+        return [
+            f"{self._context(path)}: invalid comparison: {left} {operator} {right} ({left_type} {operator} {right_type})"
         ]
 
-        if left_type == "STRING":
-            if right_type == "STRING":
-                if operator in [
-                    "EQUALS",
-                    "DOES_NOT_EQUAL",
-                    "CONTAINS",
-                    "DOES_NOT_CONTAIN",
-                ]:
-                    return True
-            elif right_type == "STRING_LIST":
-                if operator in scalar_with_list:
-                    return True
-        elif left_type == "NUMERIC":
-            if right_type == "NUMERIC":
-                if operator in [
-                    "EQUALS",
-                    "DOES_NOT_EQUAL",
-                    "GREATER_THAN",
-                    "LESS_THAN",
-                    "GREATER_THAN_OR_EQUAL_TO",
-                    "LESS_THAN_OR_EQUAL_TO",
-                ]:
-                    return True
-            elif right_type == "NUMERIC_LIST":
-                if operator in scalar_with_list:
-                    return True
-        elif left_type == "BOOLEAN":
-            if right_type == "BOOLEAN" and operator == "EQUALS":
-                return True
-        elif left_type == "STRING_LIST":
-            if right_type == "STRING":
-                if operator in list_with_scalar:
-                    return True
-            elif right_type == "STRING_LIST":
-                if operator in list_with_list:
-                    return True
-        elif left_type == "NUMERIC_LIST":
-            if right_type == "NUMERIC":
-                if operator in list_with_scalar:
-                    return True
-            elif right_type == "NUMERIC_LIST":
-                if operator in list_with_list:
-                    return True
+    def validate_does_not_depend_on_aggregated_field(self, path, field):
+        for operand in ["left", "right"]:
+            if (
+                operand not in field
+                or not isinstance(field[operand], dict)
+                or "ref" not in field[operand]
+                or not utils.has_reference_to_template_object_type(
+                    field[operand], "ref", "action"
+                )
+            ):
+                continue
 
-        return False
+            split_path = field[operand]["ref"].split(".")
+            if len(split_path) != 3 or split_path[1] != "object_promise":
+                # either it's not a valid ref (let validation catch it elsewhere),
+                # or the ref points to a field on an edge,
+                # so we can't know whether it will point to an aggregated field or not.
+                continue
+
+            action = self._resolve_global_ref(field[operand]["ref"])
+            if not utils.has_reference_to_template_object_type(
+                action, "object_promise", "object_promise"
+            ):
+                continue
+
+            object_promise = self._resolve_global_ref(action["object_promise"])
+            if (
+                object_promise is None
+                or "id" not in object_promise
+                or str(object_promise["id"]) not in self._aggregated_fields
+                or split_path[2]
+                not in self._aggregated_fields[str(object_promise["id"])]
+            ):
+                continue
+
+            return [
+                f"{self._context(path)}: cannot depend on aggregated field: {json.dumps(field[operand]['ref'])}"
+            ]
+
+        return []
 
     def validate_dependency_scope(self, path, field):
         # field is either an action or a thread
@@ -1743,7 +1700,7 @@ class SchemaValidator:
             )
         elif re.match(patterns.global_ref, var_type_details.item_type):
             referenced_object = self._resolve_global_ref(var_type_details.item_type)
-            if path[0] != "object":
+            if path[0] != "object_promise":
                 raise NotImplementedError(
                     "global ref resolution not implemented for action properties"
                 )
@@ -1765,62 +1722,94 @@ class SchemaValidator:
         if len(matches) and len(matches[0]):
             global_ref = matches[0][0]
             ref_type = matches[0][1]
-            ref_path = matches[0][2]
+            path_from_ref = matches[0][2]
 
-            template_object = self._resolve_global_ref(global_ref)
-
-            if ref_type == "object_promise":
-                # If the object promise's context is part of the resolution_context_thread_id scope,
-                # then we are dealing with a single threaded object promise
-                # that is being referenced from within the thread.
-                # Otherwise we are dealing with a list of object promises, because the promise is
-                # fulfilled in the context of a thread.
-                object_promise_id = str(template_object["id"])
-                if object_promise_id not in self._object_promise_contexts:
-                    # cannot resolve type
-                    return None
-                is_threaded_object = (
-                    self._object_promise_contexts[object_promise_id] is not None
-                )
-                is_list_of_object_promises = is_threaded_object and (
-                    resolution_context_thread_id is None
-                    or not self._thread_groups[
-                        resolution_context_thread_id
-                    ].has_access_to_context(
-                        utils.parse_ref_id(
-                            self._object_promise_contexts[object_promise_id]
-                        )
+            if ref_type == "action":
+                split_path = path_from_ref.split(".")
+                if split_path[0] != "object_promise":
+                    raise NotImplementedError(
+                        "global ref resolution not implemented for action properties"
                     )
-                )
 
-                if len(ref_path):
-                    type_details = self._resolve_type_from_object_path(
-                        object_tag=template_object["object_type"],
-                        path=ref_path,
-                    )
-                    if is_list_of_object_promises:
-                        if type_details.is_list:
-                            raise Exception("nested list types are not supported")
-
-                        type_details.is_list = True
-                elif (
-                    "object_type" in template_object
-                    and template_object["object_type"] in self.schema["object_types"]
+                action = self._resolve_global_ref(global_ref)
+                if action is None or not utils.has_reference_to_template_object_type(
+                    action, "object_promise", "object_promise"
                 ):
-                    type_details = FieldTypeDetails(
-                        is_list=is_list_of_object_promises,
-                        item_type="OBJECT",
-                        item_tag=template_object["object_type"],
-                    )
-                else:
-                    raise Exception(
-                        "could not resolve object type of object promise: "
-                        + str(template_object["id"])
-                    )
-            else:
+                    return None
+
+                # convert to object promise resolution format
+                global_ref = action["object_promise"]
+                path_from_ref = ".".join(split_path[1:])
+
+            elif ref_type != "object_promise":
                 raise NotImplementedError(
                     "global ref resolution not implemented for ref type: " + ref_type
                 )
+
+            return self._resolve_type_from_object_promise_ref(
+                global_ref,
+                path_from_ref,
+                resolution_context_thread_id,
+            )
+
+        return type_details
+
+    def _resolve_type_from_object_promise_ref(
+        self, global_ref, path_from_ref, resolution_context_thread_id
+    ):
+        object_promise = self._resolve_global_ref(global_ref)
+        # If the object promise's context is part of the resolution_context_thread_id scope,
+        # then we are dealing with a single threaded object promise
+        # that is being referenced from within the thread.
+        # Otherwise we are dealing with a list of object promises, because the promise is
+        # fulfilled in the context of a thread.
+        object_promise_id = str(object_promise["id"])
+        if object_promise_id not in self._object_promise_contexts:
+            # cannot resolve type
+            return None
+
+        # resolution_context_thread_id is the context from which we are resolving the object promise ref
+        is_threaded_object = (
+            self._object_promise_contexts[object_promise_id] is not None
+        )
+        object_promise_context = self._object_promise_contexts[object_promise_id]
+        resolution_context_is_outside_thread_scope = (
+            resolution_context_thread_id is None
+            or (
+                object_promise_context is not None
+                and not self._thread_groups[
+                    resolution_context_thread_id
+                ].has_access_to_context(utils.parse_ref_id(object_promise_context))
+            )
+        )
+        is_list_of_object_promises = (
+            is_threaded_object and resolution_context_is_outside_thread_scope
+        )
+
+        type_details = None
+        if len(path_from_ref):
+            type_details = self._resolve_type_from_object_path(
+                object_tag=object_promise["object_type"],
+                path=path_from_ref,
+            )
+            if is_list_of_object_promises:
+                if type_details.is_list:
+                    raise Exception("nested list types are not supported")
+
+                type_details.is_list = True
+        elif (
+            "object_type" in object_promise
+            and object_promise["object_type"] in self.schema["object_types"]
+        ):
+            type_details = FieldTypeDetails(
+                is_list=is_list_of_object_promises,
+                item_type="OBJECT",
+                item_tag=object_promise["object_type"],
+            )
+        else:
+            raise Exception(
+                f"could not resolve object type of object promise: {object_promise_id}"
+            )
 
         return type_details
 
@@ -2059,6 +2048,8 @@ class SchemaValidator:
                     f"{self._context(path)}: invalid ref type: expected one of {json.dumps(template['ref_types'])}, got {json.dumps(ref_type)}"
                 ]
 
+            # TODO: the following line should resolve to a type, not an object.
+            # It doesn't make a difference at the moment, but it will.
             referenced_object_type = self._resolve_global_ref(field)
 
         if referenced_object_type is None:
