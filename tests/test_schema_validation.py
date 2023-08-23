@@ -765,7 +765,9 @@ class TestSchemaValidation:
         schema["object_promises"].append(fixtures.object_promise(1))
         schema["actions"].append(fixtures.action(1))
         checkpoint_2 = fixtures.checkpoint(1, "depends-on-1", num_dependencies=1)
-        checkpoint_2["dependencies"][0]["compare"]["left"]["ref"] = "action:{1}.object_promise.completed"
+        checkpoint_2["dependencies"][0]["compare"]["left"][
+            "ref"
+        ] = "action:{1}.object_promise.completed"
         schema["checkpoints"].append(checkpoint_2)
         schema["actions"][0]["depends_on"] = "checkpoint:{depends-on-1}"
         schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-0}"
@@ -778,7 +780,9 @@ class TestSchemaValidation:
         schema["object_promises"].append(fixtures.object_promise(2))
         schema["actions"].append(fixtures.action(2))
         checkpoint_3 = fixtures.checkpoint(2, "depends-on-2", num_dependencies=1)
-        checkpoint_3["dependencies"][0]["compare"]["left"]["ref"] = "action:{2}.object_promise.completed"
+        checkpoint_3["dependencies"][0]["compare"]["left"][
+            "ref"
+        ] = "action:{2}.object_promise.completed"
         schema["checkpoints"].append(checkpoint_3)
         schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-2}"
         schema["actions"][2]["depends_on"] = "checkpoint:{depends-on-0}"
@@ -920,7 +924,9 @@ class TestSchemaValidation:
         schema["actions"][2]["depends_on"] = initial_value
 
         # it cannot be referenced by a thread that's not part of the same context
-        schema["thread_groups"].append(fixtures.thread_group(3, "depends-on-thread-variable"))
+        schema["thread_groups"].append(
+            fixtures.thread_group(3, "depends-on-thread-variable")
+        )
         schema["actions"][6]["context"] = "thread_group:{3}"
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
@@ -992,16 +998,35 @@ class TestSchemaValidation:
         )
 
         # Operands cannot be identical
-        identical_operand = {"ref": "action:{0}.object_promise.completed"}
         schema["checkpoints"][0]["dependencies"][0] = {
             "compare": {
-                "left": identical_operand,
-                "right": identical_operand,
+                "left": {"ref": "action:{0}.object_promise.completed"},
+                "right": {"ref": "action:{0}.object_promise.completed"},
                 "operator": "EQUALS",
             },
         }
         errors = validator.validate(json_string=json.dumps(schema))
-        assert errors
+        assert (
+            "root.checkpoints[0].dependencies[0].compare: invalid comparison: {'ref': 'action:{0}.object_promise.completed'} EQUALS {'ref': 'action:{0}.object_promise.completed'}: operands are identical"
+            in errors
+        )
+
+        # operands must be comparable
+        schema["checkpoints"][0]["dependencies"][0]["compare"]["left"][
+            "ref"
+        ] = "action:{0}.object_promise.name"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.checkpoints[0].dependencies[0].compare: invalid comparison: {'ref': 'action:{0}.object_promise.name'} EQUALS {'ref': 'action:{0}.object_promise.completed'} (STRING EQUALS BOOLEAN)"
+            in errors
+        )
+
+        # referenced operands can be paths
+        schema["checkpoints"][0]["dependencies"][0]["compare"]["left"][
+            "ref"
+        ] = "action:{0}.object_promise.edge.completed"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
 
     def test_checkpoint_is_referenced(self):
         validator = SchemaValidator()
@@ -1225,7 +1250,9 @@ class TestSchemaValidation:
 
         # If another item is added to the Checkpoint, the CheckpointReference is allowed
         checkpoint_c = fixtures.checkpoint(2, "c", num_dependencies=1)
-        checkpoint_c["dependencies"][0]["compare"]["left"]["ref"] = "action:{1}.object_promise.completed"
+        checkpoint_c["dependencies"][0]["compare"]["left"][
+            "ref"
+        ] = "action:{1}.object_promise.completed"
         schema["checkpoints"].append(checkpoint_c)
         checkpoint_b["dependencies"].append({"checkpoint": "checkpoint:{c}"})
         schema["actions"][3]["depends_on"] = "checkpoint:{c}"
