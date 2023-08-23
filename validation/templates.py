@@ -394,8 +394,8 @@ action = {
                     },
                 },
             },
-            "mutually_exclusive": ["include", "exclude"],
             "constraints": {
+                "mutually_exclusive": ["include", "exclude"],
                 "optional": ["default_values", "default_edges"],
             },
         },

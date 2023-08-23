@@ -2444,13 +2444,14 @@ class SchemaValidator:
         errors = []
         modified_template = template.copy()
 
-        if "mutually_exclusive" in template:
+        if (
+            "constraints" in template
+            and "mutually_exclusive" in template["constraints"]
+        ):
             (
                 new_errors,
                 modified_template,
-            ) = self._validate_mutually_exclusive_properties(
-                path, field, modified_template
-            )
+            ) = self._validate_mutually_exclusive_properties(path, field, template)
             errors += new_errors
 
         return (errors, modified_template)
@@ -2458,36 +2459,28 @@ class SchemaValidator:
     def _validate_mutually_exclusive_properties(self, path, field, template):
         included_props = []
 
-        for prop in template["mutually_exclusive"]:
+        for prop in template["constraints"]["mutually_exclusive"]:
             if prop in field:
                 included_props.append(prop)
 
         modified_template = copy.deepcopy(template)
 
-        if "constraints" not in modified_template:
-            modified_template["constraints"] = {}
-
         if "forbidden" not in modified_template["constraints"]:
             modified_template["constraints"]["forbidden"] = {"properties": []}
 
-        for prop in modified_template["mutually_exclusive"]:
+        for prop in modified_template["constraints"]["mutually_exclusive"]:
             if prop not in included_props:
-                modified_template["constraints"]["forbidden"]["properties"].append(
-                    prop
-                )
+                modified_template["constraints"]["forbidden"]["properties"].append(prop)
 
         if len(included_props) == 0:
             # unless all of the properties are optional, at least one must be specified
             error_msg = [
-                f"{self._context(path)}: must specify one of the mutually exclusive properties: {modified_template['mutually_exclusive']}"
+                f"{self._context(path)}: must specify one of the mutually exclusive properties: {modified_template['constraints']['mutually_exclusive']}"
             ]
-            if (
-                "constraints" not in modified_template
-                or "optional" not in modified_template["constraints"]
-            ):
+            if "optional" not in modified_template["constraints"]:
                 return (error_msg, modified_template)
 
-            for prop in modified_template["mutually_exclusive"]:
+            for prop in modified_template["constraints"]["mutually_exclusive"]:
                 if prop not in modified_template["constraints"]["optional"]:
                     return (error_msg, modified_template)
 

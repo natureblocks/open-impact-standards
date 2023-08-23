@@ -272,8 +272,8 @@ apply = {
         },
         "select": {"type": "string"},
     },
-    "mutually_exclusive": ["aggregate", "filter", "sort", "select"],
     "constraints": {
+        "mutually_exclusive": ["aggregate", "filter", "sort", "select"],
         "optional": ["aggregate", "filter", "sort", "select"],
     },
     "property_validation_priority": ["from"],
