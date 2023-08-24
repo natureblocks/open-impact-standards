@@ -5,7 +5,7 @@ from utils import recursive_sort, hash_sorted_object, objects_are_identical
 from validation.field_type_details import FieldTypeDetails
 from validation.pipeline_variable import PipelineVariable
 from validation.pipeline import Pipeline
-from validation.thread import ThreadGroup
+from validation.thread_group import ThreadGroup
 
 from validation import templates, oisql, utils, patterns, pipeline_utils
 from validation.utils import (
@@ -1590,6 +1590,14 @@ class SchemaValidator:
 
         to_pipeline_var = pipeline.get_variable(to_var_name, pipeline_scope)
         if to_pipeline_var is None:
+            if (
+                self._find_thread_variable(to_var_name, pipeline.thread_scope)
+                is not None
+            ):
+                return [
+                    f"{self._context(f'{path}.to')}: cannot assign to thread variable: {json.dumps(to_var_name)}"
+                ]
+
             return [
                 f"{self._context(f'{path}.to')}: pipeline variable not found in scope: {json.dumps(to_var_name)}"
             ]

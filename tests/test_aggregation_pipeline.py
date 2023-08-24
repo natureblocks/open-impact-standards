@@ -1182,6 +1182,29 @@ class TestAggregationPipeline:
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
+        # should not be able to assign to a thread variable
+        schema["actions"].append(fixtures.action(2))
+        schema["object_promises"].append(fixtures.object_promise(2))
+        schema["checkpoints"].append(fixtures.checkpoint(2, "depends-on-2"))
+        schema["checkpoints"][-1]["dependencies"][0]["compare"]["left"][
+            "ref"
+        ] = "action:{2}.object_promise.completed"
+        schema["thread_groups"] = [
+            fixtures.thread_group(0, "depends-on-2"),
+        ]
+        schema["thread_groups"][0]["spawn"] = {
+            "from": "object_promise:{2}.objects",
+            "foreach": "number",
+            "as": "$thread_var",
+        }
+        schema["actions"][1]["context"] = "thread_group:{0}"
+        schema["pipelines"][0]["apply"][0]["to"] = "$thread_var"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.pipelines[0].apply[0].to: cannot assign to thread variable: "$thread_var"'
+            in errors
+        )
+
     def test_variable_initial(self):
         validator = SchemaValidator()
         schema = fixtures.basic_schema_with_actions(1)
