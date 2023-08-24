@@ -454,6 +454,10 @@ thread_group = {
     "properties": {
         "id": {"type": "integer"},
         "description": {"type": "string"},
+        "context": {
+            "type": "ref",
+            "ref_types": ["thread_group"],
+        },
         "depends_on": {"type": "ref", "ref_types": ["checkpoint"]},
         "spawn": {
             "type": "object",
@@ -478,7 +482,7 @@ thread_group = {
         },
     },
     "constraints": {
-        "optional": ["depends_on"],
+        "optional": ["context", "depends_on"],
         "validation_functions": [
             {
                 "function": "validate_is_referenced",

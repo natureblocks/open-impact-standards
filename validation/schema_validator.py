@@ -5,7 +5,7 @@ from utils import recursive_sort, hash_sorted_object, objects_are_identical
 from validation.field_type_details import FieldTypeDetails
 from validation.pipeline_variable import PipelineVariable
 from validation.pipeline import Pipeline
-from validation.thread import Thread
+from validation.thread import ThreadGroup
 
 from validation import templates, oisql, utils, patterns, pipeline_utils
 from validation.utils import (
@@ -293,6 +293,8 @@ class SchemaValidator:
         ]
 
     def _validate_constraints(self, path, field, template):
+        # Note: "mutually_exclusive" properties are evaluated in _evaluate_meta_properties
+        # because they result in template modifications that affect the validation of other constraints.
         errors = []
         constraints = template["constraints"] if "constraints" in template else {}
         if "forbidden" in constraints:
@@ -545,6 +547,19 @@ class SchemaValidator:
                         f"{self._context(f'{path}.operation')}: for EDIT operations, an ancestor of the action must fulfill the referenced object promise: {json.dumps(action['object_promise'])}"
                     ]
 
+                # the context of the EDIT action must match the context of the action that fulfills the object promise
+                context_error = [
+                    f"{self._context(f'{path}')}: cannot edit an object promise outside of the context in which the object promise is fulfilled (fulfillment context: {json.dumps(self._object_promise_contexts[object_promise_id])})"
+                ]
+                if "context" in action:
+                    if (
+                        self._object_promise_contexts[object_promise_id]
+                        != action["context"]
+                    ):
+                        errors += context_error
+                elif self._object_promise_contexts[object_promise_id] != None:
+                    errors += context_error
+
         return errors
 
     def _object_promise_fulfilled_by_ancestor(self, path, action, object_promise):
@@ -662,8 +677,11 @@ class SchemaValidator:
                                 return []
 
                 elif "checkpoint" in dependency:
-                    if validate_has_ancestor_recursive(
-                        dependency["checkpoint"], visited_checkpoints
+                    if utils.has_reference_to_template_object_type(
+                        dependency, "checkpoint", "checkpoint"
+                    ) and validate_has_ancestor_recursive(
+                        utils.parse_ref_id(dependency["checkpoint"]),
+                        visited_checkpoints,
                     ):
                         return []
 
@@ -2781,14 +2799,14 @@ class SchemaValidator:
         self._settable_fields = {}
         self._object_promise_actions = {}
         self._object_promise_fulfillment_actions = {}
-        self._duplicate_object_promise_fulfillments = {}
+        self._duplicate_object_promise_fulfillments = []
         self._object_promise_contexts = {}
 
         if "thread_groups" in self.schema:
             for thread in self.schema["thread_groups"]:
                 thread_id = str(thread["id"])
                 if thread_id not in self._thread_groups:
-                    self._thread_groups[thread_id] = Thread()
+                    self._thread_groups[thread_id] = ThreadGroup()
 
                 if "context" in thread:
                     parent_thread = self._resolve_global_ref(thread["context"])
@@ -2801,7 +2819,7 @@ class SchemaValidator:
 
                     parent_thread_id = str(parent_thread["id"])
                     if parent_thread_id not in self._thread_groups:
-                        self._thread_groups[parent_thread_id] = Thread()
+                        self._thread_groups[parent_thread_id] = ThreadGroup()
 
                     self._thread_groups[parent_thread_id].sub_thread_ids.append(
                         thread_id
@@ -2863,35 +2881,39 @@ class SchemaValidator:
 
             action_id = str(action["id"])
             # if the action has a threaded context...
-            if "context" in action:
+            if utils.has_reference_to_template_object_type(
+                action, "context", "thread_group"
+            ):
                 # the action implicitly depends on the thread's checkpoint
-                thread = self._resolve_global_ref(action["context"])
+                thread_group = self._resolve_global_ref(action["context"])
 
-                if (
-                    thread is None
-                    or utils.parse_ref_type(action["context"]) != "thread_group"
-                ):
+                if thread_group is None:
                     continue
 
-                thread_id = str(thread["id"])
+                thread_group_id = str(thread_group["id"])
 
-                if thread_id not in self._thread_groups:
-                    self._thread_groups[thread_id] = Thread()
+                if thread_group_id not in self._thread_groups:
+                    self._thread_groups[thread_group_id] = ThreadGroup()
 
-                self._thread_groups[thread_id].action_ids.append(action_id)
+                self._thread_groups[thread_group_id].action_ids.append(action_id)
 
-                if "depends_on" in thread:
+                if utils.has_reference_to_template_object_type(
+                    thread_group, "depends_on", "checkpoint"
+                ):
                     # Normalize to alias (ref could be a different field)
-                    checkpoint = self._resolve_global_ref(thread["depends_on"])
+                    checkpoint = self._resolve_global_ref(thread_group["depends_on"])
                     if checkpoint is None or "alias" not in checkpoint:
                         continue
                     checkpoint_id = checkpoint["alias"]
-                elif "context" in thread and thread_id in self._thread_checkpoints:
-                    checkpoint_id = self._thread_checkpoints[thread_id]
+                elif (
+                    "context" in thread_group
+                    and thread_group_id in self._thread_checkpoints
+                ):
+                    checkpoint_id = self._thread_checkpoints[thread_group_id]
                 else:
                     continue
 
-                self._thread_checkpoints[thread_id] = checkpoint_id
+                self._thread_checkpoints[thread_group_id] = checkpoint_id
                 self._threaded_action_ids.append(action_id)
 
                 if "depends_on" not in action:
@@ -3006,7 +3028,7 @@ class SchemaValidator:
                         )
                     else:
                         # another action already fulfills the same object promise
-                        self._duplicate_object_promise_fulfillments.add(
+                        self._duplicate_object_promise_fulfillments.append(
                             object_promise_id
                         )
 
@@ -3090,7 +3112,7 @@ class SchemaValidator:
 
                 for action_id in dependency_path:
                     if action_id in self._threaded_action_ids:
-                        error += "; NOTE: actions with threaded context implicitly depend on the referenced thread's checkpoint (Thread.depends_on)"
+                        error += "; NOTE: actions with threaded context implicitly depend on the referenced thread group's checkpoint (ThreadGroup.depends_on)"
                         break
 
                 return [error]

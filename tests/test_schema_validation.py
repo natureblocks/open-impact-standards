@@ -352,7 +352,7 @@ class TestSchemaValidation:
         ] = "checkpoint:{depends-on-3}"  # creates circular dependency
 
         errors = validator.validate(json_string=json.dumps(schema))
-        threaded_context_note = "; NOTE: actions with threaded context implicitly depend on the referenced thread's checkpoint (Thread.depends_on)"
+        threaded_context_note = "; NOTE: actions with threaded context implicitly depend on the referenced thread group's checkpoint (ThreadGroup.depends_on)"
         assert (
             f"Circular dependency detected (dependency path: [0, 3, 2, 1]){threaded_context_note}"
             in errors
@@ -379,7 +379,7 @@ class TestSchemaValidation:
         schema["actions"][0]["context"] = "thread_group:{0}"
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            "A node cannot have itself as a dependency (id: 0); NOTE: actions with threaded context implicitly depend on the referenced thread's checkpoint (Thread.depends_on)"
+            "A node cannot have itself as a dependency (id: 0); NOTE: actions with threaded context implicitly depend on the referenced thread group's checkpoint (ThreadGroup.depends_on)"
             in errors
         )
 
@@ -413,7 +413,7 @@ class TestSchemaValidation:
 
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            "Circular dependency detected (dependency path: [0, 1]); NOTE: actions with threaded context implicitly depend on the referenced thread's checkpoint (Thread.depends_on)"
+            "Circular dependency detected (dependency path: [0, 1]); NOTE: actions with threaded context implicitly depend on the referenced thread group's checkpoint (ThreadGroup.depends_on)"
             in errors
         )
 
@@ -700,13 +700,68 @@ class TestSchemaValidation:
                     f"root.actions[{action_idx}].operation.default_edges (action id: {action_idx}): default edges are not supported for EDIT operations",
                 }.issubset(errors)
 
-                # TODO: check ancestry...
-                # first operation must be CREATE
-                # subsequent operations must be EDIT
-                # cannot edit without an ancestor specifying the CREATE operation
-                # cannot specify a default edge without an ancestor specifying the CREATE operation for the object promise
+    def test_action_operation_context(self):
+        validator = SchemaValidator()
 
-        # TODO: consider thread context stuff
+        schema = fixtures.basic_schema_with_actions(3)
+        schema["checkpoints"] = [
+            fixtures.checkpoint(0, "depends-on-0", num_dependencies=1),
+        ]
+        schema["thread_groups"] = [
+            fixtures.thread_group(0, "depends-on-0"),
+        ]
+        schema["actions"][1]["context"] = "thread_group:{0}"
+        schema["actions"][1]["object_promise"] = "object_promise:{0}"
+        schema["actions"][2]["object_promise"] = "object_promise:{1}"
+        del schema["object_promises"][2]  # unused
+
+        # if the object promise is fulfilled outside of a threaded context,
+        # then it cannot be edited from within a threaded context
+        assert (
+            schema["actions"][0]["object_promise"]
+            == schema["actions"][1]["object_promise"]
+        )
+        assert "context" not in schema["actions"][0]
+        assert schema["actions"][1]["context"] is not None
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.actions[1] (action id: 1): cannot edit an object promise outside of the context in which the object promise is fulfilled (fulfillment context: null)"
+            in errors
+        )
+
+        schema["checkpoints"].append(
+            fixtures.checkpoint(1, "depends-on-1", num_dependencies=1)
+        )
+        schema["checkpoints"][1]["dependencies"][0]["compare"]["left"][
+            "ref"
+        ] = "action:{1}.object_promise.completed"
+        schema["checkpoints"][1]["context"] = "thread_group:{0}"
+        schema["thread_groups"].append(fixtures.thread_group(1, "depends-on-1"))
+        schema["thread_groups"][1]["context"] = "thread_group:{0}"
+        schema["thread_groups"][1]["spawn"]["as"] = "$another_number"
+        schema["actions"][1]["object_promise"] = "object_promise:{1}"
+        schema["actions"][2]["context"] = "thread_group:{1}"
+
+        # EDIT actions must match the context of the action that fulfills the referenced object promise
+        assert (
+            schema["actions"][1]["object_promise"]
+            == schema["actions"][2]["object_promise"]
+        )
+        assert schema["actions"][1]["context"] is not None
+        assert schema["actions"][2]["context"] is not None
+        assert schema["actions"][1]["context"] != schema["actions"][2]["context"]
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.actions[2] (action id: 2): cannot edit an object promise outside of the context in which the object promise is fulfilled (fulfillment context: "thread_group:{0}")'
+            in errors
+        )
+
+        del schema["thread_groups"][1]
+        schema["actions"][2]["context"] = "thread_group:{0}"
+        schema["actions"][2]["depends_on"] = "checkpoint:{depends-on-1}"
+        assert schema["actions"][1]["context"] == schema["actions"][2]["context"]
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
 
     def test_milestones(self):
         validator = SchemaValidator()

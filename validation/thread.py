@@ -1,4 +1,4 @@
-class Thread:
+class ThreadGroup:
     def __init__(self):
         self.scope = None
 
