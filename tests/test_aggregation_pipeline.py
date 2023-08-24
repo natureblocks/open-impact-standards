@@ -35,6 +35,11 @@ class TestAggregationPipeline:
                         "type": "NUMERIC",
                         "initial": 0,
                     },
+                    {
+                        "name": "$edge",
+                        "type": "OBJECT",
+                        "initial": None,
+                    },
                 ],
                 "apply": [
                     {
@@ -46,11 +51,24 @@ class TestAggregationPipeline:
                         "method": "ADD",
                         "to": "$sum",
                     },
+                    {
+                        "from": "object_promise:{1}",
+                        "aggregate": {
+                            "field": "objects",
+                            "operator": "FIRST",
+                        },
+                        "method": "SET",
+                        "to": "$edge",
+                    },
                 ],
                 "output": [
                     {
                         "from": "$sum",
                         "to": "number",
+                    },
+                    {
+                        "from": "$edge",
+                        "to": "edge",
                     },
                 ],
             }
@@ -69,6 +87,39 @@ class TestAggregationPipeline:
         schema["actions"][0]["operation"]["include"] = ["name"]
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
+
+        # default values cannot be specified for output fields
+        schema["actions"][0]["operation"]["default_values"] = {
+            "number": 9,
+        }
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.pipelines[0].output[0].to: cannot use field for aggregation output because the field is included in an action's operation"
+            in errors
+        )
+
+        del schema["actions"][0]["operation"]["default_values"]
+
+        # default edges cannot be specified for output fields
+        schema["actions"].append(fixtures.action(4))
+        schema["object_promises"].append(fixtures.object_promise(4))
+        schema["checkpoints"].append(
+            fixtures.checkpoint(id=2, alias="depends-on-4", num_dependencies=1)
+        )
+        schema["checkpoints"][2]["dependencies"][0]["compare"]["left"][
+            "ref"
+        ] = "action:{4}.object_promise.completed"
+        schema["actions"][0]["depends_on"] = "checkpoint:{depends-on-4}"
+        schema["actions"][0]["operation"]["default_edges"] = {
+            "edge": "object_promise:{4}",
+        }
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.pipelines[0].output[1].to: cannot use field for aggregation output because the field is included in an action's operation"
+            in errors
+        )
+
+        del schema["actions"][0]["operation"]["default_edges"]
 
         # same is true regardless of whether it's the action that fulfills the promise (creates the instance)
         schema["actions"][1]["object_promise"] = "object_promise:{0}"
@@ -95,7 +146,7 @@ class TestAggregationPipeline:
         )
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            "root.pipelines[0].apply[1].from: cannot use local object as pipeline input"
+            f"root.pipelines[0].apply[{len(schema['pipelines'][0]['apply']) - 1}].from: cannot use local object as pipeline input"
             in errors
         )
 
