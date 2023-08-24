@@ -748,7 +748,7 @@ class SchemaValidator:
                     )
                     if type_details is None:
                         raise Exception(
-                            f"Variable not found within thread scope: {json.dumps(operand_object['ref'])}"
+                            f"variable not found within thread scope: {json.dumps(ref_path[0])}"
                         )
 
                     if len(ref_path) > 1:
@@ -3057,9 +3057,14 @@ class SchemaValidator:
                                 ):
                                     continue
 
-                                thread_checkpoint = self._resolve_global_ref(
-                                    thread["depends_on"]
+                                thread_checkpoint = (
+                                    self._resolve_global_ref(thread["depends_on"])
+                                    if utils.has_reference_to_template_object_type(
+                                        thread, "depends_on", "checkpoint"
+                                    )
+                                    else None
                                 )
+
                                 if thread_checkpoint is None:
                                     continue
 

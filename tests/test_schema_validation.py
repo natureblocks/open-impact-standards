@@ -422,6 +422,92 @@ class TestSchemaValidation:
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
+    def test_depends_on_thread_variable(self):
+        validator = SchemaValidator()
+
+        schema = fixtures.basic_schema_with_actions(5)
+        schema["checkpoints"] = [
+            fixtures.checkpoint(0, "depends-on-0", num_dependencies=1),
+            fixtures.checkpoint(1, "depends-on-thread-variable", num_dependencies=1),
+            fixtures.checkpoint(
+                2, "depends-on-thread-variable-path", num_dependencies=1
+            ),
+        ]
+        schema["thread_groups"] = [
+            fixtures.thread_group(0, "depends-on-0"),
+        ]
+        schema["thread_groups"][0]["spawn"] = {
+            "from": "object_promise:{0}",
+            "foreach": "objects",
+            "as": "$object",
+        }
+        schema["actions"][1]["context"] = "thread_group:{0}"
+        schema["actions"][2]["context"] = "thread_group:{0}"
+        schema["checkpoints"][1]["context"] = "thread_group:{0}"
+        schema["checkpoints"][2]["context"] = "thread_group:{0}"
+        schema["checkpoints"][1]["dependencies"][0]["compare"] = {
+            "left": {
+                "ref": "$object",
+            },
+            "operator": "EQUALS",
+            "right": {
+                "ref": "action:{0}.object_promise.edge",
+            },
+        }
+        schema["checkpoints"][2]["dependencies"][0]["compare"] = {
+            "left": {
+                "ref": "$object.number",
+            },
+            "operator": "LESS_THAN",
+            "right": {
+                "ref": "action:{0}.object_promise.number",
+            },
+        }
+
+        # should be able to depend on a thread variable
+        # or a path from a thread variable
+        schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-thread-variable}"
+        schema["actions"][2][
+            "depends_on"
+        ] = "checkpoint:{depends-on-thread-variable-path}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # if a checkpoint depends on a thread variable,
+        # the thread variable must exist within the scope of the checkpoint context
+        del schema["actions"][1]["context"]
+        del schema["checkpoints"][1]["context"]
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.checkpoints[1].dependencies[0].compare: variable not found within thread scope: "$object"'
+            in errors
+        )
+
+        # should be able to reference a thread variable that was defined in a parent scope
+        schema["thread_groups"].append(fixtures.thread_group(1))
+        schema["thread_groups"][1]["context"] = "thread_group:{0}"
+        schema["thread_groups"][1]["spawn"]["as"] = "$child_thread_variable"
+        schema["actions"][1]["context"] = "thread_group:{1}"
+        schema["checkpoints"][1]["context"] = "thread_group:{1}"
+        assert (
+            schema["checkpoints"][1]["dependencies"][0]["compare"]["left"]["ref"]
+            == "$object"
+        )
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # should not be able to reference a thread variable that was defined in a child scope
+        assert schema["thread_groups"][1]["context"] == "thread_group:{0}"
+        assert schema["thread_groups"][1]["spawn"]["as"] == "$child_thread_variable"
+        schema["checkpoints"][2]["dependencies"][0]["compare"]["left"] = {
+            "ref": "$child_thread_variable.number",
+        }
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.checkpoints[2].dependencies[0].compare: variable not found within thread scope: "$child_thread_variable"'
+            in errors
+        )
+
     def test_thread_is_used(self):
         validator = SchemaValidator()
 
@@ -900,7 +986,7 @@ class TestSchemaValidation:
         ] = "$out_of_scope_thread_variable"
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.checkpoints[1].dependencies[0].compare: Variable not found within thread scope: "$out_of_scope_thread_variable"'
+            'root.checkpoints[1].dependencies[0].compare: variable not found within thread scope: "$out_of_scope_thread_variable"'
             in errors
         )
 
