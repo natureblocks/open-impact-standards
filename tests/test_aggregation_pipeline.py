@@ -1234,6 +1234,58 @@ class TestAggregationPipeline:
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
+        # if traversing a pipeline variable,
+        # that variable cannot be updated within the traversal scope or any nested scopes
+        schema["pipelines"][0]["variables"].append(
+            {
+                "name": "$traversed_var",
+                "type": "STRING_LIST",
+                "initial": ["a", "b", "c"],
+            }
+        )
+        schema["pipelines"][0]["traverse"] = [
+            {
+                "ref": "$traversed_var",
+                "foreach": {
+                    "as": "$item",
+                    "traverse": [
+                        {
+                            "ref": "object_promise:{0}.objects",
+                            "foreach": {
+                                "as": "$obj",
+                                "apply": [
+                                    {
+                                        "from": "$obj",
+                                        "select": "name",
+                                        "method": "APPEND",
+                                        "to": "$traversed_var",
+                                    },
+                                ],
+                            },
+                        },
+                    ],
+                    "apply": [
+                        {
+                            "from": "$item",
+                            "method": "APPEND",
+                            "to": "$traversed_var",
+                        },
+                    ],
+                },
+            },
+        ]
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            'root.pipelines[0].traverse[0].foreach.traverse[0].foreach.apply[0].to: cannot apply to variable within a scope that traverses it: "$traversed_var"'
+            in errors
+        )
+        assert (
+            'root.pipelines[0].traverse[0].foreach.apply[0].to: cannot apply to variable within a scope that traverses it: "$traversed_var"'
+            in errors
+        )
+
+        del schema["pipelines"][0]["traverse"]
+
         # should not be able to assign to a thread variable
         schema["actions"].append(fixtures.action(2))
         schema["object_promises"].append(fixtures.object_promise(2))

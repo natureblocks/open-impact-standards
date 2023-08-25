@@ -11,3 +11,4 @@ class PipelineVariable:
         self.assigned = assigned
         self.used = False
         self.is_loop_variable = is_loop_variable
+        self.traversal_scopes = set() # the pipeline scopes that use this variable as a traverse ref

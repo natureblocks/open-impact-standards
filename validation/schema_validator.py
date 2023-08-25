@@ -1340,6 +1340,7 @@ class SchemaValidator:
                 # it may be initialized as a traversable list of values.
                 # Note, however, that a traversed variable may not be modified within the traversal or its nested scopes.
                 pipeline_var.used = True
+                pipeline_var.traversal_scopes.add(pipeline_scope)
             else:
                 # look for a thread variable in the current scope
                 parent_action = self._get_parent_action(path)
@@ -1606,6 +1607,12 @@ class SchemaValidator:
             return [
                 f"{self._context(f'{path}.to')}: cannot assign to loop variable: {json.dumps(to_var_name)}"
             ]
+
+        for traversal_scope in to_pipeline_var.traversal_scopes:
+            if pipeline_scope.startswith(traversal_scope):
+                return [
+                    f"{self._context(f'{path}.to')}: cannot apply to variable within a scope that traverses it: {json.dumps(to_var_name)}"
+                ]
 
         left_operand_type = to_pipeline_var.type_details
         left_operand_is_null = (
