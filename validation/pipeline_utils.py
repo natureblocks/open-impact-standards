@@ -212,7 +212,7 @@ def determine_right_operand_type(
                 return ref_type_details
 
             raise Exception(
-                f"invalid comparison: {left_type} {comparison['operator']} {right_type}"
+                f"invalid filter comparison: {comparison} ({left_type} {comparison['operator']} {right_type})"
             )
 
     if "select" in operation:

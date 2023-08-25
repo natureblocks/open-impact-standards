@@ -950,7 +950,7 @@ class TestAggregationPipeline:
         set_filter_value("operator", "CONTAINS")
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            "root.pipelines[0].apply[0]: invalid comparison: NUMERIC CONTAINS NUMERIC"
+            "root.pipelines[0].apply[0]: invalid filter comparison: {'left': {'ref': '$_item.number'}, 'operator': 'CONTAINS', 'right': {'ref': '$_item.edge.number'}} (NUMERIC CONTAINS NUMERIC)"
             in errors
         )
 
@@ -1061,6 +1061,58 @@ class TestAggregationPipeline:
                     },
                 ],
                 "gate_type": "OR",
+            }
+        )
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # should be able to compare a filter ref with a thread variable
+        schema["actions"].append(fixtures.action(2))
+        schema["object_promises"].append(fixtures.object_promise(2))
+        schema["checkpoints"].append(fixtures.checkpoint(2, "depends-on-2"))
+        schema["thread_groups"] = [
+            fixtures.thread_group(0, "depends-on-2"),
+        ]
+        schema["actions"].append(fixtures.action(3))
+        schema["object_promises"].append(fixtures.object_promise(3))
+        schema["actions"][3]["context"] = "thread_group:{0}"
+        schema["pipelines"].append(
+            {
+                "object_promise": "object_promise:{3}",
+                "context": "TEMPLATE",
+                "variables": [
+                    {
+                        "name": "$numbers_greater_than_thread_var",
+                        "type": "NUMERIC_LIST",
+                        "initial": [],
+                    },
+                ],
+                "apply": [
+                    {
+                        "from": "object_promise:{2}.numbers",
+                        "filter": {
+                            "where": [
+                                {
+                                    "left": {
+                                        "ref": "$_item",
+                                    },
+                                    "operator": "GREATER_THAN",
+                                    "right": {
+                                        "ref": "$number",
+                                    },
+                                },
+                            ],
+                        },
+                        "method": "CONCAT",
+                        "to": "$numbers_greater_than_thread_var",
+                    },
+                ],
+                "output": [
+                    {
+                        "from": "$numbers_greater_than_thread_var",
+                        "to": "numbers",
+                    },
+                ],
             }
         )
         errors = validator.validate(json_string=json.dumps(schema))
