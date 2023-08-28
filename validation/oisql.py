@@ -6,7 +6,7 @@ query = {
         "from": {"type": "string"},
         "where": {
             "type": "object",
-            "any_of_templates": ["condition", "condition_group"]
+            "any_of_specs": ["condition", "condition_group"]
         },
         "extract": {"type": "string"}
     },
@@ -25,7 +25,7 @@ condition = {
         },
         "value": {
             "type": "object",
-            "template": "query",
+            "obj_spec": "query",
         },
     },
 }
@@ -41,7 +41,7 @@ condition_group = {
             "type": "array",
             "values": {
                 "type": "object",
-                "any_of_templates": ["condition", "condition_group"]
+                "any_of_specs": ["condition", "condition_group"]
             }
         }
     }

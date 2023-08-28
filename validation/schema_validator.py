@@ -7,7 +7,7 @@ from validation.pipeline_variable import PipelineVariable
 from validation.pipeline import Pipeline
 from validation.thread_group import ThreadGroup
 
-from validation import templates, oisql, utils, patterns, pipeline_utils
+from validation import obj_specs, oisql, utils, patterns, pipeline_utils
 from validation.utils import (
     is_path,
     is_global_ref,
@@ -58,7 +58,7 @@ class SchemaValidator:
 
         self.warnings = []
         self.errors = (
-            self._validate_object("root", self.schema, templates.root_object)
+            self._validate_object("root", self.schema, obj_specs.root_object)
             + self._detect_circular_dependencies()
         )
 
@@ -91,16 +91,16 @@ class SchemaValidator:
 
         return [action["id"] for action in self.schema["actions"]]
 
-    def _validate_field(self, path, field, template, parent_object_template=None):
-        if "types" in template:
+    def _validate_field(self, path, field, obj_spec, parent_obj_spec=None):
+        if "types" in obj_spec:
             return self._validate_multi_type_field(
-                path, field, template["types"], parent_object_template
+                path, field, obj_spec["types"], parent_obj_spec
             )
 
-        if "nullable" in template and template["nullable"] and field is None:
+        if "nullable" in obj_spec and obj_spec["nullable"] and field is None:
             return []
 
-        expected_type = template["type"]
+        expected_type = obj_spec["type"]
 
         if expected_type == "any":
             return []
@@ -115,7 +115,7 @@ class SchemaValidator:
             dynamic_type = self._get_field(path_to_expected_type)
 
             if not isinstance(dynamic_type, str):
-                raise Exception(f"Invalid template type: {expected_type}")
+                raise Exception(f"Invalid obj_spec type: {expected_type}")
 
             expected_type = dynamic_type.lower()
 
@@ -126,11 +126,9 @@ class SchemaValidator:
                 "no validation method exists for type: " + expected_type
             )
 
-        return type_validator(path, field, template, parent_object_template)
+        return type_validator(path, field, obj_spec, parent_obj_spec)
 
-    def _validate_multi_type_field(
-        self, path, field, allowed_types, parent_object_template
-    ):
+    def _validate_multi_type_field(self, path, field, allowed_types, parent_obj_spec):
         for allowed_type in allowed_types:
             if isinstance(allowed_type, dict):
                 errors = self._validate_field(path, field, allowed_type)
@@ -143,7 +141,7 @@ class SchemaValidator:
                     )
 
                 errors = type_validator(
-                    path, field, {"type": allowed_type}, parent_object_template
+                    path, field, {"type": allowed_type}, parent_obj_spec
                 )
 
             if len(errors) == 0:
@@ -153,52 +151,52 @@ class SchemaValidator:
             f"{self._context(path)}: expected one of {json.dumps(allowed_types)}, got {json.dumps(type(field).__name__)}"
         ]
 
-    def _validate_object(self, path, field, template, parent_object_template=None):
+    def _validate_object(self, path, field, obj_spec, parent_obj_spec=None):
         self._object_context = path
 
         if not isinstance(field, dict):
             return [
-                f"{self._context(path)}: {self._template_error(template, f'expected object, got {type(field).__name__}')}"
+                f"{self._context(path)}: {self._obj_spec_error(obj_spec, f'expected object, got {type(field).__name__}')}"
             ]
 
-        if self._bypass_validation_of_object(template, field):
+        if self._bypass_validation_of_object(obj_spec, field):
             return []
 
-        if "any_of_templates" in template:
-            return self._validate_multi_template_object(
-                path, field, template, parent_object_template
+        if "any_of_specs" in obj_spec:
+            return self._validate_multi_spec_object(
+                path, field, obj_spec, parent_obj_spec
             )
 
-        template = self._resolve_template(field, template)
+        obj_spec = self._resolve_obj_spec(field, obj_spec)
 
         errors = []
-        if "properties" in template:
-            (meta_property_errors, template) = self._evaluate_meta_properties(
-                path, field, template
+        if "properties" in obj_spec:
+            (meta_property_errors, obj_spec) = self._evaluate_meta_properties(
+                path, field, obj_spec
             )
             errors += meta_property_errors
 
             # Check that all required properties are present
-            for key in template["properties"]:
-                if key not in field and self._field_is_required(key, template):
+            for key in obj_spec["properties"]:
+                if key not in field and self._field_is_required(key, obj_spec):
                     errors += [
                         f"{self._context(path)}: missing required property: {key}"
                     ]
 
-            if "constraints" in template:
-                errors += self._validate_constraints(path, field, template)
+            if "constraints" in obj_spec:
+                errors += self._validate_constraints(path, field, obj_spec)
 
             def validate_property(key):
                 return self._validate_field(
                     path=f"{path}.{key}",
                     field=field[key],
-                    template=template["properties"][key],
-                    parent_object_template=template,
+                    obj_spec=obj_spec["properties"][key],
+                    parent_obj_spec=obj_spec,
                 )
 
             validated_properties = []
-            if "property_validation_priority" in template:
-                for key in template["property_validation_priority"]:
+            if "property_validation_priority" in obj_spec:
+                for key in obj_spec["property_validation_priority"]:
                     if key in field:
                         errors += validate_property(key)
                         validated_properties.append(key)
@@ -207,69 +205,67 @@ class SchemaValidator:
                 if key in validated_properties:
                     continue
 
-                if key in template["properties"]:
+                if key in obj_spec["properties"]:
                     errors += validate_property(key)
-                elif key in templates.RESERVED_KEYWORDS:
+                elif key in obj_specs.RESERVED_KEYWORDS:
                     errors += [
                         f"{self._context(path)}: cannot use reserved keyword as property name: {json.dumps(key)}"
                     ]
 
         # For certain objects, the keys are not known ahead of time:
-        elif "keys" in template and "values" in template:
+        elif "keys" in obj_spec and "values" in obj_spec:
             for key in field.keys():
                 errors += self._validate_string(
-                    path=f"{path}.keys", field=key, template=template["keys"]
+                    path=f"{path}.keys", field=key, obj_spec=obj_spec["keys"]
                 )
 
                 errors += self._validate_field(
-                    path=f"{path}.{key}", field=field[key], template=template["values"]
+                    path=f"{path}.{key}", field=field[key], obj_spec=obj_spec["values"]
                 )
 
         return errors
 
-    def _validate_multi_template_object(
-        self, path, field, template, parent_object_template
-    ):
-        if "any_of_templates" in template:
-            allowed_templates = template["any_of_templates"]
-            template_errors = []
-            for template_name in allowed_templates:
+    def _validate_multi_spec_object(self, path, field, obj_spec, parent_obj_spec):
+        if "any_of_specs" in obj_spec:
+            allowed_obj_specs = obj_spec["any_of_specs"]
+            obj_spec_errors = []
+            for obj_spec_name in allowed_obj_specs:
                 errors = self._validate_object(
                     path,
                     field,
-                    utils.get_template(template_name),
-                    parent_object_template,
+                    utils.get_obj_spec(obj_spec_name),
+                    parent_obj_spec,
                 )
                 if not errors:
                     return []
                 else:
-                    template_errors += (
-                        [f"--- begin '{template_name}' template errors ---"]
+                    obj_spec_errors += (
+                        [f"--- begin '{obj_spec_name}' spec errors ---"]
                         + errors
-                        + [f"--- end '{template_name}' template errors ---"]
+                        + [f"--- end '{obj_spec_name}' spec errors ---"]
                     )
 
             return [
-                f"{self._context(path)}: object does not conform to any of the allowed template specifications: {str(allowed_templates)}"
-            ] + template_errors
+                f"{self._context(path)}: object does not conform to any of the allowed object specifications: {str(allowed_obj_specs)}"
+            ] + obj_spec_errors
 
-    def _validate_array(self, path, field, template, parent_object_template):
+    def _validate_array(self, path, field, obj_spec, parent_obj_spec):
         if not isinstance(field, list):
             return [f"{self._context(path)}: expected array, got {str(type(field))}"]
 
-        errors = self._validate_min_length(path, field, template)
+        errors = self._validate_min_length(path, field, obj_spec)
 
         i = 0
         for item in field:
             errors += self._validate_field(
-                path=f"{path}[{i}]", field=item, template=template["values"]
+                path=f"{path}[{i}]", field=item, obj_spec=obj_spec["values"]
             )
             i += 1
 
-        if not errors and "constraints" in template:
+        if not errors and "constraints" in obj_spec:
             if (
-                "distinct" in template["constraints"]
-                and template["constraints"]["distinct"]
+                "distinct" in obj_spec["constraints"]
+                and obj_spec["constraints"]["distinct"]
             ):
                 if len(field) != len(set(field)):
                     errors += [
@@ -277,26 +273,26 @@ class SchemaValidator:
                     ]
 
             if (
-                "unique" in template["constraints"]
-                or "unique_if_not_null" in template["constraints"]
+                "unique" in obj_spec["constraints"]
+                or "unique_if_not_null" in obj_spec["constraints"]
             ):
-                errors += self._validate_unique(path, field, template)
+                errors += self._validate_unique(path, field, obj_spec)
 
         return errors
 
-    def _validate_enum(self, path, field, template, parent_object_template):
-        if field in template["values"]:
+    def _validate_enum(self, path, field, obj_spec, parent_obj_spec):
+        if field in obj_spec["values"]:
             return []
 
         return [
-            f"{self._context(path)}: invalid enum value: expected one of {str(template['values'])}, got {json.dumps(field)}"
+            f"{self._context(path)}: invalid enum value: expected one of {str(obj_spec['values'])}, got {json.dumps(field)}"
         ]
 
-    def _validate_constraints(self, path, field, template):
+    def _validate_constraints(self, path, field, obj_spec):
         # Note: "mutually_exclusive" properties are evaluated in _evaluate_meta_properties
-        # because they result in template modifications that affect the validation of other constraints.
+        # because they result in obj_spec modifications that affect the validation of other constraints.
         errors = []
-        constraints = template["constraints"] if "constraints" in template else {}
+        constraints = obj_spec["constraints"] if "constraints" in obj_spec else {}
         if "forbidden" in constraints:
             for key in constraints["forbidden"]["properties"]:
                 if key in field:
@@ -305,7 +301,7 @@ class SchemaValidator:
                     ]
 
         if "unique" in constraints or "unique_if_not_null" in constraints:
-            errors += self._validate_unique(path, field, template)
+            errors += self._validate_unique(path, field, obj_spec)
 
         if "validation_functions" in constraints:
             for function_call in constraints["validation_functions"]:
@@ -369,7 +365,7 @@ class SchemaValidator:
         if (
             "id" not in action
             or "operation" not in action
-            or not utils.has_reference_to_template_object_type(
+            or not utils.has_reference_to_template_entity(
                 action, "object_promise", "object_promise"
             )
             or ("include" in action["operation"] and "exclude" in action["operation"])
@@ -474,7 +470,7 @@ class SchemaValidator:
                                 f"{self._context(f'{path}.operation.default_edges.{key}')}: cannot specify default value for non-edge here; use default_values instead"
                             ]
                         else:
-                            if not utils.has_reference_to_template_object_type(
+                            if not utils.has_reference_to_template_entity(
                                 operation["default_edges"], key, "object_promise"
                             ):
                                 # ref validation will have caught this already
@@ -617,7 +613,7 @@ class SchemaValidator:
                 )  # prevent circular dependency false positive
 
         def action_id_from_dependency_ref(dependency, left_or_right):
-            if not utils.has_reference_to_template_object_type(
+            if not utils.has_reference_to_template_entity(
                 dependency["compare"][left_or_right], "ref", "action"
             ):
                 return None
@@ -677,7 +673,7 @@ class SchemaValidator:
                                 return []
 
                 elif "checkpoint" in dependency:
-                    if utils.has_reference_to_template_object_type(
+                    if utils.has_reference_to_template_entity(
                         dependency, "checkpoint", "checkpoint"
                     ) and validate_has_ancestor_recursive(
                         utils.parse_ref_id(dependency["checkpoint"]),
@@ -711,8 +707,8 @@ class SchemaValidator:
 
     def validate_comparison(self, path, left, right, operator):
         if (
-            self._validate_object("", left, templates.literal_operand) == []
-            and self._validate_object("", right, templates.literal_operand) == []
+            self._validate_object("", left, obj_specs.literal_operand) == []
+            and self._validate_object("", right, obj_specs.literal_operand) == []
         ):
             return [
                 f"{self._context(path)}: invalid comparison: {left} {operator} {right}: both operands cannot be literals"
@@ -729,7 +725,7 @@ class SchemaValidator:
                 # resolve checkpoint context from path
                 if re.match("^root\.checkpoints\[\d+\]", ".".join(path.split(".")[:2])):
                     checkpoint = self._get_field(path.split(".")[:2])
-                    if utils.has_reference_to_template_object_type(
+                    if utils.has_reference_to_template_entity(
                         checkpoint, "context", "thread_group"
                     ):
                         resolution_context_thread_id = utils.parse_ref_id(
@@ -797,7 +793,7 @@ class SchemaValidator:
                 operand not in field
                 or not isinstance(field[operand], dict)
                 or "ref" not in field[operand]
-                or not utils.has_reference_to_template_object_type(
+                or not utils.has_reference_to_template_entity(
                     field[operand], "ref", "action"
                 )
             ):
@@ -811,7 +807,7 @@ class SchemaValidator:
                 continue
 
             action = self._resolve_global_ref(field[operand]["ref"])
-            if not utils.has_reference_to_template_object_type(
+            if not utils.has_reference_to_template_entity(
                 action, "object_promise", "object_promise"
             ):
                 continue
@@ -834,21 +830,19 @@ class SchemaValidator:
 
     def validate_dependency_scope(self, path, field):
         # field is either an action or a thread
-        if not utils.has_reference_to_template_object_type(
+        if not utils.has_reference_to_template_entity(
             field, "depends_on", "checkpoint"
         ):
             return []
 
         checkpoint = self._resolve_global_ref(field["depends_on"])
-        if not utils.has_reference_to_template_object_type(
+        if not utils.has_reference_to_template_entity(
             checkpoint, "context", "thread_group"
         ):
             return []
 
         # checkpoint has threaded context -- it must be within the scope of field's context
-        if not utils.has_reference_to_template_object_type(
-            field, "context", "thread_group"
-        ):
+        if not utils.has_reference_to_template_entity(field, "context", "thread_group"):
             return [
                 f"{self._context(path + '.depends_on')}: checkpoint with threaded context referenced out of scope: {json.dumps(field['depends_on'])}"
             ]
@@ -867,7 +861,7 @@ class SchemaValidator:
     def validate_checkpoint_context(self, path, checkpoint):
         checkpoint_context = (
             utils.parse_ref_id(checkpoint["context"])
-            if utils.has_reference_to_template_object_type(
+            if utils.has_reference_to_template_entity(
                 checkpoint, "context", "thread_group"
             )
             else None
@@ -875,7 +869,7 @@ class SchemaValidator:
 
         context_mismatches = []
         for dependency in checkpoint["dependencies"]:
-            if utils.has_reference_to_template_object_type(
+            if utils.has_reference_to_template_entity(
                 dependency, "checkpoint", "checkpoint"
             ):
                 referenced_checkpoint = self._resolve_global_ref(
@@ -885,7 +879,7 @@ class SchemaValidator:
                     continue
 
                 # if the referenced_checkpoint has a threaded context...
-                if utils.has_reference_to_template_object_type(
+                if utils.has_reference_to_template_entity(
                     referenced_checkpoint, "context", "thread_group"
                 ):
                     if checkpoint_context is None:
@@ -908,7 +902,7 @@ class SchemaValidator:
                 for operand in ["left", "right"]:
                     if operand not in dependency[
                         "compare"
-                    ] or not utils.has_reference_to_template_object_type(
+                    ] or not utils.has_reference_to_template_entity(
                         dependency["compare"][operand], "ref", "action"
                     ):
                         continue
@@ -918,7 +912,7 @@ class SchemaValidator:
                     )
                     if (
                         referenced_action is None
-                        or not utils.has_reference_to_template_object_type(
+                        or not utils.has_reference_to_template_entity(
                             referenced_action, "context", "thread_group"
                         )
                     ):
@@ -1004,7 +998,7 @@ class SchemaValidator:
             try:
                 resolution_context_thread_id = (
                     utils.parse_ref_id(thread["context"])
-                    if utils.has_reference_to_template_object_type(
+                    if utils.has_reference_to_template_entity(
                         thread, "context", "thread_group"
                     )
                     else None
@@ -1097,7 +1091,7 @@ class SchemaValidator:
 
     def _get_action_thread_scope(self, path):
         action = self._get_parent_action(path)
-        if action is not None and utils.has_reference_to_template_object_type(
+        if action is not None and utils.has_reference_to_template_entity(
             action, "context", "thread_group"
         ):
             thread_id = utils.parse_ref_id(action["context"])
@@ -1141,7 +1135,7 @@ class SchemaValidator:
         if (
             "id" not in action
             or "operation" not in action
-            or not utils.has_reference_to_template_object_type(
+            or not utils.has_reference_to_template_entity(
                 action, "object_promise", "object_promise"
             )
         ):
@@ -1197,7 +1191,7 @@ class SchemaValidator:
                         self._settable_fields[object_promise_id].add(field_name)
 
     def validate_pipeline(self, path, field):
-        if not utils.has_reference_to_template_object_type(
+        if not utils.has_reference_to_template_entity(
             field, "object_promise", "object_promise"
         ):
             # there will already be validation errors for the missing field
@@ -1375,7 +1369,7 @@ class SchemaValidator:
             parent_action = self._get_parent_action(path)
             if is_global_ref(ref):
                 # warn if the global ref refers to the local object
-                if utils.has_reference_to_template_object_type(
+                if utils.has_reference_to_template_entity(
                     traversal, "ref", "object_promise"
                 ) and utils.parse_ref_id(ref) == utils.parse_ref_id(
                     pipeline.object_promise_ref
@@ -1552,7 +1546,7 @@ class SchemaValidator:
         local_input_error = [
             f"{self._context(f'{path}.from')}: cannot use local object as pipeline input"
         ]
-        if utils.has_reference_to_template_object_type(apply, "from", "object_promise"):
+        if utils.has_reference_to_template_entity(apply, "from", "object_promise"):
             object_promise = self._resolve_global_ref(apply["from"])
             if (
                 object_promise is not None
@@ -1765,7 +1759,7 @@ class SchemaValidator:
                     )
 
                 action = self._resolve_global_ref(global_ref)
-                if action is None or not utils.has_reference_to_template_object_type(
+                if action is None or not utils.has_reference_to_template_entity(
                     action, "object_promise", "object_promise"
                 ):
                     return None
@@ -1902,7 +1896,7 @@ class SchemaValidator:
         return type_details
 
     def _resolve_tag_from_action(self, action):
-        if not utils.has_reference_to_template_object_type(
+        if not utils.has_reference_to_template_entity(
             action, "object_promise", "object_promise"
         ):
             return None
@@ -1971,19 +1965,19 @@ class SchemaValidator:
         # resolving some object type
         return type_details
 
-    def _validate_expected_value(self, path, field, template, parent_object_template):
-        template_vars = (
-            parent_object_template["template_vars"]
-            if parent_object_template and "template_vars" in parent_object_template
+    def _validate_expected_value(self, path, field, obj_spec, parent_obj_spec):
+        obj_spec_vars = (
+            parent_obj_spec["obj_spec_vars"]
+            if parent_obj_spec and "obj_spec_vars" in parent_obj_spec
             else {}
         )
 
-        if "one_of" in template["expected_value"]:
+        if "one_of" in obj_spec["expected_value"]:
             # looking for any matching value
-            one_of = copy.deepcopy(template["expected_value"]["one_of"])
+            one_of = copy.deepcopy(obj_spec["expected_value"]["one_of"])
             one_of["from"] = ".".join(
                 self._resolve_path_variables(
-                    path, one_of["from"].split("."), template_vars
+                    path, one_of["from"].split("."), obj_spec_vars
                 )
             )
 
@@ -1994,21 +1988,21 @@ class SchemaValidator:
             def extract_value_from_referenced_object(ref_details):
                 if "from_ref" not in ref_details or "extract" not in ref_details:
                     raise Exception(
-                        "invalid referenced_value template: " + str(ref_details)
+                        "invalid referenced_value spec: " + str(ref_details)
                     )
 
                 ref = self._get_field(
                     self._resolve_path_variables(
-                        path, ref_details["from_ref"].split("."), template_vars
+                        path, ref_details["from_ref"].split("."), obj_spec_vars
                     )
                 )
                 referenced_object = self._resolve_global_ref(ref)
 
                 return self._get_field(ref_details["extract"], referenced_object)
 
-            if "referenced_value" in template["expected_value"]:
+            if "referenced_value" in obj_spec["expected_value"]:
                 expected_value = extract_value_from_referenced_object(
-                    template["expected_value"]["referenced_value"]
+                    obj_spec["expected_value"]["referenced_value"]
                 )
 
                 if field == expected_value:
@@ -2018,9 +2012,9 @@ class SchemaValidator:
                         f"{self._context(path)}: expected {expected_value}, got {json.dumps(field)}"
                     ]
 
-            elif "equivalent_ref" in template["expected_value"]:
+            elif "equivalent_ref" in obj_spec["expected_value"]:
                 ref = extract_value_from_referenced_object(
-                    template["expected_value"]["equivalent_ref"]
+                    obj_spec["expected_value"]["equivalent_ref"]
                 )
 
                 if ref is None or not is_global_ref(ref) or not is_global_ref(field):
@@ -2059,15 +2053,15 @@ class SchemaValidator:
                     ]
             else:
                 raise NotImplementedError(
-                    "expected_value template not implemented: " + str(template)
+                    "expected_value spec not implemented: " + str(obj_spec)
                 )
 
-    def _validate_ref(self, path, field, template, parent_object_template=None):
-        if "local_ref" in template["ref_types"] and is_local_variable(field):
+    def _validate_ref(self, path, field, obj_spec, parent_obj_spec=None):
+        if "local_ref" in obj_spec["ref_types"] and is_local_variable(field):
             referenced_object_type = self._resolve_type_from_local_ref(
                 local_ref=field, path=path
             )
-        elif "filter_ref" in template["ref_types"] and is_filter_ref(field):
+        elif "filter_ref" in obj_spec["ref_types"] and is_filter_ref(field):
             referenced_object_type = self._resolve_type_from_filter_ref(
                 filter_ref=field, path=path
             )
@@ -2076,9 +2070,9 @@ class SchemaValidator:
                 return [f"{self._context(path)}: expected ref, got {json.dumps(field)}"]
 
             ref_type = utils.parse_ref_type(field)
-            if ref_type not in template["ref_types"]:
+            if ref_type not in obj_spec["ref_types"]:
                 return [
-                    f"{self._context(path)}: invalid ref type: expected one of {json.dumps(template['ref_types'])}, got {json.dumps(ref_type)}"
+                    f"{self._context(path)}: invalid ref type: expected one of {json.dumps(obj_spec['ref_types'])}, got {json.dumps(ref_type)}"
                 ]
 
             # TODO: the following line should resolve to a type, not an object.
@@ -2090,17 +2084,15 @@ class SchemaValidator:
                 f"{self._context(path)}: invalid ref: object not found: {json.dumps(field)}"
             ]
 
-        if "expected_value" in template:
-            return self._validate_expected_value(
-                path, field, template, parent_object_template
-            )
+        if "expected_value" in obj_spec:
+            return self._validate_expected_value(path, field, obj_spec, parent_obj_spec)
 
         return []
 
     def _resolve_global_ref(self, ref):
         ref_id = utils.parse_ref_id(ref)
         ref_type = utils.parse_ref_type(ref)
-        ref_config = getattr(templates, ref_type)["ref_config"]
+        ref_config = getattr(obj_specs, ref_type)["ref_config"]
         collection = self._get_field(ref_config["collection"])
 
         if collection is None:
@@ -2121,7 +2113,7 @@ class SchemaValidator:
             if party["name"] == party_name:
                 return party
 
-    def _validate_scalar(self, path, field, template=None, parent_object_template=None):
+    def _validate_scalar(self, path, field, obj_spec=None, parent_obj_spec=None):
         if field is None:
             return []
 
@@ -2130,7 +2122,7 @@ class SchemaValidator:
         for scalar_type in valid_types:
             if (
                 getattr(self, "_validate_" + scalar_type)(
-                    path, field, template, parent_object_template
+                    path, field, obj_spec, parent_obj_spec
                 )
                 == []
             ):
@@ -2138,9 +2130,7 @@ class SchemaValidator:
 
         return [f"{self._context(path)}: expected scalar, got {str(type(field))}"]
 
-    def _validate_decimal(
-        self, path, field, template=None, parent_object_template=None
-    ):
+    def _validate_decimal(self, path, field, obj_spec=None, parent_obj_spec=None):
         if (isinstance(field, float) or isinstance(field, int)) and not isinstance(
             field, bool
         ):
@@ -2148,37 +2138,33 @@ class SchemaValidator:
 
         return [f"{self._context(path)}: expected decimal, got {str(type(field))}"]
 
-    def _validate_integer(
-        self, path, field, template=None, parent_object_template=None
-    ):
+    def _validate_integer(self, path, field, obj_spec=None, parent_obj_spec=None):
         if isinstance(field, int) and not isinstance(field, bool):
             return []
 
         return [f"{self._context(path)}: expected integer, got {str(type(field))}"]
 
-    def _validate_string(self, path, field, template=None, parent_object_template=None):
+    def _validate_string(self, path, field, obj_spec=None, parent_obj_spec=None):
         if not isinstance(field, str):
             return [f"{self._context(path)}: expected string, got {str(type(field))}"]
 
-        if "pattern" in template and not re.match(template["pattern"], field):
+        if "pattern" in obj_spec and not re.match(obj_spec["pattern"], field):
             pattern_description = (
-                f'{template["pattern_description"]} '
-                if "pattern_description" in template
+                f'{obj_spec["pattern_description"]} '
+                if "pattern_description" in obj_spec
                 else ""
             )
             return [
-                f"{self._context(path)}: string does not match {pattern_description}pattern: {template['pattern']}"
+                f"{self._context(path)}: string does not match {pattern_description}pattern: {obj_spec['pattern']}"
             ]
 
-        if "expected_value" in template:
-            return self._validate_expected_value(
-                path, field, template, parent_object_template
-            )
+        if "expected_value" in obj_spec:
+            return self._validate_expected_value(path, field, obj_spec, parent_obj_spec)
 
         return []
 
     def _validate_integer_string(
-        self, path, field, template=None, parent_object_template=None
+        self, path, field, obj_spec=None, parent_obj_spec=None
     ):
         # Allow string representations of negative integers, e.g. "-1"
         if str(field)[0] == "-":
@@ -2191,17 +2177,13 @@ class SchemaValidator:
 
         return []
 
-    def _validate_boolean(
-        self, path, field, template=None, parent_object_template=None
-    ):
+    def _validate_boolean(self, path, field, obj_spec=None, parent_obj_spec=None):
         if isinstance(field, bool):
             return []
 
         return [f"{self._context(path)}: expected boolean, got {str(type(field))}"]
 
-    def _validate_string_list(
-        self, path, field, template=None, parent_object_template=None
-    ):
+    def _validate_string_list(self, path, field, obj_spec=None, parent_obj_spec=None):
         if not isinstance(field, list):
             return [f"{self._context(path)}: expected list, got {str(type(field))}"]
 
@@ -2213,9 +2195,7 @@ class SchemaValidator:
 
         return []
 
-    def _validate_numeric_list(
-        self, path, field, template=None, parent_object_template=None
-    ):
+    def _validate_numeric_list(self, path, field, obj_spec=None, parent_obj_spec=None):
         if not isinstance(field, list):
             return [f"{self._context(path)}: expected list, got {str(type(field))}"]
 
@@ -2227,42 +2207,42 @@ class SchemaValidator:
 
         return []
 
-    def _field_is_required(self, key, template):
-        if "constraints" not in template:
+    def _field_is_required(self, key, obj_spec):
+        if "constraints" not in obj_spec:
             return True  # default to required
 
         if (
-            "optional" in template["constraints"]
-            and key in template["constraints"]["optional"]
+            "optional" in obj_spec["constraints"]
+            and key in obj_spec["constraints"]["optional"]
         ) or (
-            "forbidden" in template["constraints"]
-            and key in template["constraints"]["forbidden"]["properties"]
+            "forbidden" in obj_spec["constraints"]
+            and key in obj_spec["constraints"]["forbidden"]["properties"]
         ):
             return False
 
         return True
 
-    def _field_is_forbidden(self, key, template):
-        return "forbidden" in template and key in template["forbidden"]
+    def _field_is_forbidden(self, key, obj_spec):
+        return "forbidden" in obj_spec and key in obj_spec["forbidden"]
 
-    def _validate_min_length(self, path, field, template):
-        if "constraints" not in template or "min_length" not in template["constraints"]:
+    def _validate_min_length(self, path, field, obj_spec):
+        if "constraints" not in obj_spec or "min_length" not in obj_spec["constraints"]:
             return []
 
-        if len(field) < template["constraints"]["min_length"]:
+        if len(field) < obj_spec["constraints"]["min_length"]:
             return [
-                f"{self._context(path)}: must contain at least {template['constraints']['min_length']} item(s), got {len(field)}"
+                f"{self._context(path)}: must contain at least {obj_spec['constraints']['min_length']} item(s), got {len(field)}"
             ]
 
         return []
 
-    def _validate_unique(self, path, field, template):
+    def _validate_unique(self, path, field, obj_spec):
         if not isinstance(field, list) and not isinstance(field, dict):
             raise NotImplementedError(
                 "unique validation not implemented for type " + str(type(field))
             )
 
-        constraints = template["constraints"] if "constraints" in template else {}
+        constraints = obj_spec["constraints"] if "constraints" in obj_spec else {}
         unique_fields = constraints["unique"] if "unique" in constraints else []
         unique_composites = (
             constraints["unique_composites"]
@@ -2288,7 +2268,7 @@ class SchemaValidator:
             if isinstance(field_name, list):
                 # The unique constraint applies to a combination of fields
                 for item in field if isinstance(field, list) else field.values():
-                    if self._bypass_validation_of_object(template["values"], item):
+                    if self._bypass_validation_of_object(obj_spec["values"], item):
                         # avoid psuedo-checkpoint errors
                         continue
 
@@ -2343,7 +2323,7 @@ class SchemaValidator:
                         error = f"duplicate value provided for unique field {json.dumps(field_name)}: {json.dumps(value)}"
 
                     errors += [
-                        f"{self._context(path)}: {self._template_error(template, error)}"
+                        f"{self._context(path)}: {self._obj_spec_error(obj_spec, error)}"
                     ]
 
         return errors
@@ -2393,9 +2373,9 @@ class SchemaValidator:
 
         return obj
 
-    def _object_or_array_contains(self, path, referenced_value, reference_template):
-        referenced_path = reference_template["from"]
-        referenced_prop = reference_template["extract"]
+    def _object_or_array_contains(self, path, referenced_value, reference_obj_spec):
+        referenced_path = reference_obj_spec["from"]
+        referenced_prop = reference_obj_spec["extract"]
 
         objectOrArray = self._get_field(referenced_path)
 
@@ -2473,83 +2453,83 @@ class SchemaValidator:
                 f"{self._context(path)}: reference path {referenced_path} contains invalid type: {str(type(objectOrArray))}"
             ]
 
-    def _evaluate_meta_properties(self, path, field, template):
+    def _evaluate_meta_properties(self, path, field, obj_spec):
         errors = []
-        modified_template = template.copy()
+        modified_obj_spec = obj_spec.copy()
 
         if (
-            "constraints" in template
-            and "mutually_exclusive" in template["constraints"]
+            "constraints" in obj_spec
+            and "mutually_exclusive" in obj_spec["constraints"]
         ):
             (
                 new_errors,
-                modified_template,
-            ) = self._validate_mutually_exclusive_properties(path, field, template)
+                modified_obj_spec,
+            ) = self._validate_mutually_exclusive_properties(path, field, obj_spec)
             errors += new_errors
 
-        return (errors, modified_template)
+        return (errors, modified_obj_spec)
 
-    def _validate_mutually_exclusive_properties(self, path, field, template):
+    def _validate_mutually_exclusive_properties(self, path, field, obj_spec):
         included_props = []
 
-        for prop in template["constraints"]["mutually_exclusive"]:
+        for prop in obj_spec["constraints"]["mutually_exclusive"]:
             if prop in field:
                 included_props.append(prop)
 
-        modified_template = copy.deepcopy(template)
+        modified_obj_spec = copy.deepcopy(obj_spec)
 
-        if "forbidden" not in modified_template["constraints"]:
-            modified_template["constraints"]["forbidden"] = {"properties": []}
+        if "forbidden" not in modified_obj_spec["constraints"]:
+            modified_obj_spec["constraints"]["forbidden"] = {"properties": []}
 
-        for prop in modified_template["constraints"]["mutually_exclusive"]:
+        for prop in modified_obj_spec["constraints"]["mutually_exclusive"]:
             if prop not in included_props:
-                modified_template["constraints"]["forbidden"]["properties"].append(prop)
+                modified_obj_spec["constraints"]["forbidden"]["properties"].append(prop)
 
         if len(included_props) == 0:
             # unless all of the properties are optional, at least one must be specified
             error_msg = [
-                f"{self._context(path)}: must specify one of the mutually exclusive properties: {modified_template['constraints']['mutually_exclusive']}"
+                f"{self._context(path)}: must specify one of the mutually exclusive properties: {modified_obj_spec['constraints']['mutually_exclusive']}"
             ]
-            if "optional" not in modified_template["constraints"]:
-                return (error_msg, modified_template)
+            if "optional" not in modified_obj_spec["constraints"]:
+                return (error_msg, modified_obj_spec)
 
-            for prop in modified_template["constraints"]["mutually_exclusive"]:
-                if prop not in modified_template["constraints"]["optional"]:
-                    return (error_msg, modified_template)
+            for prop in modified_obj_spec["constraints"]["mutually_exclusive"]:
+                if prop not in modified_obj_spec["constraints"]["optional"]:
+                    return (error_msg, modified_obj_spec)
 
         if len(included_props) > 1:
             return (
                 [
                     f"{self._context(path)}: more than one mutually exclusive property specified: {included_props}"
                 ],
-                modified_template,
+                modified_obj_spec,
             )
 
-        return ([], modified_template)
+        return ([], modified_obj_spec)
 
-    def _resolve_template(self, field, template):
-        if "template" in template:
-            template_name = template["template"]
-            referenced_template = utils.get_template(template_name)
+    def _resolve_obj_spec(self, field, obj_spec):
+        if "obj_spec" in obj_spec:
+            obj_spec_name = obj_spec["obj_spec"]
+            referenced_obj_spec = utils.get_obj_spec(obj_spec_name)
 
             if (
-                "template_modifiers" in template
-                and template_name in template["template_modifiers"]
+                "obj_spec_modifiers" in obj_spec
+                and obj_spec_name in obj_spec["obj_spec_modifiers"]
             ):
-                template = self._apply_template_modifiers(
-                    referenced_template,
-                    template["template_modifiers"][template_name],
+                obj_spec = self._apply_obj_spec_modifiers(
+                    referenced_obj_spec,
+                    obj_spec["obj_spec_modifiers"][obj_spec_name],
                 )
             else:
-                template = referenced_template
+                obj_spec = referenced_obj_spec
 
-        if "resolvers" in template:
-            template = self._resolve_template_variables(field, template)
+        if "resolvers" in obj_spec:
+            obj_spec = self._resolve_obj_spec_variables(field, obj_spec)
 
-        return self._evaluate_template_conditionals(field, template)
+        return self._evaluate_obj_spec_conditionals(field, obj_spec)
 
     def _resolve_path_variables(
-        self, path, path_segments_to_resolve, template_vars={}, parent_object=None
+        self, path, path_segments_to_resolve, obj_spec_vars={}, parent_object=None
     ):
         if not isinstance(path_segments_to_resolve, list):
             raise Exception("path_segments must be a list")
@@ -2565,9 +2545,9 @@ class SchemaValidator:
             if isinstance(var, list):
                 continue
 
-            # template variable?
+            # obj_spec variable?
             if re.match(r"^\{\$\w+\}$", var):
-                path_segments_to_resolve[i] = template_vars[var[1:-1]]
+                path_segments_to_resolve[i] = obj_spec_vars[var[1:-1]]
 
             # referenced field from parent object?
             if re.match(r"^\{\w+\}$", var) and var not in [
@@ -2587,43 +2567,43 @@ class SchemaValidator:
     def _get_parent_action(self, path):
         return self._get_field(path.split(".")[:2])
 
-    def _apply_template_modifiers(self, referenced_template, template_modifiers):
-        modified_template = copy.deepcopy(referenced_template)
+    def _apply_obj_spec_modifiers(self, referenced_obj_spec, obj_spec_modifiers):
+        modified_obj_spec = copy.deepcopy(referenced_obj_spec)
 
-        for prop, prop_modifiers in template_modifiers.items():
+        for prop, prop_modifiers in obj_spec_modifiers.items():
             for key, val in prop_modifiers.items():
-                modified_template["properties"][prop][key] = val
+                modified_obj_spec["properties"][prop][key] = val
 
-        return modified_template
+        return modified_obj_spec
 
-    def _resolve_template_variables(self, field, template):
-        modified_template = copy.deepcopy(template)
+    def _resolve_obj_spec_variables(self, field, obj_spec):
+        modified_obj_spec = copy.deepcopy(obj_spec)
 
-        modified_template["template_vars"] = {}
-        for variable, resolver in template["resolvers"].items():
+        modified_obj_spec["obj_spec_vars"] = {}
+        for variable, resolver in obj_spec["resolvers"].items():
             var = self._resolve_query(field, resolver)
             if isinstance(var, str):
-                modified_template["template_vars"][variable] = var
+                modified_obj_spec["obj_spec_vars"][variable] = var
             else:
                 # Query resolution failed -- insert reserved keyword "ERROR".
                 # This allows validation to run to completion, which should
                 # reveal the root cause of the query resolution failure.
-                modified_template["template_vars"][variable] = "ERROR"
+                modified_obj_spec["obj_spec_vars"][variable] = "ERROR"
 
-        return modified_template
+        return modified_obj_spec
 
-    def _evaluate_template_conditionals(self, field, template):
-        if "if" not in template and "switch" not in template:
-            return template
+    def _evaluate_obj_spec_conditionals(self, field, obj_spec):
+        if "if" not in obj_spec and "switch" not in obj_spec:
+            return obj_spec
 
-        modified_template = copy.deepcopy(template)
+        modified_obj_spec = copy.deepcopy(obj_spec)
 
-        if "if" in template:
-            for condition in modified_template["if"]:
+        if "if" in obj_spec:
+            for condition in modified_obj_spec["if"]:
                 condition_is_satisfied = (
-                    self._evaluate_template_condition_group(condition, field)
+                    self._evaluate_obj_spec_condition_group(condition, field)
                     if "conditions" in condition and "gate_type" in condition
-                    else self._evaluate_template_condition(condition, field)
+                    else self._evaluate_obj_spec_condition(condition, field)
                 )
 
                 if condition_is_satisfied:
@@ -2633,52 +2613,52 @@ class SchemaValidator:
                 else:
                     continue
 
-                modified_template = self._apply_template_conditionals(
-                    conditional_modifiers, modified_template
+                modified_obj_spec = self._apply_obj_spec_conditionals(
+                    conditional_modifiers, modified_obj_spec
                 )
 
-        if "switch" in template:
+        if "switch" in obj_spec:
             raise NotImplementedError(
-                "unit tests are needed for template switch statements"
+                "unit tests are needed for obj_spec switch statements"
             )
 
-            for case in modified_template["switch"]["cases"]:
+            for case in modified_obj_spec["switch"]["cases"]:
                 if (
-                    template["switch"]["property"] in field
-                    and case["equals"] == field[template["switch"]["property"]]
+                    obj_spec["switch"]["property"] in field
+                    and case["equals"] == field[obj_spec["switch"]["property"]]
                 ):
-                    modified_template = self._apply_template_conditionals(
-                        case["then"], modified_template
+                    modified_obj_spec = self._apply_obj_spec_conditionals(
+                        case["then"], modified_obj_spec
                     )
 
                     if case["break"]:
                         break
 
-        if "add_conditionals" in modified_template:
-            if "if" in modified_template["add_conditionals"]:
-                modified_template["if"] = modified_template["add_conditionals"]["if"]
+        if "add_conditionals" in modified_obj_spec:
+            if "if" in modified_obj_spec["add_conditionals"]:
+                modified_obj_spec["if"] = modified_obj_spec["add_conditionals"]["if"]
             else:
-                del modified_template["if"]
+                del modified_obj_spec["if"]
 
-            if "switch" in modified_template["add_conditionals"]:
-                modified_template["switch"] = modified_template["add_conditionals"][
+            if "switch" in modified_obj_spec["add_conditionals"]:
+                modified_obj_spec["switch"] = modified_obj_spec["add_conditionals"][
                     "switch"
                 ]
             else:
-                del modified_template["switch"]
+                del modified_obj_spec["switch"]
 
-            del modified_template["add_conditionals"]
+            del modified_obj_spec["add_conditionals"]
 
             # Recursively evaluate any conditionals added by the current conditionals
-            return self._evaluate_template_conditionals(field, modified_template)
+            return self._evaluate_obj_spec_conditionals(field, modified_obj_spec)
 
-        return modified_template
+        return modified_obj_spec
 
-    def _evaluate_template_condition_group(self, condition_group, field):
+    def _evaluate_obj_spec_condition_group(self, condition_group, field):
         gate_type = condition_group["gate_type"]
         if gate_type not in ["AND", "OR"]:
             raise NotImplementedError(
-                "template condition gate type not implemented: "
+                "obj_spec condition gate type not implemented: "
                 + condition_group["gate_type"]
             )
 
@@ -2693,17 +2673,17 @@ class SchemaValidator:
 
         for condition in condition_group["conditions"]:
             if (
-                self._evaluate_template_condition(condition, field)
+                self._evaluate_obj_spec_condition(condition, field)
                 == early_return_trigger
             ):
                 return early_return_value
 
         return late_return_value
 
-    def _evaluate_template_condition(self, condition, field):
+    def _evaluate_obj_spec_condition(self, condition, field):
         required_props = ["property", "operator", "value"]
         if not all(prop in condition for prop in required_props):
-            raise Exception(f"Invalid template condition: {condition}")
+            raise Exception(f"Invalid obj_spec condition: {condition}")
 
         operator = condition["operator"]
         value = (
@@ -2736,7 +2716,7 @@ class SchemaValidator:
                 condition["property"],
                 field,
                 throw_on_invalid_path=True,
-                exception_context=lambda path: f"Unable to evaluate template condition for object at path: '{self._object_context}': missing required field: {path}",
+                exception_context=lambda path: f"Unable to evaluate obj_spec condition for object at path: '{self._object_context}': missing required field: {path}",
             )
         except Exception as _:
             return False
@@ -2781,26 +2761,26 @@ class SchemaValidator:
             return not isinstance(prop, str) or not re.match(value, prop)
 
         raise NotImplementedError(
-            "template operator not yet supported: " + str(operator)
+            "obj_spec operator not yet supported: " + str(operator)
         )
 
-    def _apply_template_conditionals(self, conditional_modifiers, to_template):
+    def _apply_obj_spec_conditionals(self, conditional_modifiers, to_obj_spec):
         for key in conditional_modifiers:
             if key == "override_properties" or key == "add_properties":
                 for prop, prop_modifier in conditional_modifiers[key].items():
-                    to_template["properties"][prop] = prop_modifier
+                    to_obj_spec["properties"][prop] = prop_modifier
             elif key == "add_constraints":
-                if "constraints" not in to_template:
-                    to_template["constraints"] = {}
+                if "constraints" not in to_obj_spec:
+                    to_obj_spec["constraints"] = {}
 
                 for constraint_name, constraint in conditional_modifiers[key].items():
-                    to_template["constraints"][constraint_name] = constraint
+                    to_obj_spec["constraints"][constraint_name] = constraint
             else:
                 raise NotImplementedError(
                     "Unexpected key in conditional modifiers: " + key
                 )
 
-        return to_template
+        return to_obj_spec
 
     def _collect_actions_and_checkpoints(self):
         if "actions" not in self.schema or not isinstance(self.schema["actions"], list):
@@ -2881,7 +2861,7 @@ class SchemaValidator:
 
             # Track which actions reference object promises...
             # Ancestry will be used to determine operation types.
-            if "id" in action and utils.has_reference_to_template_object_type(
+            if "id" in action and utils.has_reference_to_template_entity(
                 action, "object_promise", "object_promise"
             ):
                 object_promise = self._resolve_global_ref(action["object_promise"])
@@ -2896,7 +2876,7 @@ class SchemaValidator:
 
             action_id = str(action["id"])
             # if the action has a threaded context...
-            if utils.has_reference_to_template_object_type(
+            if utils.has_reference_to_template_entity(
                 action, "context", "thread_group"
             ):
                 # the action implicitly depends on the thread's checkpoint
@@ -2912,7 +2892,7 @@ class SchemaValidator:
 
                 self._thread_groups[thread_group_id].action_ids.append(action_id)
 
-                if utils.has_reference_to_template_object_type(
+                if utils.has_reference_to_template_entity(
                     thread_group, "depends_on", "checkpoint"
                 ):
                     # Normalize to alias (ref could be a different field)
@@ -2970,7 +2950,7 @@ class SchemaValidator:
             if "alias" in checkpoint:
                 self._checkpoints[checkpoint["alias"]] = checkpoint
 
-                if utils.has_reference_to_template_object_type(
+                if utils.has_reference_to_template_entity(
                     checkpoint, "context", "thread_group"
                 ):
                     thread_id = utils.parse_ref_id(checkpoint["context"])
@@ -3036,7 +3016,7 @@ class SchemaValidator:
                         # and therefore the object promise inherits the action's thread scope
                         self._object_promise_contexts[object_promise_id] = (
                             action["context"]
-                            if utils.has_reference_to_template_object_type(
+                            if utils.has_reference_to_template_entity(
                                 action, "context", "thread_group"
                             )
                             else None
@@ -3057,24 +3037,24 @@ class SchemaValidator:
                         if "ref" in dependency["compare"][operand]:
                             if is_variable(dependency["compare"][operand]["ref"]):
                                 # It's a thread variable -- use the implicit dependency
-                                if not utils.has_reference_to_template_object_type(
-                                    obj=checkpoint,
-                                    key="context",
-                                    template_object_type="thread_group",
+                                if not utils.has_reference_to_template_entity(
+                                    checkpoint,
+                                    "context",
+                                    "thread_group",
                                 ):
                                     continue
 
                                 thread = self._resolve_global_ref(checkpoint["context"])
-                                if utils.has_reference_to_template_object_type(
-                                    obj=thread,
-                                    key="depends_on",
-                                    template_object_type="checkpoint",
+                                if utils.has_reference_to_template_entity(
+                                    thread,
+                                    "depends_on",
+                                    "checkpoint",
                                 ):
                                     continue
 
                                 thread_checkpoint = (
                                     self._resolve_global_ref(thread["depends_on"])
-                                    if utils.has_reference_to_template_object_type(
+                                    if utils.has_reference_to_template_entity(
                                         thread, "depends_on", "checkpoint"
                                     )
                                     else None
@@ -3196,9 +3176,9 @@ class SchemaValidator:
             f" ({','.join(self._path_context)})" if self._path_context else ""
         )
 
-    def _template_error(self, template, error):
-        if "error_replacements" in template:
-            for replacement in template["error_replacements"]:
+    def _obj_spec_error(self, obj_spec, error):
+        if "error_replacements" in obj_spec:
+            for replacement in obj_spec["error_replacements"]:
                 if re.search(replacement["pattern"], error):
                     return replacement["replace_with"]
 
@@ -3236,7 +3216,7 @@ class SchemaValidator:
 
         "extract" is the property to resolve from the result of the above clauses.
         """
-        if not self._matches_meta_template("query", query):
+        if not self._matches_meta_obj_spec("query", query):
             raise Exception(f"Invalid query: {query}")
 
         from_path = query["from"].split(".")
@@ -3269,9 +3249,9 @@ class SchemaValidator:
             return self._get_field(query["extract"], from_collection)
 
     def _matches_where_clause(self, item, where_clause, parent_obj):
-        if self._matches_meta_template("condition", where_clause):
+        if self._matches_meta_obj_spec("condition", where_clause):
             return self._evaluate_query_condition(where_clause, item, parent_obj)
-        elif self._matches_meta_template("condition_group", where_clause):
+        elif self._matches_meta_obj_spec("condition_group", where_clause):
             return self._evaluate_query_condition_group_recursive(
                 where_clause, item, parent_obj
             )
@@ -3286,7 +3266,7 @@ class SchemaValidator:
         )
         left_operand = self._get_field(prop, item)
 
-        if self._matches_meta_template("query", condition["value"]):
+        if self._matches_meta_obj_spec("query", condition["value"]):
             right_operand = self._resolve_query(parent_obj, condition["value"])
         else:
             # treat it as a literal value
@@ -3324,13 +3304,13 @@ class SchemaValidator:
             )
 
         for sub_condition in condition["conditions"]:
-            if self._matches_meta_template("condition", sub_condition):
+            if self._matches_meta_obj_spec("condition", sub_condition):
                 if (
                     self._evaluate_query_condition(sub_condition, item, parent_obj)
                     == early_return_trigger
                 ):
                     return early_return_value
-            elif self._matches_meta_template("condition_group", sub_condition):
+            elif self._matches_meta_obj_spec("condition_group", sub_condition):
                 if (
                     self._evaluate_query_condition_group_recursive(
                         sub_condition, item, parent_obj
@@ -3345,14 +3325,14 @@ class SchemaValidator:
 
         return late_return_value
 
-    def _matches_meta_template(self, template_name, obj):
-        return self._validate_object("", obj, getattr(oisql, template_name)) == []
+    def _matches_meta_obj_spec(self, obj_spec_name, obj):
+        return self._validate_object("", obj, getattr(oisql, obj_spec_name)) == []
 
-    def _bypass_validation_of_object(self, template, field):
+    def _bypass_validation_of_object(self, obj_spec, field):
         if (
             isinstance(field, dict)
-            and "template" in template
-            and template["template"] == "checkpoint"
+            and "obj_spec" in obj_spec
+            and obj_spec["obj_spec"] == "checkpoint"
             and "alias" in field
             and field["alias"] in self._psuedo_checkpoints
         ):

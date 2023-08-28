@@ -1,8 +1,9 @@
 import json
 import logging
+from validation import obj_specs
 
 from tests import fixtures
-from validation import templates, utils
+from validation import utils
 from validation.schema_validator import SchemaValidator
 from enums import milestones
 
@@ -17,7 +18,7 @@ class TestSchemaValidation:
         A high-level description of the schema specification can be found in the README:
             https://github.com/natureblocks/open-impact-standards#schema-specification
 
-        The schema specification is formally defined in validation/templates.py.
+        The schema specification is formally defined in validation/obj_specs.py.
 
         Any validation errors are printed as standard output (if using VS Code,
         open the Output tab and select "Python Test Log" from the dropdown).
@@ -894,7 +895,9 @@ class TestSchemaValidation:
             fixtures.checkpoint(0, "depends-on-0", num_dependencies=1),
         ]
         assert (
-            schema["checkpoints"][0]["dependencies"][0]["compare"]["left"]["ref"].split(".")[0]
+            schema["checkpoints"][0]["dependencies"][0]["compare"]["left"]["ref"].split(
+                "."
+            )[0]
             == "action:{" + str(schema["actions"][0]["id"]) + "}"
         )
         schema["actions"][0]["depends_on"] = "checkpoint:{depends-on-0}"
@@ -1292,8 +1295,8 @@ class TestSchemaValidation:
         # An empty root object should yield an error for each required property
         valid_root = "{}"
         errors = validator.validate(json_string=valid_root)
-        assert len(errors) == len(templates.root_object["properties"]) - len(
-            templates.root_object["constraints"]["optional"]
+        assert len(errors) == len(obj_specs.root_object["properties"]) - len(
+            obj_specs.root_object["constraints"]["optional"]
         )
 
         # The basic_schema fixture should be valid
@@ -1427,7 +1430,7 @@ class TestSchemaValidation:
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
-    def test_template_conditionals(self):
+    def test_obj_spec_conditionals(self):
         validator = SchemaValidator()
 
         # If a checkpoint has more than one dependency,
@@ -1540,7 +1543,7 @@ class TestSchemaValidation:
         validator = SchemaValidator()
         schema = fixtures.basic_schema()
 
-        for keyword in templates.RESERVED_KEYWORDS:
+        for keyword in obj_specs.RESERVED_KEYWORDS:
             schema[keyword] = "test"
             errors = validator.validate(json_string=json.dumps(schema))
             assert len(errors) == 1
@@ -1581,8 +1584,8 @@ class TestSchemaValidation:
                 == f"root.parties[0]: expected object, got {type(invalid_array[0]).__name__}"
             )
 
-        # Arrays must conform to the specified template
-        # (in ths case, templates.party)
+        # Arrays must conform to the specified obj_spec
+        # (in ths case, obj_specs.party)
         invalid_object_arrays = [
             [{}],
             [{"name": 1}],
@@ -1606,7 +1609,7 @@ class TestSchemaValidation:
     def test_distict_array(self):
         validator = SchemaValidator()
 
-        template = {
+        obj_spec = {
             "type": "array",
             "values": {"type": "string"},
             "constraints": {
@@ -1614,11 +1617,11 @@ class TestSchemaValidation:
             },
         }
 
-        errors = validator._validate_array("none", ["a", "b", "a"], template, None)
+        errors = validator._validate_array("none", ["a", "b", "a"], obj_spec, None)
         assert len(errors) == 1
         assert errors[0] == "none: contains duplicate item(s) (values must be distinct)"
 
-        errors = validator._validate_array("none", ["a", "b", "c"], template, None)
+        errors = validator._validate_array("none", ["a", "b", "c"], obj_spec, None)
         assert not errors
 
     def test_min_length(self):
@@ -1699,21 +1702,21 @@ class TestSchemaValidation:
     def test_enum(self):
         validator = SchemaValidator()
 
-        template = {"values": ["a", "b", "c"]}
+        obj_spec = {"values": ["a", "b", "c"]}
 
         invalid_enum_values = [1, 1.0, True, None, [], {}, "test"]
         for invalid_value in invalid_enum_values:
-            errors = validator._validate_enum("none", invalid_value, template, None)
+            errors = validator._validate_enum("none", invalid_value, obj_spec, None)
             assert len(errors) == 1
             assert (
                 errors[0]
                 == f"none: invalid enum value: expected one of "
-                + str(template["values"])
+                + str(obj_spec["values"])
                 + f", got {json.dumps(invalid_value)}"
             )
 
-        for valid_value in template["values"]:
-            errors = validator._validate_enum("none", valid_value, template, None)
+        for valid_value in obj_spec["values"]:
+            errors = validator._validate_enum("none", valid_value, obj_spec, None)
             assert not errors
 
     def test_number(self):
@@ -1782,7 +1785,7 @@ class TestSchemaValidation:
             assert len(errors) == 1
             assert (
                 errors[0]
-                == f'root.parties[0].hex_code: string does not match {templates.party["properties"]["hex_code"]["pattern_description"]} pattern: {templates.party["properties"]["hex_code"]["pattern"]}'
+                == f'root.parties[0].hex_code: string does not match {obj_specs.party["properties"]["hex_code"]["pattern_description"]} pattern: {obj_specs.party["properties"]["hex_code"]["pattern"]}'
             )
 
     def test_string(self):
@@ -1807,11 +1810,11 @@ class TestSchemaValidation:
     def test_boolean(self):
         validator = SchemaValidator()
 
-        template = {"type": "boolean"}
+        obj_spec = {"type": "boolean"}
 
         invalid_booleans = [1, 1.0, "True", None, [], {}]
         for invalid_boolean in invalid_booleans:
-            errors = validator._validate_boolean("none", invalid_boolean, template)
+            errors = validator._validate_boolean("none", invalid_boolean, obj_spec)
             assert len(errors) == 1
             assert (
                 errors[0] == f"none: expected boolean, got {str(type(invalid_boolean))}"
@@ -1819,5 +1822,5 @@ class TestSchemaValidation:
 
         valid_booleans = [True, False]
         for valid_boolean in valid_booleans:
-            errors = validator._validate_boolean("none", valid_boolean, template)
+            errors = validator._validate_boolean("none", valid_boolean, obj_spec)
             assert not errors

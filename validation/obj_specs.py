@@ -37,7 +37,7 @@ root_object = {
         },
         "parties": {
             "type": "array",
-            "values": {"type": "object", "template": "party"},
+            "values": {"type": "object", "obj_spec": "party"},
             "constraints": {
                 "unique": ["id", "name"],
             },
@@ -49,14 +49,14 @@ root_object = {
             },
             "values": {
                 "type": "object",
-                "template": "object_type",
+                "obj_spec": "object_type",
             },
         },
         "object_promises": {
             "type": "array",
             "values": {
                 "type": "object",
-                "template": "object_promise",
+                "obj_spec": "object_promise",
             },
             "constraints": {
                 "unique": ["id", "name"],
@@ -66,7 +66,7 @@ root_object = {
             "type": "array",
             "values": {
                 "type": "object",
-                "template": "pipeline",  # see aggregation_pipeline.py
+                "obj_spec": "pipeline",  # see aggregation_pipeline.py
             },
             "constraints": {
                 "unique": ["object_promise"],
@@ -76,7 +76,7 @@ root_object = {
             "type": "array",
             "values": {
                 "type": "object",
-                "template": "action",
+                "obj_spec": "action",
             },
             "constraints": {
                 "unique": ["id", "milestones"],
@@ -86,7 +86,7 @@ root_object = {
             "type": "array",
             "values": {
                 "type": "object",
-                "template": "thread_group",
+                "obj_spec": "thread_group",
             },
             "constraints": {
                 "unique": ["id"],
@@ -96,7 +96,7 @@ root_object = {
             "type": "array",
             "values": {
                 "type": "object",
-                "template": "checkpoint",
+                "obj_spec": "checkpoint",
             },
             "constraints": {
                 "unique": ["id", "alias"],
@@ -233,11 +233,11 @@ dependency = {
             "properties": {
                 "left": {
                     "type": "object",
-                    "any_of_templates": ["literal_operand", "referenced_operand"],
+                    "any_of_specs": ["literal_operand", "referenced_operand"],
                 },
                 "right": {
                     "type": "object",
-                    "any_of_templates": ["literal_operand", "referenced_operand"],
+                    "any_of_specs": ["literal_operand", "referenced_operand"],
                 },
                 "operator": {
                     "type": "enum",
@@ -276,7 +276,7 @@ checkpoint = {
             "type": "array",
             "values": {
                 "type": "object",
-                "any_of_templates": ["dependency", "checkpoint_reference"],
+                "any_of_specs": ["dependency", "checkpoint_reference"],
             },
         },
         "context": {
@@ -314,7 +314,7 @@ checkpoint = {
                         "type": "array",
                         "values": {
                             "type": "object",
-                            "template": "dependency",
+                            "obj_spec": "dependency",
                         },
                         "constraints": {
                             "min_length": 1,

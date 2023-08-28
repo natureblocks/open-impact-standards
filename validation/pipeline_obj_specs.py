@@ -39,7 +39,7 @@ pipeline = {
             "type": "array",
             "values": {
                 "type": "object",
-                "template": "variable",
+                "obj_spec": "variable",
             },
             "constraints": {
                 "min_length": 1,
@@ -49,7 +49,7 @@ pipeline = {
             "type": "array",
             "values": {
                 "type": "object",
-                "template": "traverse",
+                "obj_spec": "traverse",
             },
             "constraints": {
                 "unique": ["ref"],
@@ -65,7 +65,7 @@ pipeline = {
             "type": "array",
             "values": {
                 "type": "object",
-                "template": "apply",
+                "obj_spec": "apply",
             },
         },
         "output": {
@@ -146,7 +146,7 @@ traverse = {
                     "type": "array",
                     "values": {
                         "type": "object",
-                        "template": "variable",
+                        "obj_spec": "variable",
                     },
                     "constraints": {
                         "min_length": 1,
@@ -156,7 +156,7 @@ traverse = {
                     "type": "array",
                     "values": {
                         "type": "object",
-                        "template": "traverse",
+                        "obj_spec": "traverse",
                     },
                     "constraints": {
                         "unique": ["ref"],
@@ -172,7 +172,7 @@ traverse = {
                     "type": "array",
                     "values": {
                         "type": "object",
-                        "template": "apply",
+                        "obj_spec": "apply",
                     },
                 },
             },
@@ -229,7 +229,7 @@ apply = {
                     "type": "array",
                     "values": {
                         "type": "object",
-                        "any_of_templates": ["filter_comparison", "nested_filter_query"],
+                        "any_of_specs": ["filter_comparison", "nested_filter_query"],
                     },
                     "constraints": {
                         "min_length": 1,
@@ -286,7 +286,7 @@ nested_filter_query = {
             "type": "array",
             "values": {
                 "type": "object",
-                "any_of_templates": ["filter_comparison", "nested_filter_query"],
+                "any_of_specs": ["filter_comparison", "nested_filter_query"],
             },
             "constraints": {
                 "min_length": 2,
@@ -310,7 +310,7 @@ filter_comparison = {
                 },
                 {
                     "type": "object",
-                    "template": "contextual_ref",
+                    "obj_spec": "contextual_ref",
                 },
                 {"type": "scalar"},
             ],
@@ -327,7 +327,7 @@ filter_comparison = {
                 },
                 {
                     "type": "object",
-                    "template": "contextual_ref",
+                    "obj_spec": "contextual_ref",
                 },
                 {"type": "scalar"},
             ],

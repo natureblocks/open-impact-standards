@@ -1,14 +1,14 @@
 import re
-from validation import templates, oisql, pipeline_templates, patterns
+from validation import obj_specs, oisql, pipeline_obj_specs, patterns
 from enums import ref_types
 
 
-def has_reference_to_template_object_type(obj, key, template_object_type):
+def has_reference_to_template_entity(obj, key, entity_obj_name):
     return (
         isinstance(obj, dict)
         and key in obj
         and is_global_ref(obj[key])
-        and parse_ref_type(obj[key]) == template_object_type
+        and parse_ref_type(obj[key]) == entity_obj_name
     )
 
 
@@ -65,15 +65,15 @@ def parse_ref_type(value):
     return value.split(":")[0]
 
 
-def get_template(template_name):
-    if hasattr(templates, template_name):
-        return getattr(templates, template_name)
-    elif hasattr(oisql, template_name):
-        return getattr(oisql, template_name)
-    elif hasattr(pipeline_templates, template_name):
-        return getattr(pipeline_templates, template_name)
+def get_obj_spec(obj_spec_name):
+    if hasattr(obj_specs, obj_spec_name):
+        return getattr(obj_specs, obj_spec_name)
+    elif hasattr(oisql, obj_spec_name):
+        return getattr(oisql, obj_spec_name)
+    elif hasattr(pipeline_obj_specs, obj_spec_name):
+        return getattr(pipeline_obj_specs, obj_spec_name)
 
-    raise Exception(f"Template not found: {template_name}")
+    raise Exception(f"obj_spec not found: {obj_spec_name}")
 
 
 def field_type_from_python_type_name(python_type_name):
