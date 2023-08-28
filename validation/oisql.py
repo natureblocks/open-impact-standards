@@ -25,7 +25,7 @@ condition = {
         },
         "value": {
             "type": "object",
-            "obj_spec": "query",
+            "obj_spec_name": "query",
         },
     },
 }

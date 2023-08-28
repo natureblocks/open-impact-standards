@@ -37,7 +37,7 @@ root_object = {
         },
         "parties": {
             "type": "array",
-            "values": {"type": "object", "obj_spec": "party"},
+            "values": {"type": "object", "obj_spec_name": "party"},
             "constraints": {
                 "unique": ["id", "name"],
             },
@@ -49,14 +49,14 @@ root_object = {
             },
             "values": {
                 "type": "object",
-                "obj_spec": "object_type",
+                "obj_spec_name": "object_type",
             },
         },
         "object_promises": {
             "type": "array",
             "values": {
                 "type": "object",
-                "obj_spec": "object_promise",
+                "obj_spec_name": "object_promise",
             },
             "constraints": {
                 "unique": ["id", "name"],
@@ -66,7 +66,7 @@ root_object = {
             "type": "array",
             "values": {
                 "type": "object",
-                "obj_spec": "pipeline",  # see aggregation_pipeline.py
+                "obj_spec_name": "pipeline",  # see aggregation_pipeline.py
             },
             "constraints": {
                 "unique": ["object_promise"],
@@ -76,7 +76,7 @@ root_object = {
             "type": "array",
             "values": {
                 "type": "object",
-                "obj_spec": "action",
+                "obj_spec_name": "action",
             },
             "constraints": {
                 "unique": ["id", "milestones"],
@@ -86,7 +86,7 @@ root_object = {
             "type": "array",
             "values": {
                 "type": "object",
-                "obj_spec": "thread_group",
+                "obj_spec_name": "thread_group",
             },
             "constraints": {
                 "unique": ["id"],
@@ -96,7 +96,7 @@ root_object = {
             "type": "array",
             "values": {
                 "type": "object",
-                "obj_spec": "checkpoint",
+                "obj_spec_name": "checkpoint",
             },
             "constraints": {
                 "unique": ["id", "alias"],
@@ -314,7 +314,7 @@ checkpoint = {
                         "type": "array",
                         "values": {
                             "type": "object",
-                            "obj_spec": "dependency",
+                            "obj_spec_name": "dependency",
                         },
                         "constraints": {
                             "min_length": 1,

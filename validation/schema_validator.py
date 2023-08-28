@@ -2508,8 +2508,8 @@ class SchemaValidator:
         return ([], modified_obj_spec)
 
     def _resolve_obj_spec(self, field, obj_spec):
-        if "obj_spec" in obj_spec:
-            obj_spec_name = obj_spec["obj_spec"]
+        if "obj_spec_name" in obj_spec:
+            obj_spec_name = obj_spec["obj_spec_name"]
             referenced_obj_spec = utils.get_obj_spec(obj_spec_name)
 
             if (
@@ -3331,8 +3331,8 @@ class SchemaValidator:
     def _bypass_validation_of_object(self, obj_spec, field):
         if (
             isinstance(field, dict)
-            and "obj_spec" in obj_spec
-            and obj_spec["obj_spec"] == "checkpoint"
+            and "obj_spec_name" in obj_spec
+            and obj_spec["obj_spec_name"] == "checkpoint"
             and "alias" in field
             and field["alias"] in self._psuedo_checkpoints
         ):

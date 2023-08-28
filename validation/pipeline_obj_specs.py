@@ -39,7 +39,7 @@ pipeline = {
             "type": "array",
             "values": {
                 "type": "object",
-                "obj_spec": "variable",
+                "obj_spec_name": "variable",
             },
             "constraints": {
                 "min_length": 1,
@@ -49,7 +49,7 @@ pipeline = {
             "type": "array",
             "values": {
                 "type": "object",
-                "obj_spec": "traverse",
+                "obj_spec_name": "traverse",
             },
             "constraints": {
                 "unique": ["ref"],
@@ -65,7 +65,7 @@ pipeline = {
             "type": "array",
             "values": {
                 "type": "object",
-                "obj_spec": "apply",
+                "obj_spec_name": "apply",
             },
         },
         "output": {
@@ -146,7 +146,7 @@ traverse = {
                     "type": "array",
                     "values": {
                         "type": "object",
-                        "obj_spec": "variable",
+                        "obj_spec_name": "variable",
                     },
                     "constraints": {
                         "min_length": 1,
@@ -156,7 +156,7 @@ traverse = {
                     "type": "array",
                     "values": {
                         "type": "object",
-                        "obj_spec": "traverse",
+                        "obj_spec_name": "traverse",
                     },
                     "constraints": {
                         "unique": ["ref"],
@@ -172,7 +172,7 @@ traverse = {
                     "type": "array",
                     "values": {
                         "type": "object",
-                        "obj_spec": "apply",
+                        "obj_spec_name": "apply",
                     },
                 },
             },
@@ -310,7 +310,7 @@ filter_comparison = {
                 },
                 {
                     "type": "object",
-                    "obj_spec": "contextual_ref",
+                    "obj_spec_name": "contextual_ref",
                 },
                 {"type": "scalar"},
             ],
@@ -327,7 +327,7 @@ filter_comparison = {
                 },
                 {
                     "type": "object",
-                    "obj_spec": "contextual_ref",
+                    "obj_spec_name": "contextual_ref",
                 },
                 {"type": "scalar"},
             ],
