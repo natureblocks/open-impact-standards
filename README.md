@@ -203,6 +203,8 @@ type Party {
 ````
 
 ### Pipelines
+- A pipeline's `object_promise` references the promised object instance to which the `Pipeline.output`s will write. The pipeline inherits its threaded (or non-threaded) context from the referenced `ObjectPromise`. When a pipeline inherits a threaded context, in-scope `thread_variable`s can be referenced within the pipeline where indicated by this specification.
+- The runtime execution order of a pipeline is as follows: initialize `variables`, then `traverse`, then `apply`, then `output`. The execution order is the same within `PipelineTraversal`s (minus `output` which is not part of traversals). Nested traversals are always executed before the `apply` step.
 __Pipeline:__
 ````
 type Pipeline {
@@ -210,15 +212,12 @@ type Pipeline {
     variables: [PipelineVariable],
     traverse?: [PipelineTraversal],
     apply?: [PipelineApplication],
-    output: [
-        {
-            from: variable,
-            to: string
-        }
-    ]
+    output: [PipelineOutput]
 }
 ````
 __PipelineVariable__:
+- Declaration of a variable to be used within a pipeline. This specification indicates the `pipeline_variable` value type wherever a `PipelineVariable.name` can be referenced. `reference_path(pipeline_variable)` indicates that the value can be a path beginning with a `PipelineVariable.name`, provided that the `PipelineVariable.type` is `"EDGE"` (or in some special cases, `"EDGE_COLLECTION"`).
+- An `initial` value must be provided for a `PipelineVariable`, and it must match the specified `type`.
 ````
 type PipelineVariable {
     name: string,
@@ -227,9 +226,12 @@ type PipelineVariable {
 }
 ````
 __PipelineTraversal__:
+- A `PipelineTraversal` loops over the value of the `ref` and executes the specified pipeline operations `foreach` item in the referenced list (`ref` must evaluate to a list type).
+- A traversal loop variable is declared by `PipelineTraversal.foreach.as`. This variable can be referenced within the traversal and any nested traversals.
+- `PipelineApplications` within `PipelineTraversal`s can apply `to` `pipeline_variable`s that were defined in parent scopes.
 ````
 type PipelineTraversal {
-    ref: reference_path(ObjectPromise) | variable,
+    ref: reference_path(ObjectPromise | pipeline_variable | thread_variable),
     foreach: {
         as: string,
         variables: [PipelineVariable],
@@ -239,43 +241,60 @@ type PipelineTraversal {
 }
 ````
 __PipelineApplication__:
+- The `from` value can be aggregated using one of `aggregate`, `filter`, `sort`, or `select`, and the resulting value is applied `to` the referenced `pipeline_variable`. The `from` value must evaluate to a list type if `aggregate`, `filter`, or `sort` are specified. Note that a `PipelineApplication` could omit the aforementioned 4 properties altogether and simply apply `from` a reference `to` a variable.
+- It must be valid to use the `method` to apply the aggregated value to the `to` type.
+- `PipelineTraversal` loop variables (defined by `PipelineTraversal.foreach.as`) cannot be referenced by `PipelineApplication.to`.
 ````
 type PipelineApplication {
-    from: reference_path(ObjectPromise) | variable,
-    to: pipeline_variable, // cannot be a traversal loop variable
-    method: ApplicationMethod,
+    from: reference_path(ObjectPromise | pipeline_variable | thread_variable),
     
-    // mutually exclusive properties:
-    aggregate: {
+    // Begin mutually exclusive properties
+    aggregate?: {
         field: string,
         operator: AggregationOperator
     },
-    filter: {
+    filter?: {
         where: [FilterComparison | NestedFilter],
         gate_type?*: GateType
     },
-    sort: [
+    sort?: [
         {
             field: string,
             order: "ASC" | "DESC"
         }
     ],
-    select: string
+    select?: string,
+    // End mutually exclusive properties
+
+    method: ApplicationMethod,
+    to: pipeline_variable
 }
 ````
 __FilterComparison__:
+- Since a `PipelineApplication.filter` is applied to each item in a list, `filter_variable` refers to the individual item being compared. The `filter_variable` source is `PipelineApplication.from`.
+- Either `left`, `right`, or both must be `filter_variable` references.
 ````
 type FilterComparison {
-    left: filter_ref | reference_path(ObjectPromise) | variable_path | scalar,
+    left: reference_path(filter_variable | ObjectPromise | pipeline_variable | thread_variable) | scalar,
     operator: ComparisonOperator,
-    right: filter_ref | reference_path(ObjectPromise) | variable_path | scalar
+    right: reference_path(filter_variable | ObjectPromise | pipeline_variable | thread_variable) | scalar
 }
 ````
 __NestedFilter__:
+- Facilitates complex logic gate combinations within `PipelineApplication.filter`s.
 ````
 type NestedFilter {
     where: [FilterComparison | NestedFilter],
     gate_type?*: GateType
+}
+````
+__PipelineOutput__:
+- Output values must come `from` a `pipeline_variable` defined by the same `Pipeline`.
+- Pipelines output values `to` attributes on the referenced `Pipeline.object_promise`.
+````
+type PipelineOutput {
+    from: pipeline_variable,
+    to: string
 }
 ````
 
