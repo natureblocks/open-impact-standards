@@ -787,6 +787,115 @@ class TestSchemaValidation:
                     f"root.actions[{action_idx}].operation.default_edges (action id: {action_idx}): default edges are not supported for EDIT operations",
                 }.issubset(errors)
 
+        # test operation.appends_objects_to
+        schema = fixtures.basic_schema_with_actions(3)
+
+        # appends_objects_to must reference an ancestor's object promise
+        schema["actions"][1]["operation"] = {
+            "exclude": None,
+            "appends_objects_to": "object_promise:{0}.objects",
+        }
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.actions[1].operation.appends_objects_to (action id: 1): the referenced object promise is not fulfilled by an ancestor of this action"
+            in errors
+        )
+        schema["checkpoints"] = [
+            fixtures.checkpoint(0, "depends-on-0", num_dependencies=1),
+        ]
+        schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-0}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # object type of object promise must match the object type of the referenced edge collection
+        schema["object_types"]["SomeOtherType"] = {
+            "some_field": {"field_type": "STRING"}
+        }
+        schema["object_types"]["Placeholder"]["some_other_objects"] = {
+            "field_type": "EDGE_COLLECTION",
+            "object_type": "SomeOtherType",
+        }
+        invalid_fields = ["some_other_objects", "edge", "numbers", "name"]
+        for field_name in invalid_fields:
+            schema["actions"][1]["operation"]["appends_objects_to"] = (
+                "object_promise:{0}." + field_name
+            )
+            errors = validator.validate(json_string=json.dumps(schema))
+            assert (
+                "root.actions[1].operation.appends_objects_to (action id: 1): must reference an edge collection with the same object_type as this action's object promise"
+                in errors
+            )
+
+        schema["actions"][1]["operation"][
+            "appends_objects_to"
+        ] = "object_promise:{0}.objects"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # edge collection cannot be included in any other operation
+        ways_to_include_edge_collection = [
+            {"include": ["objects"]},
+            {"exclude": ["name"]},
+            {"exclude": None},
+        ]
+        for operation in ways_to_include_edge_collection:
+            schema["actions"][0]["operation"] = operation
+            errors = validator.validate(json_string=json.dumps(schema))
+            assert (
+                "root.actions[1].operation.appends_objects_to (action id: 1): the referenced edge collection cannot be included in any other action's operation"
+                in errors
+            )
+
+        schema["actions"][0]["operation"] = {"include": ["name"]}
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # operation type must be CREATE
+        schema["actions"][2]["object_promise"] = "object_promise:{1}"
+        schema["object_promises"].pop()  # unused
+        schema["checkpoints"].append(
+            fixtures.checkpoint(1, "depends-on-2", num_dependencies=1)
+        )
+        schema["checkpoints"][-1]["dependencies"][0]["compare"]["left"][
+            "ref"
+        ] = "action:{2}.object_promise.completed"
+        schema["checkpoints"].append(
+            {
+                "id": 2,
+                "description": "test",
+                "alias": "depends-on-0-and-2",
+                "dependencies": [
+                    {"checkpoint": "checkpoint:{depends-on-0}"},
+                    {"checkpoint": "checkpoint:{depends-on-2}"},
+                ],
+                "gate_type": "AND",
+            }
+        )
+        schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-0-and-2}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.actions[1].operation.appends_objects_to (action id: 1): this property is not supported for EDIT operations."
+            in errors
+        )
+
+        # an action whose operation specifies appends_objects_to
+        # cannot be referenced by any checkpoint dependencies
+        schema["checkpoints"].pop()
+        schema["checkpoints"].pop()
+        schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-0}"
+        schema["checkpoints"].append(
+            fixtures.checkpoint(1, "depends-on-1", num_dependencies=1)
+        )
+        schema["checkpoints"][-1]["dependencies"][0]["compare"]["left"][
+            "ref"
+        ] = "action:{1}.object_promise.completed"
+        schema["actions"][2]["depends_on"] = "checkpoint:{depends-on-1}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.actions[1].operation.appends_objects_to (action id: 1): if this property is specified, the parent action cannot be included in any checkpoint dependencies"
+            in errors
+        )
+
     def test_action_operation_context(self):
         validator = SchemaValidator()
 

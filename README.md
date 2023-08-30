@@ -78,6 +78,7 @@ __Operation:__
 - `include` and `exclude` are mutually exclusive.
 - An `Action` may specify 0 or more `Milestone` values, but a given `Milestone` value may not appear on `Action` objects more than once per schema.
 - If the parent `Action` fulfills the object promise (is the first action in the state map to reference that specific `ObjectPromise`, and will therefore trigger the creation of the object instance), then `default_values` and `default_edges` can optionally be specified. Defaults are not supported for edge collections.
+- If the parent `Action` fulfills the object promise and is never referenced by a checkpoint dependency, `appends_objects_to` can be used to reference an edge collection to which new instances of the object promise will be automatically appended. This mechanism is useful for manually spawning threads within a `ThreadGroup` that is set to spawn a new thread for each item in the referenced edge collection.
 - If the parent `Action` DOES NOT fulfill the object promise (an ancestor `Action` within the state map fulfills the promise), its `operation` is inferred to be editing an already-instantiated object. In that case, `default_fields` and `default_edges` shall not be specified by the `operation`.
 ````
 type Operation {
@@ -90,7 +91,8 @@ type Operation {
     },
     default_edges?: {
         <attribute>: reference(Action)
-    }
+    },
+    appends_objects_to?*: reference_path(ObjectPromise)
 }
 ````
 __Checkpoint:__

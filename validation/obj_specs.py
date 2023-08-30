@@ -393,10 +393,14 @@ action = {
                         "ref_types": ["object_promise"],
                     },
                 },
+                "appends_objects_to": {
+                    "type": "ref",
+                    "ref_types": ["object_promise"],
+                }
             },
             "constraints": {
                 "mutually_exclusive": ["include", "exclude"],
-                "optional": ["default_values", "default_edges"],
+                "optional": ["default_values", "default_edges", "appends_objects_to"],
             },
         },
         "milestones": {

@@ -515,6 +515,59 @@ class SchemaValidator:
                                     errors += [
                                         f"{self._context(f'{path}.operation.default_edges.{key}')}: an ancestor of the action must fulfill the referenced object promise: {json.dumps(val)}"
                                     ]
+
+                if utils.has_reference_to_template_entity(
+                    operation, "appends_objects_to", "object_promise"
+                ):
+                    appends_to_object_promise = self._resolve_global_ref(
+                        operation["appends_objects_to"]
+                    )
+                    if not self._object_promise_fulfilled_by_ancestor(
+                        path, action, appends_to_object_promise
+                    ):
+                        errors += [
+                            f"{self._context(f'{path}.operation.appends_objects_to')}: the referenced object promise is not fulfilled by an ancestor of this action"
+                        ]
+
+                    split_ref = operation["appends_objects_to"].split(".")
+                    edge_collection_details = (
+                        self._resolve_type_from_object_promise_ref(
+                            global_ref=split_ref[0],
+                            path_from_ref=split_ref[1:],
+                            resolution_context_thread_id=action["context"]
+                            if utils.has_reference_to_template_entity(
+                                action, "context", "thread"
+                            )
+                            else None,
+                        )
+                    )
+                    if (
+                        not isinstance(edge_collection_details, FieldTypeDetails)
+                        or edge_collection_details.item_type != "OBJECT"
+                        or not edge_collection_details.is_list
+                        or edge_collection_details.item_tag
+                        != object_promise["object_type"]
+                    ):
+                        errors += [
+                            f"{self._context(f'{path}.operation.appends_objects_to')}: must reference an edge collection with the same object_type as this action's object promise"
+                        ]
+
+                    edge_collection_key = operation["appends_objects_to"].split(".")[-1]
+                    appends_to_object_promise_id = str(appends_to_object_promise["id"])
+                    if (
+                        "id" in appends_to_object_promise
+                        and appends_to_object_promise_id in self._settable_fields
+                        and edge_collection_key
+                        in self._settable_fields[appends_to_object_promise_id]
+                    ):
+                        errors += [
+                            f"{self._context(f'{path}.operation.appends_objects_to')}: the referenced edge collection cannot be included in any other action's operation"
+                        ]
+
+                    if str(action["id"]) in self._dependee_action_ids:
+                        errors += [
+                            f"{self._context(f'{path}.operation.appends_objects_to')}: if this property is specified, the parent action cannot be included in any checkpoint dependencies"
+                        ]
             else:
                 # EDIT operation
                 if "default_values" in operation:
@@ -524,6 +577,10 @@ class SchemaValidator:
                 if "default_edges" in operation:
                     errors += [
                         f"{self._context(f'{path}.operation.default_edges')}: default edges are not supported for EDIT operations"
+                    ]
+                if "appends_objects_to" in operation:
+                    errors += [
+                        f"{self._context(f'{path}.operation.appends_objects_to')}: this property is not supported for EDIT operations."
                     ]
 
                 if (
@@ -612,13 +669,6 @@ class SchemaValidator:
                     descendant_id
                 )  # prevent circular dependency false positive
 
-        def action_id_from_dependency_ref(dependency, left_or_right):
-            if not utils.has_reference_to_template_entity(
-                dependency["compare"][left_or_right], "ref", "action"
-            ):
-                return None
-            return utils.parse_ref_id(dependency["compare"][left_or_right]["ref"])
-
         def validate_has_ancestor_recursive(checkpoint_alias, visited_checkpoints):
             if checkpoint_alias is None or checkpoint_alias in visited_checkpoints:
                 return error
@@ -633,8 +683,8 @@ class SchemaValidator:
             for dependency in checkpoint["dependencies"]:
                 if "compare" in dependency:
                     for referenced_action_id in [
-                        action_id_from_dependency_ref(dependency, "left"),
-                        action_id_from_dependency_ref(dependency, "right"),
+                        utils.action_id_from_dependency_ref(dependency, "left"),
+                        utils.action_id_from_dependency_ref(dependency, "right"),
                     ]:
                         if ancestor_id is not None:
                             if referenced_action_id == ancestor_id:
@@ -673,11 +723,15 @@ class SchemaValidator:
                                 return []
 
                 elif "checkpoint" in dependency:
-                    if utils.has_reference_to_template_entity(
-                        dependency, "checkpoint", "checkpoint"
-                    ) and validate_has_ancestor_recursive(
-                        utils.parse_ref_id(dependency["checkpoint"]),
-                        visited_checkpoints,
+                    if (
+                        utils.has_reference_to_template_entity(
+                            dependency, "checkpoint", "checkpoint"
+                        )
+                        and validate_has_ancestor_recursive(
+                            utils.parse_ref_id(dependency["checkpoint"]),
+                            visited_checkpoints,
+                        )
+                        == []
                     ):
                         return []
 
@@ -2788,6 +2842,7 @@ class SchemaValidator:
 
         self._action_checkpoints = {}
         self._checkpoints = {}
+        self._dependee_action_ids = set()
         self._thread_checkpoints = {}
         self._threaded_action_ids = []
         self._thread_groups = {}
@@ -2961,8 +3016,15 @@ class SchemaValidator:
 
             if "dependencies" in checkpoint:
                 for dependency in checkpoint["dependencies"]:
-                    if "checkpoint" in dependency and is_global_ref(
-                        dependency["checkpoint"]
+                    if "compare" in dependency:
+                        for side in ["left", "right"]:
+                            dependee_action_id = utils.action_id_from_dependency_ref(
+                                dependency, side
+                            )
+                            if dependee_action_id is not None:
+                                self._dependee_action_ids.add(dependee_action_id)
+                    elif utils.has_reference_to_template_entity(
+                        dependency, "checkpoint", "checkpoint"
                     ):
                         alias = utils.parse_ref_id(dependency["checkpoint"])
                         nested_checkpoints.append(alias)
@@ -3000,7 +3062,7 @@ class SchemaValidator:
                         path="",
                         descendant_id=action_id,
                         descendant_type="action",
-                        ancestor_ids=action_ids,
+                        ancestor_ids=copy.deepcopy(action_ids),
                     )
                     != []
                 ):
@@ -3082,7 +3144,11 @@ class SchemaValidator:
 
                 elif "checkpoint" in dependency:
                     # CheckpointReference
-                    alias = utils.parse_ref_id(dependency["checkpoint"])
+                    try:
+                        alias = utils.parse_ref_id(dependency["checkpoint"])
+                    except:
+                        return []
+
                     if alias not in self._checkpoints:
                         # CheckpointReference is invalid -- allow validation to fail elsewhere
                         return []

@@ -65,6 +65,20 @@ def parse_ref_type(value):
     return value.split(":")[0]
 
 
+def action_id_from_dependency_ref(dependency, left_or_right):
+    if (
+        "compare" not in dependency
+        or left_or_right not in dependency["compare"]
+        or "ref" not in dependency["compare"][left_or_right]
+        or not has_reference_to_template_entity(
+            dependency["compare"][left_or_right], "ref", "action"
+        )
+    ):
+        return None
+
+    return parse_ref_id(dependency["compare"][left_or_right]["ref"])
+
+
 def get_obj_spec(obj_spec_name):
     if hasattr(obj_specs, obj_spec_name):
         return getattr(obj_specs, obj_spec_name)
