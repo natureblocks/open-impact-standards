@@ -202,6 +202,83 @@ type Party {
 }
 ````
 
+### Pipelines
+__Pipeline:__
+````
+type Pipeline {
+    object_promise: reference(ObjectPromise),
+    variables: [PipelineVariable],
+    traverse?: [PipelineTraversal],
+    apply?: [PipelineApplication],
+    output: [
+        {
+            from: variable,
+            to: string
+        }
+    ]
+}
+````
+__PipelineVariable__:
+````
+type PipelineVariable {
+    name: string,
+    type: FieldType | "EDGE" | "EDGE_COLLECTION",
+    initial: scalar? | [scalar]
+}
+````
+__PipelineTraversal__:
+````
+type PipelineTraversal {
+    ref: reference_path(ObjectPromise) | variable,
+    foreach: {
+        as: string,
+        variables: [PipelineVariable],
+        traverse: [Pipelinetraversal],
+        apply: [PipelineApplication]
+    }
+}
+````
+__PipelineApplication__:
+````
+type PipelineApplication {
+    from: reference_path(ObjectPromise) | variable,
+    to: pipeline_variable, // cannot be a traversal loop variable
+    method: ApplicationMethod,
+    
+    // mutually exclusive properties:
+    aggregate: {
+        field: string,
+        operator: AggregationOperator
+    },
+    filter: {
+        where: [FilterComparison | NestedFilter],
+        gate_type?*: GateType
+    },
+    sort: [
+        {
+            field: string,
+            order: "ASC" | "DESC"
+        }
+    ],
+    select: string
+}
+````
+__FilterComparison__:
+````
+type FilterComparison {
+    left: filter_ref | reference_path(ObjectPromise) | variable_path | scalar,
+    operator: ComparisonOperator,
+    right: filter_ref | reference_path(ObjectPromise) | variable_path | scalar
+}
+````
+__NestedFilter__:
+````
+type NestedFilter {
+    where: [FilterComparison | NestedFilter],
+    gate_type?*: GateType
+}
+````
+
 ### Enumeration Types
 
 __FieldType enumeration:__
@@ -253,7 +330,37 @@ enum ComparisonOperator {
     "CONTAINS_ANY_OF",
     "CONTAINS_NONE_OF"
     "IS_SUBSET_OF",
-    "IS_SUPERSET_OF",
+    "IS_SUPERSET_OF"
+}
+````
+
+__ApplicationMethod enumeration:__
+````
+enum ApplicationMethod {
+    "ADD",
+    "SUBTRACT",
+    "MULTIPLY",
+    "DIVIDE",
+    "APPEND",
+    "PREPEND",
+    "CONCAT",
+    "SELECT",
+    "SET"
+}
+````
+
+__AggregationOperator enumeration:__
+````
+enum AggregationOperator {
+    "AVERAGE",
+    "COUNT",
+    "MAX",
+    "MIN",
+    "SUM",
+    "FIRST",
+    "LAST",
+    "AND",
+    "OR"
 }
 ````
 
