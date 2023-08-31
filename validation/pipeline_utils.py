@@ -71,7 +71,7 @@ def determine_right_operand_type(
     ref_type_details,
     pipeline_scope,
     schema_validator,
-    resolution_context_thread_id,
+    resolution_context_thread_group_id,
 ):
     if "aggregate" in operation:
         field_to_aggregate = operation["aggregate"]["field"]
@@ -193,7 +193,7 @@ def determine_right_operand_type(
                             path,
                             ref=operand["ref"],
                             pipeline_scope=pipeline_scope,
-                            resolution_context_thread_id=resolution_context_thread_id,
+                            resolution_context_thread_group_id=resolution_context_thread_group_id,
                         )
                 else:
                     # scalar

@@ -850,6 +850,56 @@ class TestSchemaValidation:
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
+        # appender context must match appendee context
+        schema["thread_groups"] = [
+            fixtures.thread_group(0, "depends-on-0"),
+        ]
+        # threaded appender, non-threaded appendee
+        schema["actions"][1]["context"] = "thread_group:{0}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.actions[1].operation.appends_objects_to (action id: 1): the action's context must match the context of the object promise referenced by this property (thread_group:{0} != None)"
+            in errors
+        )
+
+        # both threaded, same context (should be valid)
+        schema["actions"][1]["operation"][
+            "appends_objects_to"
+        ] = "object_promise:{2}.objects"
+        schema["actions"][2]["context"] = "thread_group:{0}"
+        schema["checkpoints"].append(
+            fixtures.checkpoint(1, "depends-on-2", num_dependencies=1)
+        )
+        schema["checkpoints"][1]["dependencies"][0]["compare"]["left"][
+            "ref"
+        ] = "action:{2}.object_promise.completed"
+        schema["checkpoints"][1]["context"] = "thread_group:{0}"
+        schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-2}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # both threaded, different context
+        schema["thread_groups"].append(fixtures.thread_group(1, "depends-on-2"))
+        schema["thread_groups"][1]["context"] = "thread_group:{0}"
+        schema["thread_groups"][1]["spawn"]["as"] = "$another_number"
+        del schema["actions"][1]["depends_on"]
+        schema["actions"][1]["context"] = "thread_group:{1}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.actions[1].operation.appends_objects_to (action id: 1): the action's context must match the context of the object promise referenced by this property (thread_group:{1} != thread_group:{0})"
+            in errors
+        )
+
+        # reset
+        schema["thread_groups"] = []
+        del schema["checkpoints"][1]
+        del schema["actions"][1]["context"]
+        del schema["actions"][2]["context"]
+        schema["actions"][1]["operation"]["appends_objects_to"] = "object_promise:{0}.objects"
+        schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-0}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
         # operation type must be CREATE
         schema["actions"][2]["object_promise"] = "object_promise:{1}"
         schema["object_promises"].pop()  # unused

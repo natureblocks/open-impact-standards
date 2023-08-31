@@ -1,7 +1,7 @@
 from enums import field_types, gate_types, comparison_operators
 from validation import patterns
 
-operation_methods = [
+application_methods = [
     "ADD",
     "SUBTRACT",
     "MULTIPLY",
@@ -126,7 +126,7 @@ traverse = {
             "types": [
                 {
                     "type": "ref",
-                    "ref_types": ["object_promise", "thread_group"],
+                    "ref_types": ["object_promise"],
                 },
                 {
                     "type": "string",
@@ -210,7 +210,7 @@ apply = {
         },
         "method": {
             "type": "enum",
-            "values": operation_methods,
+            "values": application_methods,
         },
         "aggregate": {
             "type": "object",

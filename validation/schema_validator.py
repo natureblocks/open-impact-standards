@@ -534,9 +534,11 @@ class SchemaValidator:
                         self._resolve_type_from_object_promise_ref(
                             global_ref=split_ref[0],
                             path_from_ref=split_ref[1:],
-                            resolution_context_thread_id=action["context"]
+                            resolution_context_thread_group_id=utils.parse_ref_id(
+                                action["context"]
+                            )
                             if utils.has_reference_to_template_entity(
-                                action, "context", "thread"
+                                action, "context", "thread_group"
                             )
                             else None,
                         )
@@ -568,6 +570,21 @@ class SchemaValidator:
                         errors += [
                             f"{self._context(f'{path}.operation.appends_objects_to')}: if this property is specified, the parent action cannot be included in any checkpoint dependencies"
                         ]
+
+                    # appender and appendee must have the same context
+                    appends_from_context = (
+                        action["context"] if "context" in action else None
+                    )
+                    appends_to_context = (
+                        self._object_promise_contexts[appends_to_object_promise_id]
+                        if appends_to_object_promise_id in self._object_promise_contexts
+                        else None
+                    )
+                    if appends_from_context != appends_to_context:
+                        errors += [
+                            f"{self._context(f'{path}.operation.appends_objects_to')}: the action's context must match the context of the object promise referenced by this property ({appends_from_context} != {appends_to_context})"
+                        ]
+
             else:
                 # EDIT operation
                 if "default_values" in operation:
@@ -650,8 +667,24 @@ class SchemaValidator:
         ]
 
         descendant_id = str(descendant_id)
-        if (
-            descendant_id not in self._action_checkpoints
+        if descendant_type == "action":
+            if descendant_id not in self._action_checkpoints:
+                # does the action have an implicit checkpoint?
+                action = self._resolve_global_ref("action:{" + descendant_id + "}")
+                if not utils.has_reference_to_template_entity(
+                    action, "context", "thread_group"
+                ):
+                    return error
+
+                thread_id = utils.parse_ref_id(action["context"])
+                if thread_id not in self._thread_checkpoints:
+                    return error
+                else:
+                    # ancestors of the thread group are implicit ancestors of the action
+                    descendant_type = "thread_group"
+                    descendant_id = thread_id
+        elif (
+            descendant_type == "thread_group"
             and descendant_id not in self._thread_checkpoints
         ):
             return error
@@ -775,20 +808,20 @@ class SchemaValidator:
 
         def extract_field_type(path, operand_object):
             if "ref" in operand_object:
-                resolution_context_thread_id = None
+                resolution_context_thread_group_id = None
                 # resolve checkpoint context from path
                 if re.match("^root\.checkpoints\[\d+\]", ".".join(path.split(".")[:2])):
                     checkpoint = self._get_field(path.split(".")[:2])
                     if utils.has_reference_to_template_entity(
                         checkpoint, "context", "thread_group"
                     ):
-                        resolution_context_thread_id = utils.parse_ref_id(
+                        resolution_context_thread_group_id = utils.parse_ref_id(
                             checkpoint["context"]
                         )
 
                 if is_global_ref(operand_object["ref"]):
                     type_details = self._resolve_type_from_global_ref(
-                        operand_object["ref"], resolution_context_thread_id
+                        operand_object["ref"], resolution_context_thread_group_id
                     )
                 elif is_variable(operand_object["ref"]):
                     # thread variable
@@ -1050,7 +1083,7 @@ class SchemaValidator:
                 if errors:
                     return errors
             try:
-                resolution_context_thread_id = (
+                resolution_context_thread_group_id = (
                     utils.parse_ref_id(thread["context"])
                     if utils.has_reference_to_template_entity(
                         thread, "context", "thread_group"
@@ -1058,7 +1091,7 @@ class SchemaValidator:
                     else None
                 )
                 from_object_type = self._resolve_type_from_global_ref(
-                    spawn["from"], resolution_context_thread_id
+                    spawn["from"], resolution_context_thread_group_id
                 )
             except Exception as e:
                 return [f"{self._context(path)}.spawn: {str(e)}"]
@@ -1435,7 +1468,7 @@ class SchemaValidator:
                     return local_input_error
 
                 ref_type_details = self._resolve_type_from_global_ref(
-                    ref, resolution_context_thread_id=pipeline.get_thread_id()
+                    ref, resolution_context_thread_group_id=pipeline.get_thread_id()
                 )
 
                 if ref_type_details is None:
@@ -1542,7 +1575,7 @@ class SchemaValidator:
         path,
         ref,
         pipeline_scope,
-        resolution_context_thread_id=None,
+        resolution_context_thread_group_id=None,
         var_is_being_used=False,
     ):
         from_path = ref.split(".")
@@ -1583,7 +1616,9 @@ class SchemaValidator:
         elif is_global_ref(ref) and utils.parse_ref_type(ref) == "object_promise":
             # global ref
 
-            return self._resolve_type_from_global_ref(ref, resolution_context_thread_id)
+            return self._resolve_type_from_global_ref(
+                ref, resolution_context_thread_group_id
+            )
         else:
             # pattern validation will have already caught this
             return None
@@ -1621,7 +1656,7 @@ class SchemaValidator:
                 path,
                 ref=apply["from"],
                 pipeline_scope=pipeline_scope,
-                resolution_context_thread_id=pipeline.get_thread_id(),
+                resolution_context_thread_group_id=pipeline.get_thread_id(),
                 var_is_being_used=True,
             )
         except Exception as e:
@@ -1673,7 +1708,7 @@ class SchemaValidator:
                 apply,
                 ref_type_details,
                 pipeline_scope,
-                resolution_context_thread_id=pipeline.get_thread_id(),
+                resolution_context_thread_group_id=pipeline.get_thread_id(),
                 schema_validator=self,
             )
 
@@ -1797,7 +1832,9 @@ class SchemaValidator:
 
         return var_type_details
 
-    def _resolve_type_from_global_ref(self, ref, resolution_context_thread_id=None):
+    def _resolve_type_from_global_ref(
+        self, ref, resolution_context_thread_group_id=None
+    ):
         type_details = None
         matches = re.findall(patterns.global_ref, ref)
         if len(matches) and len(matches[0]):
@@ -1830,16 +1867,16 @@ class SchemaValidator:
             return self._resolve_type_from_object_promise_ref(
                 global_ref,
                 path_from_ref,
-                resolution_context_thread_id,
+                resolution_context_thread_group_id,
             )
 
         return type_details
 
     def _resolve_type_from_object_promise_ref(
-        self, global_ref, path_from_ref, resolution_context_thread_id
+        self, global_ref, path_from_ref, resolution_context_thread_group_id
     ):
         object_promise = self._resolve_global_ref(global_ref)
-        # If the object promise's context is part of the resolution_context_thread_id scope,
+        # If the object promise's context is part of the resolution_context_thread_group_id scope,
         # then we are dealing with a single threaded object promise
         # that is being referenced from within the thread.
         # Otherwise we are dealing with a list of object promises, because the promise is
@@ -1849,22 +1886,22 @@ class SchemaValidator:
             # cannot resolve type
             return None
 
-        # resolution_context_thread_id is the context from which we are resolving the object promise ref
-        is_threaded_object = (
-            self._object_promise_contexts[object_promise_id] is not None
+        # resolution_context_thread_group_id is the context from which we are resolving the object promise ref
+        object_promise_context = (
+            self._object_promise_contexts[object_promise_id]
+            if object_promise_id in self._object_promise_contexts
+            else None
         )
-        object_promise_context = self._object_promise_contexts[object_promise_id]
-        resolution_context_is_outside_thread_scope = (
-            resolution_context_thread_id is None
-            or (
-                object_promise_context is not None
-                and not self._thread_groups[
-                    resolution_context_thread_id
-                ].has_access_to_context(utils.parse_ref_id(object_promise_context))
-            )
+        object_promise_context_id = (
+            utils.parse_ref_id(object_promise_context)
+            if is_global_ref(object_promise_context)
+            else None
         )
-        is_list_of_object_promises = (
-            is_threaded_object and resolution_context_is_outside_thread_scope
+        is_list_of_object_promises = object_promise_context_id is not None and (
+            resolution_context_thread_group_id not in self._thread_groups
+            or not self._thread_groups[
+                resolution_context_thread_group_id
+            ].has_access_to_context(object_promise_context_id)
         )
 
         type_details = None
