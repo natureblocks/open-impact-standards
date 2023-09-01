@@ -1347,11 +1347,11 @@ class TestAggregationPipeline:
             "BOOLEAN": [0, "a", []],
             "NUMERIC": [True, "a", []],
             "STRING": [True, 0, [], {}],
-            "NUMERIC_LIST": [True, "a", 0, [True], ["a"], [[]], [0, "a"]],
-            "STRING_LIST": [True, "a", 0, [True], [0], [[]], [0, "a"]],
-            "BOOLEAN_LIST": [True, "a", 0, ["a"], [0], [[]], [True, 1]],
-            "EDGE": [True, "a", 0, []],
-            "EDGE_COLLECTION": [True, "a", 0],
+            "NUMERIC_LIST": [None, True, "a", 0, [True], ["a"], [[]], [0, "a"]],
+            "STRING_LIST": [None, True, "a", 0, [True], [0], [[]], [0, "a"]],
+            "BOOLEAN_LIST": [None, True, "a", 0, ["a"], [0], [[]], [True, 1]],
+            "OBJECT": [True, "a", 0, []],
+            "OBJECT_LIST": [None, True, "a", 0],
         }
 
         expected_context = "root.pipelines[0].variables[0].initial:"
@@ -1372,11 +1372,11 @@ class TestAggregationPipeline:
             "BOOLEAN": [True, False, None],
             "NUMERIC": [0, 1, 10.5, None],
             "STRING": ["", "test", None],
-            "NUMERIC_LIST": [[], [1, 2, 3], None],
-            "STRING_LIST": [[], ["a", "b", "c"], None],
-            "BOOLEAN_LIST": [[], [True, False], None],
+            "NUMERIC_LIST": [[], [1, 2, 3]],
+            "STRING_LIST": [[], ["a", "b", "c"]],
+            "BOOLEAN_LIST": [[], [True, False]],
             "OBJECT": [None],
-            "OBJECT_LIST": [None, []],
+            "OBJECT_LIST": [[]],
         }
 
         for field_type, values in valid_initial_values.items():

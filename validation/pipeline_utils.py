@@ -247,28 +247,29 @@ def determine_right_operand_type(
 
 def initial_matches_type(initial_type_details, var_type):
     initial_field_type_string = initial_type_details.to_string()
+
+    if initial_field_type_string == "NULL" and var_type.endswith("_LIST"):
+        # list types cannot be initialized to null
+        return False
+
     return (
         initial_field_type_string == "NULL"
         or initial_field_type_string == var_type
-        or (
-            initial_field_type_string == "LIST"
-            and ("_LIST" in var_type or var_type == "EDGE_COLLECTION")
-        )
+        or (initial_field_type_string == "LIST" and "_LIST" in var_type)
     )
 
 
 def field_type_details_from_scalar(value, expected_type=None):
     if value is None:
+        is_list = False
         if expected_type is not None and expected_type in [
             "BOOLEAN_LIST",
             "STRING_LIST",
             "NUMERIC_LIST",
             "OBJECT_LIST",
         ]:
-            is_list = True
-            item_type = expected_type[: -len("_LIST")]
+            item_type = None
         else:
-            is_list = False
             item_type = expected_type
 
         return FieldTypeDetails(
