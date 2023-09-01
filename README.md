@@ -216,12 +216,12 @@ type Pipeline {
 }
 ````
 __PipelineVariable__:
-- Declaration of a variable to be used within a pipeline. This specification indicates the `pipeline_variable` value type wherever a `PipelineVariable.name` can be referenced. `reference_path(pipeline_variable)` indicates that the value can be a path beginning with a `PipelineVariable.name`, provided that the `PipelineVariable.type` is `"EDGE"` (or in some special cases, `"EDGE_COLLECTION"`).
+- Declaration of a variable to be used within a pipeline. This specification indicates the `pipeline_variable` value type wherever a `PipelineVariable.name` can be referenced. `reference_path(pipeline_variable)` indicates that the value can be a path beginning with a `PipelineVariable.name`, provided that the `PipelineVariable.type` is `"OBJECT"` (or in some special cases, `"OBJECT_LIST"`).
 - An `initial` value must be provided for a `PipelineVariable`, and it must match the specified `type`.
 ````
 type PipelineVariable {
     name: string,
-    type: FieldType | "EDGE" | "EDGE_COLLECTION",
+    type: FieldType | "OBJECT" | "OBJECT_LIST",
     initial: scalar? | [scalar]
 }
 ````
