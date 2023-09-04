@@ -797,13 +797,48 @@ class TestSchemaValidation:
         }
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            "root.actions[1].operation.appends_objects_to (action id: 1): the referenced object promise is not fulfilled by an ancestor of this action"
+            "root.actions[1].operation.appends_objects_to (action id: 1): the referenced object promise is not guaranteed to be fulfilled by an ancestor of this action"
             in errors
         )
         schema["checkpoints"] = [
             fixtures.checkpoint(0, "depends-on-0", num_dependencies=1),
         ]
         schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-0}"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # OR gate does not guarantee ancestry...
+        schema["actions"].append(fixtures.action(3))
+        schema["object_promises"].append(fixtures.object_promise(3))
+        schema["checkpoints"][0]["dependencies"].append(
+            {
+                "compare": {
+                    "left": {
+                        "ref": "action:{3}.object_promise.completed",
+                    },
+                    "operator": "EQUALS",
+                    "right": {"value": True},
+                }
+            }
+        )
+        schema["checkpoints"][0]["gate_type"] = "OR"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.actions[1].operation.appends_objects_to (action id: 1): the referenced object promise is not guaranteed to be fulfilled by an ancestor of this action"
+            in errors
+        )
+
+        # ...unless every condition references the same action
+        schema["checkpoints"][0]["dependencies"][1]["compare"]["left"][
+            "ref"
+        ] = "action:{0}.object_promise.completed"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        # should not matter if a single dependency references two different actions
+        schema["checkpoints"][0]["dependencies"][1]["compare"]["right"][
+            "ref"
+        ] = "action:{3}.object_promise.completed"
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
@@ -895,7 +930,9 @@ class TestSchemaValidation:
         del schema["checkpoints"][1]
         del schema["actions"][1]["context"]
         del schema["actions"][2]["context"]
-        schema["actions"][1]["operation"]["appends_objects_to"] = "object_promise:{0}.objects"
+        schema["actions"][1]["operation"][
+            "appends_objects_to"
+        ] = "object_promise:{0}.objects"
         schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-0}"
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors

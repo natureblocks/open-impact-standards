@@ -523,10 +523,10 @@ class SchemaValidator:
                         operation["appends_objects_to"]
                     )
                     if not self._object_promise_fulfilled_by_ancestor(
-                        path, action, appends_to_object_promise
+                        path, action, appends_to_object_promise, guarantee_ancestry=True
                     ):
                         errors += [
-                            f"{self._context(f'{path}.operation.appends_objects_to')}: the referenced object promise is not fulfilled by an ancestor of this action"
+                            f"{self._context(f'{path}.operation.appends_objects_to')}: the referenced object promise is not guaranteed to be fulfilled by an ancestor of this action"
                         ]
 
                     split_ref = operation["appends_objects_to"].split(".")
@@ -632,7 +632,9 @@ class SchemaValidator:
 
         return errors
 
-    def _object_promise_fulfilled_by_ancestor(self, path, action, object_promise):
+    def _object_promise_fulfilled_by_ancestor(
+        self, path, action, object_promise, guarantee_ancestry=False
+    ):
         if "id" not in action or "id" not in object_promise:
             # object promise validation will have caught this already
             return True
@@ -649,6 +651,7 @@ class SchemaValidator:
                 descendant_id=action["id"],
                 descendant_type="action",
                 ancestor_ref="action:{" + str(fulfiller_id) + "}",
+                guarantee_ancestry=guarantee_ancestry,
             )
             == []
         )
@@ -661,9 +664,11 @@ class SchemaValidator:
         ancestor_ref=None,
         ancestor_source=None,
         ancestor_ids=None,
+        guarantee_ancestry=False,  # OR gates allow circumvention of actions, so ancestry is not guaranteed
     ):
+        an_ancestor = "a guaranteed ancestor" if guarantee_ancestry else "an ancestor"
         error = [
-            f"{self._context(path)}: the value of property {json.dumps(ancestor_source)} must reference an ancestor of {descendant_type} id {json.dumps(descendant_id)}, got {json.dumps(ancestor_ref)}"
+            f"{self._context(path)}: the value of property {json.dumps(ancestor_source)} must reference {an_ancestor} of {descendant_type} id {json.dumps(descendant_id)}, got {json.dumps(ancestor_ref)}"
         ]
 
         descendant_id = str(descendant_id)
@@ -702,7 +707,11 @@ class SchemaValidator:
                     descendant_id
                 )  # prevent circular dependency false positive
 
-        def validate_has_ancestor_recursive(checkpoint_alias, visited_checkpoints):
+        def validate_has_ancestor_recursive(
+            checkpoint_alias,
+            ancestor_id,
+            visited_checkpoints=[],
+        ):
             if checkpoint_alias is None or checkpoint_alias in visited_checkpoints:
                 return error
 
@@ -711,64 +720,78 @@ class SchemaValidator:
                 return []
 
             visited_checkpoints.append(checkpoint_alias)
-
             checkpoint = self._checkpoints[checkpoint_alias]
+
+            check_all_paths = (
+                guarantee_ancestry
+                and "gate_type" in checkpoint
+                and checkpoint["gate_type"] == "OR"
+            )
             for dependency in checkpoint["dependencies"]:
                 if "compare" in dependency:
                     for referenced_action_id in [
                         utils.action_id_from_dependency_ref(dependency, "left"),
                         utils.action_id_from_dependency_ref(dependency, "right"),
                     ]:
-                        if ancestor_id is not None:
-                            if referenced_action_id == ancestor_id:
-                                # found ancestor
+                        if referenced_action_id is None:
+                            continue
+
+                        if referenced_action_id == ancestor_id:
+                            if check_all_paths:
+                                break
+                            else:
                                 return []
 
-                            # continue searching for ancestor if possible
-                            if (
-                                referenced_action_id is not None
-                                and str(referenced_action_id)
-                                in self._action_checkpoints
-                                and validate_has_ancestor_recursive(
-                                    self._action_checkpoints[str(referenced_action_id)],
-                                    visited_checkpoints,
-                                )
-                                == []
-                            ):
-                                return []
-                        elif (
-                            ancestor_ids is not None
-                            and referenced_action_id is not None
-                        ):
-                            if str(referenced_action_id) in ancestor_ids:
-                                # found ancestor
-                                return []
-
-                            # continue searching for ancestor if possible
-                            if (
-                                str(referenced_action_id) in self._action_checkpoints
-                                and validate_has_ancestor_recursive(
-                                    self._action_checkpoints[str(referenced_action_id)],
-                                    visited_checkpoints,
-                                )
-                                == []
-                            ):
-                                return []
-
-                elif "checkpoint" in dependency:
-                    if (
-                        utils.has_reference_to_template_entity(
-                            dependency, "checkpoint", "checkpoint"
+                        referenced_action_has_ancestor = (
+                            str(referenced_action_id) not in self._action_checkpoints
+                            or validate_has_ancestor_recursive(
+                                self._action_checkpoints[str(referenced_action_id)],
+                                ancestor_id,
+                                visited_checkpoints,
+                            )
+                            == []
                         )
-                        and validate_has_ancestor_recursive(
+
+                        if check_all_paths:
+                            if referenced_action_has_ancestor:
+                                break
+
+                            return error
+                        elif referenced_action_has_ancestor:
+                            return []
+                        else:
+                            return error
+
+                elif utils.has_reference_to_template_entity(
+                    dependency, "checkpoint", "checkpoint"
+                ):
+                    checkpoint_has_ancestor = (
+                        validate_has_ancestor_recursive(
                             utils.parse_ref_id(dependency["checkpoint"]),
+                            ancestor_id,
                             visited_checkpoints,
                         )
                         == []
-                    ):
-                        return []
+                    )
 
-            return error
+                    if checkpoint_has_ancestor:
+                        if check_all_paths:
+                            continue
+
+                        return []
+                    elif check_all_paths:
+                        return error
+                else:
+                    return error
+
+            if check_all_paths:
+                # if the error hasn't been returned yet,
+                # all dependencies have the guaranteed ancestor
+                return []
+            else:
+                # if [] hasn't been returned yet,
+                # the ancestor was not found
+                return error
 
         if descendant_type == "action":
             if (
@@ -777,20 +800,26 @@ class SchemaValidator:
             ):
                 return error
 
-            return validate_has_ancestor_recursive(
-                self._action_checkpoints[descendant_id], []
-            )
+            checkpoint_alias = self._action_checkpoints[descendant_id]
         elif descendant_type == "thread_group":
             if descendant_id not in self._thread_checkpoints:
                 return error
 
-            return validate_has_ancestor_recursive(
-                self._thread_checkpoints[descendant_id], []
-            )
+            checkpoint_alias = self._thread_checkpoints[descendant_id]
         else:
             raise Exception(
                 f"cannot validate ancestry: invalid descendant type: {descendant_type}"
             )
+
+        if ancestor_id is not None:
+            return validate_has_ancestor_recursive(checkpoint_alias, ancestor_id)
+        elif ancestor_ids is not None:
+            # one of the ancestor ids must be an ancestor of the descendant
+            for ancestor_id in ancestor_ids:
+                if validate_has_ancestor_recursive(checkpoint_alias, ancestor_id) == []:
+                    return []
+
+        return error
 
     def validate_comparison(self, path, left, right, operator):
         if (
