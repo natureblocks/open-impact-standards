@@ -28,5 +28,5 @@ class Pipeline:
 
         return None
 
-    def get_thread_id(self):
+    def get_thread_group_id(self):
         return self.thread_scope.split(".")[-1] if self.thread_scope else None

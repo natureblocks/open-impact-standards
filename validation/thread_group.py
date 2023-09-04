@@ -6,14 +6,14 @@ class ThreadGroup:
         # {variable_name: FieldTypeDetails}
         self.variables = {}
 
-        self.sub_thread_ids = []
+        self.sub_thread_group_ids = []
         self.action_ids = []
 
         # checkpoints that specifically reference this thread as their context
         self.checkpoints = []
 
-    def has_access_to_context(self, thread_id):
+    def has_access_to_context(self, thread_group_id):
         if self.scope is None:
             return False
 
-        return thread_id in self.scope.split(".")
+        return thread_group_id in self.scope.split(".")

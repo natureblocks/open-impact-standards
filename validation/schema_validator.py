@@ -681,16 +681,16 @@ class SchemaValidator:
                 ):
                     return error
 
-                thread_id = utils.parse_ref_id(action["context"])
-                if thread_id not in self._thread_checkpoints:
+                thread_group_id = utils.parse_ref_id(action["context"])
+                if thread_group_id not in self._thread_group_checkpoints:
                     return error
                 else:
                     # ancestors of the thread group are implicit ancestors of the action
                     descendant_type = "thread_group"
-                    descendant_id = thread_id
+                    descendant_id = thread_group_id
         elif (
             descendant_type == "thread_group"
-            and descendant_id not in self._thread_checkpoints
+            and descendant_id not in self._thread_group_checkpoints
         ):
             return error
 
@@ -802,10 +802,10 @@ class SchemaValidator:
 
             checkpoint_alias = self._action_checkpoints[descendant_id]
         elif descendant_type == "thread_group":
-            if descendant_id not in self._thread_checkpoints:
+            if descendant_id not in self._thread_group_checkpoints:
                 return error
 
-            checkpoint_alias = self._thread_checkpoints[descendant_id]
+            checkpoint_alias = self._thread_group_checkpoints[descendant_id]
         else:
             raise Exception(
                 f"cannot validate ancestry: invalid descendant type: {descendant_type}"
@@ -963,10 +963,10 @@ class SchemaValidator:
                 f"{self._context(path + '.depends_on')}: checkpoint with threaded context referenced out of scope: {json.dumps(field['depends_on'])}"
             ]
 
-        checkpoint_thread_id = utils.parse_ref_id(checkpoint["context"])
-        field_thread_id = utils.parse_ref_id(field["context"])
-        if not self._thread_groups[field_thread_id].has_access_to_context(
-            checkpoint_thread_id
+        checkpoint_thread_group_id = utils.parse_ref_id(checkpoint["context"])
+        field_thread_group_id = utils.parse_ref_id(field["context"])
+        if not self._thread_groups[field_thread_group_id].has_access_to_context(
+            checkpoint_thread_group_id
         ):
             return [
                 f"{self._context(path + '.depends_on')}: checkpoint with threaded context referenced out of scope: {json.dumps(field['depends_on'])}"
@@ -1045,47 +1045,50 @@ class SchemaValidator:
 
         return context_mismatches
 
-    def validate_thread_group(self, path, thread):
-        spawn = thread["spawn"] if "spawn" in thread else None
+    def validate_thread_group(self, path, thread_group):
+        spawn = thread_group["spawn"] if "spawn" in thread_group else None
         if (
             spawn is None
             or "from" not in spawn
             or "foreach" not in spawn
             or "as" not in spawn
+            or "id" not in thread_group
         ):
             # there will already be validation errors for the missing field(s)
             return []
 
-        def resolve_thread_scope_recursive(thread):
+        def resolve_thread_scope_recursive(thread_group):
             # get the scope of the thread
-            thread_id = str(thread["id"])
-            if self._thread_groups[thread_id].scope is not None:
-                return self._thread_groups[thread_id].scope
+            thread_group_id = str(thread_group["id"])
+            if self._thread_groups[thread_group_id].scope is not None:
+                return self._thread_groups[thread_group_id].scope
 
-            if "context" not in thread:
+            if "context" not in thread_group:
                 # it's a top-level thread
-                self._thread_groups[thread_id].scope = thread_id
-                return thread_id
+                self._thread_groups[thread_group_id].scope = thread_group_id
+                return thread_group_id
             else:
                 # it's a nested thread
-                if is_global_ref(thread["context"]):
+                if is_global_ref(thread_group["context"]):
                     # resolve all parent threads first
-                    parent_thread_id = utils.parse_ref_id(thread["context"])
-                    if parent_thread_id not in self._thread_groups:
+                    parent_thread_group_id = utils.parse_ref_id(thread_group["context"])
+                    if parent_thread_group_id not in self._thread_groups:
                         return None  # cannot resolve parent thread scope
 
                     if (
-                        self._thread_groups[parent_thread_id].scope is None
+                        self._thread_groups[parent_thread_group_id].scope is None
                         and resolve_thread_scope_recursive(
-                            thread=self._resolve_global_ref(thread["context"])
+                            thread_group=self._resolve_global_ref(
+                                thread_group["context"]
+                            )
                         )
                         is None
                     ):
                         return None  # could not resolve parent thread scope
 
                     # record the thread and set its scope
-                    scope = f"{self._thread_groups[parent_thread_id].scope}.{thread_id}"
-                    self._thread_groups[thread_id].scope = scope
+                    scope = f"{self._thread_groups[parent_thread_group_id].scope}.{thread_group_id}"
+                    self._thread_groups[thread_group_id].scope = scope
 
                     return scope
 
@@ -1093,17 +1096,17 @@ class SchemaValidator:
 
         errors = []
 
-        scope = resolve_thread_scope_recursive(thread)
+        scope = resolve_thread_scope_recursive(thread_group)
         if scope is None:
             return [f"{self._context(path)}: could not resolve thread scope"]
 
-        thread_id = str(thread["id"])
+        thread_group_id = str(thread_group["id"])
         if is_global_ref(spawn["from"]):
             # if the global ref is an action, it must be an ancestor of the thread
             if utils.parse_ref_type(spawn["from"]) == "object_promise":
                 errors += self.validate_has_ancestor(
                     path,
-                    descendant_id=thread_id,
+                    descendant_id=thread_group_id,
                     descendant_type="thread_group",
                     ancestor_ref=spawn["from"],
                     ancestor_source="spawn.from",
@@ -1113,9 +1116,9 @@ class SchemaValidator:
                     return errors
             try:
                 resolution_context_thread_group_id = (
-                    utils.parse_ref_id(thread["context"])
+                    utils.parse_ref_id(thread_group["context"])
                     if utils.has_reference_to_template_entity(
-                        thread, "context", "thread_group"
+                        thread_group, "context", "thread_group"
                     )
                     else None
                 )
@@ -1201,7 +1204,7 @@ class SchemaValidator:
             # thread variables are essentially loop variables, so the collection is de-listified here for convenience
             variable_type.is_list = False
             # record the variable type
-            self._thread_groups[thread_id].variables[var_name] = variable_type
+            self._thread_groups[thread_group_id].variables[var_name] = variable_type
 
         return errors
 
@@ -1210,9 +1213,9 @@ class SchemaValidator:
         if action is not None and utils.has_reference_to_template_entity(
             action, "context", "thread_group"
         ):
-            thread_id = utils.parse_ref_id(action["context"])
-            if thread_id in self._thread_groups:
-                return self._thread_groups[thread_id].scope
+            thread_group_id = utils.parse_ref_id(action["context"])
+            if thread_group_id in self._thread_groups:
+                return self._thread_groups[thread_group_id].scope
 
         return None
 
@@ -1223,27 +1226,29 @@ class SchemaValidator:
         # check the current scope
         thread_path = scope.split(".")
         thread_path.reverse()
-        for thread_id in thread_path:
-            if thread_id not in self._thread_groups:
+        for thread_group_id in thread_path:
+            if thread_group_id not in self._thread_groups:
                 break
 
-            thread_context = self._thread_groups[thread_id]
+            thread_context = self._thread_groups[thread_group_id]
             if var_name in thread_context.variables:
                 return thread_context.variables[var_name]
 
         if check_nested_scopes:
 
-            def check_nested_scopes_recursive(thread_id):
-                for sub_thread_id in self._thread_groups[thread_id].sub_thread_ids:
-                    sub_thread_context = self._thread_groups[sub_thread_id]
+            def check_nested_scopes_recursive(thread_group_id):
+                for sub_thread_group_id in self._thread_groups[
+                    thread_group_id
+                ].sub_thread_group_ids:
+                    sub_thread_context = self._thread_groups[sub_thread_group_id]
 
                     if var_name in sub_thread_context.variables:
                         return sub_thread_context.variables[var_name]
 
-                    if sub_thread_context.sub_thread_ids:
-                        return check_nested_scopes_recursive(sub_thread_id)
+                    if sub_thread_context.sub_thread_group_ids:
+                        return check_nested_scopes_recursive(sub_thread_group_id)
 
-            return check_nested_scopes_recursive(thread_id)
+            return check_nested_scopes_recursive(thread_group_id)
 
         return None
 
@@ -1455,9 +1460,11 @@ class SchemaValidator:
                 # look for a thread variable in the current scope
                 parent_action = self._get_parent_action(path)
                 if "context" in parent_action:
-                    parent_thread_id = utils.parse_ref_id(parent_action["context"])
+                    parent_thread_group_id = utils.parse_ref_id(
+                        parent_action["context"]
+                    )
                     var_type_details = self._find_thread_variable(
-                        var_name, self._thread_groups[parent_thread_id].scope
+                        var_name, self._thread_groups[parent_thread_group_id].scope
                     )
                 else:
                     var_type_details = None
@@ -1497,7 +1504,8 @@ class SchemaValidator:
                     return local_input_error
 
                 ref_type_details = self._resolve_type_from_global_ref(
-                    ref, resolution_context_thread_group_id=pipeline.get_thread_id()
+                    ref,
+                    resolution_context_thread_group_id=pipeline.get_thread_group_id(),
                 )
 
                 if ref_type_details is None:
@@ -1685,7 +1693,7 @@ class SchemaValidator:
                 path,
                 ref=apply["from"],
                 pipeline_scope=pipeline_scope,
-                resolution_context_thread_group_id=pipeline.get_thread_id(),
+                resolution_context_thread_group_id=pipeline.get_thread_group_id(),
                 var_is_being_used=True,
             )
         except Exception as e:
@@ -1737,7 +1745,7 @@ class SchemaValidator:
                 apply,
                 ref_type_details,
                 pipeline_scope,
-                resolution_context_thread_group_id=pipeline.get_thread_id(),
+                resolution_context_thread_group_id=pipeline.get_thread_group_id(),
                 schema_validator=self,
             )
 
@@ -2909,7 +2917,7 @@ class SchemaValidator:
         self._action_checkpoints = {}
         self._checkpoints = {}
         self._dependee_action_ids = set()
-        self._thread_checkpoints = {}
+        self._thread_group_checkpoints = {}
         self._threaded_action_ids = []
         self._thread_groups = {}
         self._settable_fields = {}
@@ -2919,62 +2927,67 @@ class SchemaValidator:
         self._object_promise_contexts = {}
 
         if "thread_groups" in self.schema:
-            for thread in self.schema["thread_groups"]:
-                thread_id = str(thread["id"])
-                if thread_id not in self._thread_groups:
-                    self._thread_groups[thread_id] = ThreadGroup()
+            for thread_group in self.schema["thread_groups"]:
+                thread_group_id = str(thread_group["id"])
+                if thread_group_id not in self._thread_groups:
+                    self._thread_groups[thread_group_id] = ThreadGroup()
 
-                if "context" in thread:
-                    parent_thread = self._resolve_global_ref(thread["context"])
+                if "context" in thread_group:
+                    parent_thread_group = self._resolve_global_ref(
+                        thread_group["context"]
+                    )
                     if (
-                        parent_thread is None
-                        or utils.parse_ref_type(thread["context"]) != "thread_group"
-                        or "depends_on" not in parent_thread
+                        parent_thread_group is None
+                        or utils.parse_ref_type(thread_group["context"])
+                        != "thread_group"
+                        or "depends_on" not in parent_thread_group
                     ):
                         continue
 
-                    parent_thread_id = str(parent_thread["id"])
-                    if parent_thread_id not in self._thread_groups:
-                        self._thread_groups[parent_thread_id] = ThreadGroup()
+                    parent_thread_group_id = str(parent_thread_group["id"])
+                    if parent_thread_group_id not in self._thread_groups:
+                        self._thread_groups[parent_thread_group_id] = ThreadGroup()
 
-                    self._thread_groups[parent_thread_id].sub_thread_ids.append(
-                        thread_id
-                    )
+                    self._thread_groups[
+                        parent_thread_group_id
+                    ].sub_thread_group_ids.append(thread_group_id)
 
                     # Normalize to alias (ref could be a different field)
-                    checkpoint = self._resolve_global_ref(parent_thread["depends_on"])
+                    checkpoint = self._resolve_global_ref(
+                        parent_thread_group["depends_on"]
+                    )
                     if checkpoint is None or "alias" not in checkpoint:
                         continue
                     checkpoint_id = checkpoint["alias"]
 
-                    if "depends_on" not in thread:
-                        self._thread_checkpoints[thread_id] = checkpoint_id
+                    if "depends_on" not in thread_group:
+                        self._thread_group_checkpoints[thread_group_id] = checkpoint_id
                     else:
                         # a psuedo-checkpoint is needed to combine the thread's checkpoint
                         # with the parent thread's checkpoint
-                        alias = f"_psuedo-thread-checkpoint-{str(thread['id'])}"
+                        alias = f"_psuedo-thread-checkpoint-{str(thread_group['id'])}"
                         self.schema["checkpoints"].append(
                             {
                                 "alias": alias,
                                 "gate_type": "AND",
                                 "dependencies": [
-                                    {"checkpoint": parent_thread["depends_on"]},
-                                    {"checkpoint": thread["depends_on"]},
+                                    {"checkpoint": parent_thread_group["depends_on"]},
+                                    {"checkpoint": thread_group["depends_on"]},
                                 ],
                             }
                         )
-                        self._thread_checkpoints[thread_id] = alias
+                        self._thread_group_checkpoints[thread_group_id] = alias
 
                         # bypass validation of psuedo-checkpoint fields
                         self._psuedo_checkpoints.append(alias)
-                elif "depends_on" in thread:
-                    if not is_global_ref(thread["depends_on"]):
+                elif "depends_on" in thread_group:
+                    if not is_global_ref(thread_group["depends_on"]):
                         # skip invalid refs -- allow validation to fail elsewhere
                         continue
 
-                    self._thread_checkpoints[thread_id] = utils.parse_ref_id(
-                        thread["depends_on"]
-                    )
+                    self._thread_group_checkpoints[
+                        thread_group_id
+                    ] = utils.parse_ref_id(thread_group["depends_on"])
 
         for action in self.schema["actions"]:
             if "id" not in action:
@@ -3023,13 +3036,13 @@ class SchemaValidator:
                     checkpoint_id = checkpoint["alias"]
                 elif (
                     "context" in thread_group
-                    and thread_group_id in self._thread_checkpoints
+                    and thread_group_id in self._thread_group_checkpoints
                 ):
-                    checkpoint_id = self._thread_checkpoints[thread_group_id]
+                    checkpoint_id = self._thread_group_checkpoints[thread_group_id]
                 else:
                     continue
 
-                self._thread_checkpoints[thread_group_id] = checkpoint_id
+                self._thread_group_checkpoints[thread_group_id] = checkpoint_id
                 self._threaded_action_ids.append(action_id)
 
                 if "depends_on" not in action:
@@ -3074,9 +3087,9 @@ class SchemaValidator:
                 if utils.has_reference_to_template_entity(
                     checkpoint, "context", "thread_group"
                 ):
-                    thread_id = utils.parse_ref_id(checkpoint["context"])
-                    if thread_id in self._thread_groups:
-                        self._thread_groups[thread_id].checkpoints.append(
+                    thread_group_id = utils.parse_ref_id(checkpoint["context"])
+                    if thread_group_id in self._thread_groups:
+                        self._thread_groups[thread_group_id].checkpoints.append(
                             checkpoint["alias"]
                         )
 
@@ -3096,13 +3109,13 @@ class SchemaValidator:
                         nested_checkpoints.append(alias)
 
         self._unreferenced_thread_groups = []
-        for thread_id, thread in self._thread_groups.items():
+        for thread_group_id, thread_group in self._thread_groups.items():
             if (
-                not len(thread.action_ids)
-                and not len(thread.sub_thread_ids)
-                # note that a checkpoint referencing the thread does not count
+                not len(thread_group.action_ids)
+                and not len(thread_group.sub_thread_group_ids)
+                # note that a checkpoint referencing the thread_group does not count
             ):
-                self._unreferenced_thread_groups.append(thread_id)
+                self._unreferenced_thread_groups.append(thread_group_id)
 
         self._unreferenced_checkpoints = []
         for checkpoint in self.schema["checkpoints"]:
@@ -3110,7 +3123,7 @@ class SchemaValidator:
                 alias = checkpoint["alias"]
                 if (
                     alias not in self._action_checkpoints.values()
-                    and alias not in self._thread_checkpoints.values()
+                    and alias not in self._thread_group_checkpoints.values()
                     and alias not in nested_checkpoints
                 ):
                     self._unreferenced_checkpoints.append(checkpoint["alias"])
@@ -3172,27 +3185,29 @@ class SchemaValidator:
                                 ):
                                     continue
 
-                                thread = self._resolve_global_ref(checkpoint["context"])
+                                thread_group = self._resolve_global_ref(
+                                    checkpoint["context"]
+                                )
                                 if utils.has_reference_to_template_entity(
-                                    thread,
+                                    thread_group,
                                     "depends_on",
                                     "checkpoint",
                                 ):
                                     continue
 
-                                thread_checkpoint = (
-                                    self._resolve_global_ref(thread["depends_on"])
+                                thread_group_checkpoint = (
+                                    self._resolve_global_ref(thread_group["depends_on"])
                                     if utils.has_reference_to_template_entity(
-                                        thread, "depends_on", "checkpoint"
+                                        thread_group, "depends_on", "checkpoint"
                                     )
                                     else None
                                 )
 
-                                if thread_checkpoint is None:
+                                if thread_group_checkpoint is None:
                                     continue
 
                                 errors = _explore_checkpoint_recursive(
-                                    thread_checkpoint,
+                                    thread_group_checkpoint,
                                     visited,
                                     dependency_path.copy(),
                                 )
