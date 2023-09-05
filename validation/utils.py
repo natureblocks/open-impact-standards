@@ -28,7 +28,9 @@ def is_global_ref(value):
     ref_type = split_ref[0]
     ref_id = ":".join(split_ref[1:])
 
-    return ref_type in ref_types and re.match(patterns.global_ref_identifier, ref_id)
+    alias_match = re.match(patterns.global_ref_alias, ref_id)
+    identifier_match = re.match(patterns.global_ref_identifier, ref_id)
+    return ref_type in ref_types and (alias_match or identifier_match)
 
 
 def is_variable(value):
@@ -47,15 +49,26 @@ def parse_ref_id(value):
     if not is_global_ref(value):
         raise Exception(f"Invalid ref: {value}")
 
-    framed_ref_id = ":".join(value.split(":")[1:]).split(".")[0]  # "{ref_id}"
-    return framed_ref_id[1:-1]
+    ref_id = ":".join(value.split(":")[1:]).split(".")[0]  # "{ref_id}" or "ref_id"
+
+    if ref_id[0] == "{" and ref_id[-1] == "}":
+        return ref_id[1:-1]
+
+    return ref_id
 
 
-def as_ref(value, ref_type):
+def as_ref(value, ref_type, value_is_id=False):
     if ref_type not in ref_types:
         raise Exception(f"Invalid ref type: {ref_type}")
 
-    return ref_type + ":{" + str(value) + "}"
+    if value_is_id:
+        left_brace = ""
+        right_brace = ""
+    else:
+        left_brace = "{"
+        right_brace = "}"
+
+    return ref_type + ":" + left_brace + str(value) + right_brace
 
 
 def parse_ref_type(value):

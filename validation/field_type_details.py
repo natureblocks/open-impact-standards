@@ -25,7 +25,9 @@ class FieldTypeDetails:
         if self.is_list:
             if item_type_string == "EDGE":
                 return "EDGE_COLLECTION"
-            elif re.match(patterns.global_ref, item_type_string):
+            elif re.match(patterns.global_alias_ref, item_type_string) or re.match(
+                patterns.global_id_ref, item_type_string
+            ):
                 return f"[{item_type_string}]"
 
             return (

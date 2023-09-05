@@ -119,7 +119,7 @@
     ],
     "pipelines": [
         {
-            "object_promise": "object_promise:{0}",
+            "object_promise": "object_promise:0",
             "context": "TEMPLATE",
             "variables": [
                 {
@@ -130,7 +130,7 @@
             ],
             "apply": [
                 {
-                    "from": "object_promise:{10}",
+                    "from": "object_promise:10",
                     "aggregate": {
                         "operator": "AVERAGE",
                         "field": "numbers"
@@ -152,7 +152,7 @@
             "id": 7,
             "description": "Set up survey",
             "party": "party:{Project Developer}",
-            "object_promise": "object_promise:{0}",
+            "object_promise": "object_promise:0",
             "operation": {
                 "exclude": ["number"]
             }
@@ -161,7 +161,7 @@
             "id": 8,
             "description": "Make contact with them with preliminary set of questions",
             "party": "party:{Project Developer}",
-            "object_promise": "object_promise:{1}",
+            "object_promise": "object_promise:1",
             "operation": {
                 "exclude": null
             },
@@ -171,7 +171,7 @@
             "id": 9,
             "description": "Agreement decided between tenant and owner.",
             "party": "party:{Land Representative}",
-            "object_promise": "object_promise:{2}",
+            "object_promise": "object_promise:2",
             "operation": {
                 "exclude": null
             }
@@ -180,7 +180,7 @@
             "id": 10,
             "description": "Guidance on what should be on the contract from Natureblocks",
             "party": "party:{Project Developer}",
-            "object_promise": "object_promise:{3}",
+            "object_promise": "object_promise:3",
             "operation": {
                 "exclude": null
             }
@@ -189,7 +189,7 @@
             "id": 11,
             "description": "Written agreement to generate Carbon offsets",
             "party": "party:{Land Representative}",
-            "object_promise": "object_promise:{4}",
+            "object_promise": "object_promise:4",
             "operation": {
                 "exclude": null
             },
@@ -199,7 +199,7 @@
             "id": 12,
             "description": "Laws and contracts adhered to by both parties",
             "party": "party:{Land Representative}",
-            "object_promise": "object_promise:{5}",
+            "object_promise": "object_promise:5",
             "operation": {
                 "exclude": null
             },
@@ -209,7 +209,7 @@
             "id": 13,
             "description": "Tenant of land",
             "party": "party:{Land Representative}",
-            "object_promise": "object_promise:{6}",
+            "object_promise": "object_promise:6",
             "operation": {
                 "exclude": null
             },
@@ -219,7 +219,7 @@
             "id": 14,
             "description": "Is the owner of land",
             "party": "party:{Land Representative}",
-            "object_promise": "object_promise:{7}",
+            "object_promise": "object_promise:7",
             "operation": {
                 "exclude": null
             },
@@ -229,7 +229,7 @@
             "id": 15,
             "description": "Land user has the rights to generate carbon offsets",
             "party": "party:{Project}",
-            "object_promise": "object_promise:{8}",
+            "object_promise": "object_promise:8",
             "operation": {
                 "exclude": null
             },
@@ -239,7 +239,7 @@
             "id": 16,
             "description": "No local laws would be broken by planting crops / trees / etc",
             "party": "party:{Project}",
-            "object_promise": "object_promise:{9}",
+            "object_promise": "object_promise:9",
             "operation": {
                 "exclude": null
             },
@@ -249,7 +249,7 @@
             "id": 17,
             "description": "Usable land available",
             "party": "party:{Project}",
-            "object_promise": "object_promise:{10}",
+            "object_promise": "object_promise:10",
             "operation": {
                 "exclude": null
             },
@@ -266,7 +266,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{8}.object_promise.completed"
+                            "ref": "action:8.object_promise.completed"
                         },
                         "right": {
                             "value": true
@@ -285,7 +285,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{11}.object_promise.completed"
+                            "ref": "action:11.object_promise.completed"
                         },
                         "right": {
                             "value": true
@@ -296,7 +296,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{12}.object_promise.completed"
+                            "ref": "action:12.object_promise.completed"
                         },
                         "right": {
                             "value": true
@@ -314,7 +314,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{7}.object_promise.completed"
+                            "ref": "action:7.object_promise.completed"
                         },
                         "right": {
                             "value": true
@@ -333,7 +333,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{9}.object_promise.completed"
+                            "ref": "action:9.object_promise.completed"
                         },
                         "right": {
                             "value": true
@@ -344,7 +344,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{10}.object_promise.completed"
+                            "ref": "action:10.object_promise.completed"
                         },
                         "right": {
                             "value": true
@@ -363,7 +363,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{13}.object_promise.completed"
+                            "ref": "action:13.object_promise.completed"
                         },
                         "right": {
                             "value": true
@@ -375,7 +375,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{14}.object_promise.completed"
+                            "ref": "action:14.object_promise.completed"
                         },
                         "right": {
                             "value": true
@@ -394,7 +394,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{15}.object_promise.completed"
+                            "ref": "action:15.object_promise.completed"
                         },
                         "right": {
                             "value": true
@@ -405,7 +405,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{16}.object_promise.completed"
+                            "ref": "action:16.object_promise.completed"
                         },
                         "right": {
                             "value": true

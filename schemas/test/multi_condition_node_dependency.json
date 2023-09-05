@@ -43,7 +43,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{0}",
+                            "ref": "action:0",
                             "field": "completed"
                         },
                         "right": {
@@ -55,7 +55,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{0}",
+                            "ref": "action:0",
                             "field": "did_the_thing"
                         },
                         "right": {

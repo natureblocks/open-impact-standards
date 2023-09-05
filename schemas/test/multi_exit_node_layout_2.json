@@ -20,13 +20,13 @@
         {
             "alias": "0",
             "dependencies": [
-                {"compare": {"left": {"ref": "action:{0}"}}}
+                {"compare": {"left": {"ref": "action:0"}}}
             ]
         },
         {
             "alias": "1",
             "dependencies": [
-                {"compare": {"left": {"ref": "action:{1}"}}}
+                {"compare": {"left": {"ref": "action:1"}}}
             ]
         }
     ]

@@ -114,7 +114,7 @@
             "tag": "MyNodeTag",
             "operation": {
                 "type": "EDIT",
-                "ref": "action:{0}",
+                "ref": "action:0",
                 "include": ["a_string_list_field", "a_numeric_list_field"]
             },
             "depends_on": "checkpoint:{Example dependency set#0000}"
@@ -155,7 +155,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{0}",
+                            "ref": "action:0",
                             "field": "a_boolean_field"
                         },
                         "right": {
@@ -175,7 +175,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{0}",
+                            "ref": "action:0",
                             "field": "a_numeric_field"
                         },
                         "right": {
@@ -187,7 +187,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{1}",
+                            "ref": "action:1",
                             "field": "a_string_list_field"
                         },
                         "right": {
@@ -207,7 +207,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{0}",
+                            "ref": "action:0",
                             "field": "a_boolean_field"
                         },
                         "right": {
@@ -220,7 +220,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{1}",
+                            "ref": "action:1",
                             "field": "a_string_field"
                         },
                         "right": {
@@ -243,7 +243,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{3}",
+                            "ref": "action:3",
                             "field": "a_numeric_list_field"
                         },
                         "right": {
@@ -262,7 +262,7 @@
                 {
                     "compare": {
                         "left": {
-                            "ref": "action:{4}",
+                            "ref": "action:4",
                             "field": "a_boolean_field"
                         },
                         "right": {

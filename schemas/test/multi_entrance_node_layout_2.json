@@ -20,15 +20,15 @@
             "alias": "0",
             "gate_type": "AND",
             "dependencies": [
-                {"compare": {"left": {"ref": "action:{0}"}}}
+                {"compare": {"left": {"ref": "action:0"}}}
             ]
         },
         {
             "alias": "1 and 2",
             "gate_type": "AND",
             "dependencies": [
-                {"compare": {"left": {"ref": "action:{1}"}}},
-                {"compare": {"left": {"ref": "action:{2}"}}}
+                {"compare": {"left": {"ref": "action:1"}}},
+                {"compare": {"left": {"ref": "action:2"}}}
             ]
         }
     ]

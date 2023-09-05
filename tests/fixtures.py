@@ -40,7 +40,7 @@ def action(action_id=None):
 
     return {
         "id": action_id,
-        "object_promise": "object_promise:{" + str(action_id) + "}",
+        "object_promise": "object_promise:" + str(action_id),
         "description": "test action",
         "party": "party:{Project}",
         "operation": {
@@ -60,7 +60,7 @@ def object_promise(op_id=0, object_type="Placeholder"):
 def checkpoint(id, alias, gate_type="AND", num_dependencies=2):
     dependencies = []
     for i in range(num_dependencies):
-        dependencies.append(dependency(ref="action:{" + str(i) + "}"))
+        dependencies.append(dependency(ref="action:" + str(i)))
 
     checkpoint = {
         "id": id,
@@ -95,7 +95,7 @@ def thread_group(id, depends_on_id=None):
         "id": id,
         "description": "",
         "spawn": {
-            "from": "object_promise:{0}",
+            "from": "object_promise:0",
             "foreach": "numbers",
             "as": "$number",
         },

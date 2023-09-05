@@ -177,8 +177,8 @@ object_promise = {
         ],
     },
     "ref_config": {
-        "fields": ["id", "name"],
         "collection": "root.object_promises",
+        "alias_field": "name",
     },
 }
 
@@ -325,8 +325,8 @@ checkpoint = {
         },
     ],
     "ref_config": {
-        "fields": ["id", "alias"],
         "collection": "root.checkpoints",
+        "alias_field": "alias",
     },
 }
 
@@ -428,7 +428,6 @@ action = {
         ],
     },
     "ref_config": {
-        "fields": ["id"],
         "collection": "root.actions",
     },
 }
@@ -448,8 +447,8 @@ party = {
         "optional": ["hex_code"],
     },
     "ref_config": {
-        "fields": ["id", "name"],
         "collection": "root.parties",
+        "alias_field": "name",
     },
 }
 
@@ -501,7 +500,6 @@ thread_group = {
         ],
     },
     "ref_config": {
-        "fields": ["id"],
         "collection": "root.thread_groups",
     },
 }

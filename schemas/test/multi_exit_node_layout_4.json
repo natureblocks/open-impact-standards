@@ -60,57 +60,57 @@
         {
             "alias": "0",
             "dependencies": [
-                {"compare": {"left": {"ref": "action:{0}"}}}
+                {"compare": {"left": {"ref": "action:0"}}}
             ]
         },
         {
             "alias": "1",
             "dependencies": [
-                {"compare": {"left": {"ref": "action:{1}"}}}
+                {"compare": {"left": {"ref": "action:1"}}}
             ]
         },
         {
             "alias": "2",
             "dependencies": [
-                {"compare": {"left": {"ref": "action:{2}"}}}
+                {"compare": {"left": {"ref": "action:2"}}}
             ]
         },
         {
             "alias": "3",
             "dependencies": [
-                {"compare": {"left": {"ref": "action:{3}"}}}
+                {"compare": {"left": {"ref": "action:3"}}}
             ]
         },
         {
             "alias": "4 and 7",
             "gate_type": "AND",
             "dependencies": [
-                {"compare": {"left": {"ref": "action:{4}"}}},
-                {"compare": {"left": {"ref": "action:{7}"}}}
+                {"compare": {"left": {"ref": "action:4"}}},
+                {"compare": {"left": {"ref": "action:7"}}}
             ]
         },
         {
             "alias": "5",
             "dependencies": [
-                {"compare": {"left": {"ref": "action:{5}"}}}
+                {"compare": {"left": {"ref": "action:5"}}}
             ]
         },
         {
             "alias": "8",
             "dependencies": [
-                {"compare": {"left": {"ref": "action:{8}"}}}
+                {"compare": {"left": {"ref": "action:8"}}}
             ]
         },
         {
             "alias": "11",
             "dependencies": [
-                {"compare": {"left": {"ref": "action:{11}"}}}
+                {"compare": {"left": {"ref": "action:11"}}}
             ]
         },
         {
             "alias": "12",
             "dependencies": [
-                {"compare": {"left": {"ref": "action:{12}"}}}
+                {"compare": {"left": {"ref": "action:12"}}}
             ]
         }
     ]

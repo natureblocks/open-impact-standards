@@ -1,5 +1,7 @@
-global_ref_identifier = "^{.+}$"
-global_ref = "(^(action|thread|object|object_promise):{.+}).?(.*)$"
+global_ref_identifier = "^\d+$"
+global_ref_alias = "^{.+}$"
+global_alias_ref = "(^(action|checkpoint|thread|object|object_promise|party):{.+}).?(.*)$"
+global_id_ref = "(^(action|checkpoint|thread|object|object_promise|party):\d+).?(.*)$"
 
 # must begin with "$_", which is reserved for local variables
 local_variable = "^\$_.+$"

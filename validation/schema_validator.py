@@ -650,7 +650,7 @@ class SchemaValidator:
                 path,
                 descendant_id=action["id"],
                 descendant_type="action",
-                ancestor_ref="action:{" + str(fulfiller_id) + "}",
+                ancestor_ref=utils.as_ref(fulfiller_id, "action", value_is_id=True),
                 guarantee_ancestry=guarantee_ancestry,
             )
             == []
@@ -675,7 +675,9 @@ class SchemaValidator:
         if descendant_type == "action":
             if descendant_id not in self._action_checkpoints:
                 # does the action have an implicit checkpoint?
-                action = self._resolve_global_ref("action:{" + descendant_id + "}")
+                action = self._resolve_global_ref(
+                    utils.as_ref(descendant_id, "action", value_is_id=True)
+                )
                 if not utils.has_reference_to_template_entity(
                     action, "context", "thread_group"
                 ):
@@ -1851,7 +1853,7 @@ class SchemaValidator:
                 object_tag=var_type_details.item_tag,
                 path=path,
             )
-        elif re.match(patterns.global_ref, var_type_details.item_type):
+        elif utils.is_global_ref(var_type_details.item_type):
             referenced_object = self._resolve_global_ref(var_type_details.item_type)
             if path[0] != "object_promise":
                 raise NotImplementedError(
@@ -1873,7 +1875,11 @@ class SchemaValidator:
         self, ref, resolution_context_thread_group_id=None
     ):
         type_details = None
-        matches = re.findall(patterns.global_ref, ref)
+        if re.match(patterns.global_id_ref, ref):
+            matches = re.findall(patterns.global_id_ref, ref)
+        elif re.match(patterns.global_alias_ref, ref):
+            matches = re.findall(patterns.global_alias_ref, ref)
+
         if len(matches) and len(matches[0]):
             global_ref = matches[0][0]
             ref_type = matches[0][1]
@@ -2218,21 +2224,31 @@ class SchemaValidator:
         return []
 
     def _resolve_global_ref(self, ref):
+        is_alias_reference = re.match(patterns.global_alias_ref, ref)
         ref_id = utils.parse_ref_id(ref)
         ref_type = utils.parse_ref_type(ref)
         ref_config = getattr(obj_specs, ref_type)["ref_config"]
-        collection = self._get_field(ref_config["collection"])
 
+        if "collection" not in ref_config or (
+            is_alias_reference and "alias_field" not in ref_config
+        ):
+            return None
+
+        collection = self._get_field(ref_config["collection"])
         if collection is None:
             return None
 
-        for ref_field in ref_config["fields"]:
-            for item in collection:
-                if ref_field not in item:
-                    continue
+        if is_alias_reference:
+            ref_field = ref_config["alias_field"]
+        else:
+            ref_field = "id"
 
-                if str(item[ref_field]) == ref_id:
-                    return item
+        for item in collection:
+            if ref_field not in item:
+                continue
+
+            if str(item[ref_field]) == ref_id:
+                return item
 
         return None
 
@@ -3131,7 +3147,9 @@ class SchemaValidator:
         # determine which actions fulfill object promises (CREATE operations)
         for object_promise_id, action_ids in self._object_promise_actions.items():
             for action_id in action_ids:
-                action = self._resolve_global_ref("action:{" + action_id + "}")
+                action = self._resolve_global_ref(
+                    utils.as_ref(action_id, "action", value_is_id=True)
+                )
                 if action is None or "operation" not in action:
                     continue
 

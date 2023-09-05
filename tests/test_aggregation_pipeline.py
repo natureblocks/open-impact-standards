@@ -16,18 +16,18 @@ class TestAggregationPipeline:
         ]
         schema["checkpoints"][1]["dependencies"][0]["compare"]["left"][
             "ref"
-        ] = "action:{1}.object_promise.completed"
+        ] = "action:1.object_promise.completed"
         schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-0}"
         schema["actions"][2]["depends_on"] = "checkpoint:{depends-on-1}"
-        schema["actions"][1]["object_promise"] = "object_promise:{0}"
-        schema["actions"][2]["object_promise"] = "object_promise:{0}"
-        schema["actions"][3]["object_promise"] = "object_promise:{1}"
+        schema["actions"][1]["object_promise"] = "object_promise:0"
+        schema["actions"][2]["object_promise"] = "object_promise:0"
+        schema["actions"][3]["object_promise"] = "object_promise:1"
         while len(schema["object_promises"]) > 2:
             schema["object_promises"].pop()
 
         schema["pipelines"].append(
             {
-                "object_promise": "object_promise:{0}",
+                "object_promise": "object_promise:0",
                 "context": "TEMPLATE",
                 "variables": [
                     {
@@ -43,7 +43,7 @@ class TestAggregationPipeline:
                 ],
                 "apply": [
                     {
-                        "from": "object_promise:{1}.numbers",
+                        "from": "object_promise:1.numbers",
                         "aggregate": {
                             "field": "$_item",
                             "operator": "SUM",
@@ -52,7 +52,7 @@ class TestAggregationPipeline:
                         "to": "$sum",
                     },
                     {
-                        "from": "object_promise:{1}",
+                        "from": "object_promise:1",
                         "aggregate": {
                             "field": "objects",
                             "operator": "FIRST",
@@ -108,10 +108,10 @@ class TestAggregationPipeline:
         )
         schema["checkpoints"][2]["dependencies"][0]["compare"]["left"][
             "ref"
-        ] = "action:{4}.object_promise.completed"
+        ] = "action:4.object_promise.completed"
         schema["actions"][0]["depends_on"] = "checkpoint:{depends-on-4}"
         schema["actions"][0]["operation"]["default_edges"] = {
-            "edge": "object_promise:{4}",
+            "edge": "object_promise:4",
         }
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
@@ -122,7 +122,7 @@ class TestAggregationPipeline:
         del schema["actions"][0]["operation"]["default_edges"]
 
         # same is true regardless of whether it's the action that fulfills the promise (creates the instance)
-        schema["actions"][1]["object_promise"] = "object_promise:{0}"
+        schema["actions"][1]["object_promise"] = "object_promise:0"
         schema["actions"][1]["operation"] = {
             "include": ["number"],
         }
@@ -151,7 +151,7 @@ class TestAggregationPipeline:
         )
 
         # this should hold true for global references to local fields
-        schema["pipelines"][0]["apply"][1]["from"] = "object_promise:{0}.number"
+        schema["pipelines"][0]["apply"][1]["from"] = "object_promise:0.number"
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
             "root.pipelines[0].apply[1].from: cannot use local object as pipeline input"
@@ -163,7 +163,7 @@ class TestAggregationPipeline:
         # local fields cannot be traversed
         schema["pipelines"][0]["traverse"] = [
             {
-                "ref": "object_promise:{0}.numbers",
+                "ref": "object_promise:0.numbers",
                 "foreach": {
                     "as": "$num",
                     "apply": [
@@ -194,7 +194,7 @@ class TestAggregationPipeline:
         schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-0}"
         schema["pipelines"].append(
             {
-                "object_promise": "object_promise:{1}",
+                "object_promise": "object_promise:1",
                 "context": "TEMPLATE",
                 "variables": [
                     {
@@ -205,7 +205,7 @@ class TestAggregationPipeline:
                 ],
                 "apply": [
                     {
-                        "from": "object_promise:{0}.numbers",
+                        "from": "object_promise:0.numbers",
                         "aggregate": {
                             "field": "$_item",
                             "operator": "SUM",
@@ -226,7 +226,7 @@ class TestAggregationPipeline:
         # should not be able to depend on an aggregated field
         schema["checkpoints"][1]["dependencies"][0]["compare"] = {
             "left": {
-                "ref": "action:{1}.object_promise.number",
+                "ref": "action:1.object_promise.number",
             },
             "operator": "GREATER_THAN",
             "right": {
@@ -236,7 +236,7 @@ class TestAggregationPipeline:
         schema["actions"][2]["depends_on"] = "checkpoint:{depends-on-aggregated-field}"
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.checkpoints[1].dependencies[0].compare: cannot depend on aggregated field: "action:{1}.object_promise.number"'
+            'root.checkpoints[1].dependencies[0].compare: cannot depend on aggregated field: "action:1.object_promise.number"'
             in errors
         )
 
@@ -245,7 +245,7 @@ class TestAggregationPipeline:
         schema = fixtures.basic_schema_with_actions(3)
         schema["pipelines"].append(
             {
-                "object_promise": "object_promise:{1}",
+                "object_promise": "object_promise:1",
                 "context": "TEMPLATE",
                 "variables": [
                     {
@@ -301,7 +301,7 @@ class TestAggregationPipeline:
         schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-0}"
 
         # should be able to traverse an edge collection
-        set_pipeline_value("traverse", "ref", "object_promise:{0}.objects")
+        set_pipeline_value("traverse", "ref", "object_promise:0.objects")
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
@@ -330,14 +330,12 @@ class TestAggregationPipeline:
         schema["thread_groups"] = [
             fixtures.thread_group(0, "depends-on-0"),
         ]
-        schema["actions"][2][
-            "context"
-        ] = "thread_group:{0}"  # action:{2} is now threaded
+        schema["actions"][2]["context"] = "thread_group:0"  # action:2 is now threaded
         set_pipeline_value("variables", "name", "$average_minimums")
         set_pipeline_value("variables", "type", "NUMERIC_LIST")
         set_pipeline_value("variables", "initial", [])
         set_pipeline_value(
-            "traverse", "ref", "object_promise:{2}"
+            "traverse", "ref", "object_promise:2"
         )  # traversing the threaded action
         set_pipeline_value(
             "traverse",
@@ -389,10 +387,10 @@ class TestAggregationPipeline:
         assert not errors
 
         # "ref" properties of sibling traversal objects must be unique
-        assert schema["pipelines"][0]["traverse"][0]["ref"] == "object_promise:{2}"
+        assert schema["pipelines"][0]["traverse"][0]["ref"] == "object_promise:2"
         schema["pipelines"][0]["traverse"].append(
             {
-                "ref": "object_promise:{2}",
+                "ref": "object_promise:2",
                 "foreach": {
                     "as": "$edge",
                     "apply": [],
@@ -424,7 +422,7 @@ class TestAggregationPipeline:
         )
 
         # should not be able to traverse non-threaded actions
-        set_pipeline_value("traverse", "ref", "object_promise:{0}")
+        set_pipeline_value("traverse", "ref", "object_promise:0")
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
             "root.pipelines[0].traverse[0].ref: cannot traverse non-list object"
@@ -438,7 +436,7 @@ class TestAggregationPipeline:
         # unused varaibles should throw a warning
         schema["pipelines"].append(
             {
-                "object_promise": "object_promise:{1}",
+                "object_promise": "object_promise:1",
                 "context": "TEMPLATE",
                 "variables": [
                     {
@@ -454,7 +452,7 @@ class TestAggregationPipeline:
                 ],
                 "apply": [
                     {
-                        "from": "object_promise:{0}",
+                        "from": "object_promise:0",
                         "aggregate": {
                             "field": "numbers",
                             "operator": "SUM",
@@ -482,7 +480,7 @@ class TestAggregationPipeline:
         # there should be no warning
         schema["pipelines"][0]["traverse"] = [
             {
-                "ref": "object_promise:{0}.objects",
+                "ref": "object_promise:0.objects",
                 "foreach": {
                     "as": "$edge",
                     "apply": [
@@ -556,7 +554,7 @@ class TestAggregationPipeline:
         schema = fixtures.basic_schema_with_actions(2)
         schema["pipelines"].append(
             {
-                "object_promise": "object_promise:{1}",
+                "object_promise": "object_promise:1",
                 "context": "TEMPLATE",
                 "variables": [
                     {
@@ -572,7 +570,7 @@ class TestAggregationPipeline:
                 ],
                 "traverse": [
                     {
-                        "ref": "object_promise:{0}.objects",
+                        "ref": "object_promise:0.objects",
                         "foreach": {
                             "as": "$edge",
                             "variables": [
@@ -637,7 +635,7 @@ class TestAggregationPipeline:
         schema["pipelines"][0]["apply"].insert(
             0,
             {
-                "from": "object_promise:{0}.number",
+                "from": "object_promise:0.number",
                 "to": "$some_var",
                 "method": "ADD",
             },
@@ -659,7 +657,7 @@ class TestAggregationPipeline:
         # should not be able to declare variables with the same name
         schema["pipelines"].append(
             {
-                "object_promise": "object_promise:{1}",
+                "object_promise": "object_promise:1",
                 "context": "TEMPLATE",
                 "variables": [
                     {
@@ -698,7 +696,7 @@ class TestAggregationPipeline:
         ]
         schema["pipelines"][0]["traverse"] = [
             {
-                "ref": "object_promise:{0}.objects",
+                "ref": "object_promise:0.objects",
                 "foreach": {
                     "as": "$edge",
                     "variables": [
@@ -802,8 +800,8 @@ class TestAggregationPipeline:
         schema["thread_groups"] = [
             fixtures.thread_group(0, "depends-on-0"),
         ]
-        schema["thread_groups"][0]["spawn"]["from"] = "object_promise:{0}"
-        schema["actions"][1]["context"] = "thread_group:{0}"
+        schema["thread_groups"][0]["spawn"]["from"] = "object_promise:0"
+        schema["actions"][1]["context"] = "thread_group:0"
         schema["thread_groups"][0]["spawn"]["as"] = "$thread_var"
 
         schema["pipelines"][0]["variables"].append(
@@ -863,7 +861,7 @@ class TestAggregationPipeline:
         # simple filter
         schema["pipelines"].append(
             {
-                "object_promise": "object_promise:{1}",
+                "object_promise": "object_promise:1",
                 "context": "TEMPLATE",
                 "variables": [
                     {
@@ -884,7 +882,7 @@ class TestAggregationPipeline:
                 ],
                 "apply": [
                     {
-                        "from": "object_promise:{0}.objects",
+                        "from": "object_promise:0.objects",
                         "filter": {
                             "where": [
                                 {
@@ -927,7 +925,7 @@ class TestAggregationPipeline:
         # one of the operands must be a filter variable
         non_filter_variables = [
             {"ref": "$_object.number"},
-            {"ref": "object_promise:{0}.number"},
+            {"ref": "object_promise:0.number"},
             {"ref": "$some_number"},
             4,
         ]
@@ -1075,10 +1073,10 @@ class TestAggregationPipeline:
         ]
         schema["actions"].append(fixtures.action(3))
         schema["object_promises"].append(fixtures.object_promise(3))
-        schema["actions"][3]["context"] = "thread_group:{0}"
+        schema["actions"][3]["context"] = "thread_group:0"
         schema["pipelines"].append(
             {
-                "object_promise": "object_promise:{3}",
+                "object_promise": "object_promise:3",
                 "context": "TEMPLATE",
                 "variables": [
                     {
@@ -1089,7 +1087,7 @@ class TestAggregationPipeline:
                 ],
                 "apply": [
                     {
-                        "from": "object_promise:{2}.numbers",
+                        "from": "object_promise:2.numbers",
                         "filter": {
                             "where": [
                                 {
@@ -1123,7 +1121,7 @@ class TestAggregationPipeline:
         schema = fixtures.basic_schema_with_actions(2)
         schema["pipelines"].append(
             {
-                "object_promise": "object_promise:{1}",
+                "object_promise": "object_promise:1",
                 "context": "TEMPLATE",
                 "variables": [
                     {
@@ -1171,7 +1169,7 @@ class TestAggregationPipeline:
             "initial": None,
         }
         schema["pipelines"][0]["apply"][0] = {
-            "from": "object_promise:{0}.name",
+            "from": "object_promise:0.name",
             "method": "SET",
             "to": "$some_var",
         }
@@ -1222,7 +1220,7 @@ class TestAggregationPipeline:
         }
         schema["pipelines"][0]["apply"] = [
             {
-                "from": "object_promise:{0}.name",
+                "from": "object_promise:0.name",
                 "method": "ADD",
                 "to": "$some_var",
             }
@@ -1250,7 +1248,7 @@ class TestAggregationPipeline:
                     "as": "$item",
                     "traverse": [
                         {
-                            "ref": "object_promise:{0}.objects",
+                            "ref": "object_promise:0.objects",
                             "foreach": {
                                 "as": "$obj",
                                 "apply": [
@@ -1292,16 +1290,16 @@ class TestAggregationPipeline:
         schema["checkpoints"].append(fixtures.checkpoint(2, "depends-on-2"))
         schema["checkpoints"][-1]["dependencies"][0]["compare"]["left"][
             "ref"
-        ] = "action:{2}.object_promise.completed"
+        ] = "action:2.object_promise.completed"
         schema["thread_groups"] = [
             fixtures.thread_group(0, "depends-on-2"),
         ]
         schema["thread_groups"][0]["spawn"] = {
-            "from": "object_promise:{2}.objects",
+            "from": "object_promise:2.objects",
             "foreach": "number",
             "as": "$thread_var",
         }
-        schema["actions"][1]["context"] = "thread_group:{0}"
+        schema["actions"][1]["context"] = "thread_group:0"
         schema["pipelines"][0]["apply"][0]["to"] = "$thread_var"
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
@@ -1314,7 +1312,7 @@ class TestAggregationPipeline:
         schema = fixtures.basic_schema_with_actions(1)
         schema["pipelines"].append(
             {
-                "object_promise": "object_promise:{0}",
+                "object_promise": "object_promise:0",
                 "context": "TEMPLATE",
                 "variables": [
                     {
@@ -1497,11 +1495,11 @@ class TestAggregationPipeline:
         schema["thread_groups"] = [
             fixtures.thread_group(0, "depends-on-0"),
         ]
-        schema["actions"][1]["context"] = "thread_group:{0}"
-        schema["actions"][2]["context"] = "thread_group:{0}"
+        schema["actions"][1]["context"] = "thread_group:0"
+        schema["actions"][2]["context"] = "thread_group:0"
         schema["pipelines"].append(
             {
-                "object_promise": "object_promise:{2}",
+                "object_promise": "object_promise:2",
                 "context": "TEMPLATE",
                 "variables": [
                     {
@@ -1512,12 +1510,12 @@ class TestAggregationPipeline:
                 ],
                 "apply": [
                     {
-                        "from": "object_promise:{1}.numbers",
+                        "from": "object_promise:1.numbers",
                         "method": "CONCAT",
                         "to": "$numbers",
                     },
                     {
-                        "from": "object_promise:{1}.edge.numbers",
+                        "from": "object_promise:1.edge.numbers",
                         "method": "CONCAT",
                         "to": "$numbers",
                     },
@@ -1537,7 +1535,7 @@ class TestAggregationPipeline:
         # should result in an error
         schema["pipelines"].append(
             {
-                "object_promise": "object_promise:{3}",
+                "object_promise": "object_promise:3",
                 "context": "TEMPLATE",
                 "variables": [
                     {
@@ -1548,7 +1546,7 @@ class TestAggregationPipeline:
                 ],
                 "apply": [
                     {
-                        "from": "object_promise:{2}.numbers",
+                        "from": "object_promise:2.numbers",
                         "method": "CONCAT",
                         "to": "$numbers",
                     },
@@ -1569,6 +1567,6 @@ class TestAggregationPipeline:
 
         # from outside of the threaded context,
         # referencing a non-list on a threaded action should be allowed
-        schema["pipelines"][1]["apply"][0]["from"] = "object_promise:{2}.number"
+        schema["pipelines"][1]["apply"][0]["from"] = "object_promise:2.number"
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors

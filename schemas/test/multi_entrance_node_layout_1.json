@@ -16,8 +16,8 @@
             "alias": "0 and 1",
             "gate_type": "AND",
             "dependencies": [
-                {"compare": {"left": {"ref": "action:{0}"}}},
-                {"compare": {"left": {"ref": "action:{1}"}}}
+                {"compare": {"left": {"ref": "action:0"}}},
+                {"compare": {"left": {"ref": "action:1"}}}
             ]
         }
     ]
