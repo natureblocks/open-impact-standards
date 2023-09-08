@@ -40,6 +40,10 @@ def validate_operation(
             "STRING_LIST": ["CONCAT"],
             "STRING": ["APPEND", "PREPEND"],
         },
+        "BOOLEAN_LIST": {
+            "BOOLEAN_LIST": ["CONCAT"],
+            "BOOLEAN": ["APPEND", "PREPEND"],
+        },
         "NULL": {
             "OBJECT": ["SET"],
             "STRING": ["SET"],

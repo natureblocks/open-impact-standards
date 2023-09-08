@@ -364,7 +364,9 @@ enum ApplicationMethod {
     "PREPEND",
     "CONCAT",
     "SELECT",
-    "SET"
+    "SET",
+    "AND",
+    "OR"
 }
 ````
 

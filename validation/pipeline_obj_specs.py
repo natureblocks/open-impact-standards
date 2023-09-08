@@ -9,8 +9,9 @@ application_methods = [
     "APPEND",
     "PREPEND",
     "CONCAT",
-    "SELECT",
     "SET",
+    "AND",
+    "OR",
 ]
 aggregation_operators = [
     "AVERAGE",
