@@ -127,8 +127,7 @@ class TestSchemaValidation:
                 "description": "",
                 "party": "party:{0}",
                 "spawn": {
-                    "from": "",
-                    "foreach": "numbers",
+                    "foreach": "",
                     "as": "$number",
                 },
                 "depends_on": "checkpoint:{depends-on-0}",
@@ -146,30 +145,30 @@ class TestSchemaValidation:
             else:
                 schema["thread_groups"][0][key] = val
 
-        # spawn.from must be an ancestor of the thread
-        set_thread_value(["spawn", "from"], "object_promise:2")
+        # spawn.foreach must be an ancestor of the thread
+        set_thread_value(["spawn", "foreach"], "object_promise:2.numbers")
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.thread_groups[0]: the value of property "spawn.from" must reference an ancestor of thread_group id "0", got "object_promise:2"'
+            'root.thread_groups[0]: the value of property "spawn.foreach" must reference an ancestor of thread_group id "0", got "object_promise:2.numbers"'
             in errors
         )
 
-        set_thread_value(["spawn", "from"], "object_promise:0")
+        set_thread_value(["spawn", "foreach"], "object_promise:0.numbers")
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
-        # spawn.foreach must refer to a collection on spawn.from
-        set_thread_value(["spawn", "foreach"], "words")
+        # spawn.foreach must refer to a collection on spawn.foreach
+        set_thread_value(["spawn", "foreach"], "object_promise:0.words")
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.thread_groups[0].spawn: could not resolve variable type: "object_promise:0.words"'
+            'root.thread_groups[0].spawn.foreach: could not resolve variable type: "object_promise:0.words"'
             in errors
         )
 
-        set_thread_value(["spawn", "foreach"], "name")
+        set_thread_value(["spawn", "foreach"], "object_promise:0.name")
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            "root.thread_groups[0].spawn: cannot spawn threads from a non-list object"
+            "root.thread_groups[0].spawn.foreach: cannot spawn threads from a non-list object"
             in errors
         )
 
@@ -178,16 +177,14 @@ class TestSchemaValidation:
         set_thread_value(
             ["spawn"],
             {
-                "from": "object_promise:0",
-                "foreach": "objects",
+                "foreach": "object_promise:0.objects",
                 "as": "$object",
             },
         )
         schema["thread_groups"].append(fixtures.thread_group(1))
         schema["thread_groups"][1]["context"] = "thread_group:0"
         schema["thread_groups"][1]["spawn"] = {
-            "from": "$object",
-            "foreach": "numbers",
+            "foreach": "$object.numbers",
             "as": "$number",
         }
         schema["actions"][2]["context"] = "thread_group:1"
@@ -195,8 +192,7 @@ class TestSchemaValidation:
         assert not errors
 
         schema["thread_groups"][1]["spawn"] = {
-            "from": "$object",
-            "foreach": "objects",
+            "foreach": "$object.objects",
             "as": "$sub_object",
         }
         errors = validator.validate(json_string=json.dumps(schema))
@@ -217,18 +213,16 @@ class TestSchemaValidation:
 
         # test valid list sources...
         valid_list_sources = [
-            ("", "numbers"),  # list of scalars
-            ("", "objects"),  # edge collection
-            ("objects", "name"),  # field on an edge collection
-            ("objects", "edge"),  # edge on an edge collection
-            ("edge.edge.edge.objects", "name"),  # just for fun
+            "numbers",  # list of scalars
+            "objects",  # edge collection
+            "objects.name",  # field on an edge collection
+            "objects.edge",  # edge on an edge collection
+            "edge.edge.edge.objects.name",  # just for fun
         ]
 
-        for path_completion, field_name in valid_list_sources:
+        for path in valid_list_sources:
             schema["thread_groups"][0]["spawn"] = {
-                "from": "object_promise:0"
-                + ("." + path_completion if path_completion else ""),
-                "foreach": field_name,
+                "foreach": "object_promise:0." + path,
                 "as": "$var",
             }
             errors = validator.validate(json_string=json.dumps(schema))
@@ -250,8 +244,8 @@ class TestSchemaValidation:
         ] = "action:1.object_promise.completed"
         schema["thread_groups"][1]["depends_on"] = "checkpoint:{depends-on-1}"
         schema["thread_groups"][1]["spawn"] = {
-            "from": "object_promise:1",  # non-list (despite it being a threaded object)
-            "foreach": "numbers",  # list
+            # object_promise:1 is a non-list (despite it being a threaded object)
+            "foreach": "object_promise:1.numbers",  # numbers is a list
             "as": "$numbers",  # should be a list
         }
         errors = validator.validate(json_string=json.dumps(schema))
@@ -259,8 +253,8 @@ class TestSchemaValidation:
 
         # edge on a threaded action (the threading makes it a list)
         schema["thread_groups"][1]["spawn"] = {
-            "from": "object_promise:1",  # non-list (despite it being threaded object)
-            "foreach": "objects",  # list
+            # object_promise:1 is a non-list (despite it being threaded object)
+            "foreach": "object_promise:1.objects",  # objects is a list
             "as": "$edges",  # should be a list
         }
         errors = validator.validate(json_string=json.dumps(schema))
@@ -273,39 +267,35 @@ class TestSchemaValidation:
         ]
         for field_name in non_list_sources:
             schema["thread_groups"][0]["spawn"] = {
-                "from": "object_promise:0",
-                "foreach": field_name,
+                "foreach": "object_promise:0." + field_name,
                 "as": "$var",
             }
             errors = validator.validate(json_string=json.dumps(schema))
             assert (
-                "root.thread_groups[0].spawn: cannot spawn threads from a non-list object"
+                "root.thread_groups[0].spawn.foreach: cannot spawn threads from a non-list object"
                 in errors
             )
 
         # nested lists are invalid...
         nested_list_sources = [
-            ("objects", "numbers"),  # edge_collection->list
-            ("objects.edge", "numbers"),  # edge_collection->edge->list
-            ("objects.edge", "objects"),  # edge_collection->edge->edge_collection
+            "objects.numbers",  # edge_collection->list
+            "objects.edge.numbers",  # edge_collection->edge->list
+            "objects.edge.objects",  # edge_collection->edge->edge_collection
         ]
 
-        for path_completion, field_name in nested_list_sources:
+        for path in nested_list_sources:
             schema["thread_groups"][0]["spawn"] = {
-                "from": "object_promise:0"
-                + ("." + path_completion if path_completion else ""),
-                "foreach": field_name,
+                "foreach": "object_promise:0." + path,
                 "as": "$var",
             }
             errors = validator.validate(json_string=json.dumps(schema))
             assert (
-                f"root.thread_groups[0].spawn: nested list types are not supported"
+                f"root.thread_groups[0].spawn.foreach: nested list types are not supported"
                 in errors
             )
 
         schema["thread_groups"][0]["spawn"] = {
-            "from": "object_promise:0",
-            "foreach": "numbers",
+            "foreach": "object_promise:0.numbers",
             "as": "$number",
         }
 
@@ -313,8 +303,7 @@ class TestSchemaValidation:
         schema["thread_groups"].append(fixtures.thread_group(2))
         schema["thread_groups"][2]["context"] = "thread_group:1"
         schema["thread_groups"][2]["spawn"] = {
-            "from": "object_promise:1",
-            "foreach": "objects",
+            "foreach": "object_promise:1.objects",
             "as": "$object",
         }
         schema["actions"][3]["context"] = "thread_group:2"
@@ -399,13 +388,11 @@ class TestSchemaValidation:
             fixtures.thread_group(1),
         ]
         schema["thread_groups"][0]["spawn"] = {
-            "from": "object_promise:0",
-            "foreach": "objects",
+            "foreach": "object_promise:0.objects",
             "as": "$object",
         }
         schema["thread_groups"][1]["spawn"] = {
-            "from": "$object",  # parent thread variable!
-            "foreach": "numbers",
+            "foreach": "$object.numbers",  # parent thread variable!
             "as": "$number",
         }
         schema["thread_groups"][1]["context"] = "thread_group:0"
@@ -438,8 +425,7 @@ class TestSchemaValidation:
             fixtures.thread_group(0, "depends-on-0"),
         ]
         schema["thread_groups"][0]["spawn"] = {
-            "from": "object_promise:0",
-            "foreach": "objects",
+            "foreach": "object_promise:0.objects",
             "as": "$object",
         }
         schema["actions"][1]["context"] = "thread_group:0"
@@ -532,8 +518,7 @@ class TestSchemaValidation:
         schema["thread_groups"].append(fixtures.thread_group(1))
         schema["thread_groups"][1]["context"] = "thread_group:0"
         schema["thread_groups"][1]["spawn"] = {
-            "from": "object_promise:0",
-            "foreach": "objects",
+            "foreach": "object_promise:0.objects",
             "as": "$object",
         }
         errors = validator.validate(json_string=json.dumps(schema))
@@ -752,9 +737,7 @@ class TestSchemaValidation:
                     },
                 )
                 errors = validator.validate(json_string=json.dumps(schema))
-                expected_error = (
-                    f'root.actions[{action_idx}].operation.default_edges.edge (action id: {action_idx}): object type of referenced object promise does not match the object type definition: "object_promise:{str(object_promise_count)}"; expected "Placeholder", got "SomeOtherType"'
-                )
+                expected_error = f'root.actions[{action_idx}].operation.default_edges.edge (action id: {action_idx}): object type of referenced object promise does not match the object type definition: "object_promise:{str(object_promise_count)}"; expected "Placeholder", got "SomeOtherType"'
                 assert expected_error in errors
 
                 del schema["actions"][action_idx]["operation"]["default_edges"]
@@ -849,7 +832,9 @@ class TestSchemaValidation:
         }
         invalid_fields = ["some_other_objects", "edge", "numbers", "name"]
         for field_name in invalid_fields:
-            schema["actions"][1]["operation"]["appends_objects_to"] = f"object_promise:0.{field_name}"
+            schema["actions"][1]["operation"][
+                "appends_objects_to"
+            ] = f"object_promise:0.{field_name}"
             errors = validator.validate(json_string=json.dumps(schema))
             assert (
                 "root.actions[1].operation.appends_objects_to (action id: 1): must reference an edge collection with the same object_type as this action's object promise"
@@ -1658,7 +1643,10 @@ class TestSchemaValidation:
         schema["parties"] = [{"id": 0, "name": "Project"}]
         schema["actions"][0]["party"] = "party:{something else}"
         errors = validator.validate(json_string=json.dumps(schema))
-        assert 'root.actions[0].party (action id: 0): invalid ref: object not found: "party:{something else}"' in errors
+        assert (
+            'root.actions[0].party (action id: 0): invalid ref: object not found: "party:{something else}"'
+            in errors
+        )
 
         schema["actions"][0]["party"] = "party:{Project}"
         errors = validator.validate(json_string=json.dumps(schema))
@@ -1833,9 +1821,7 @@ class TestSchemaValidation:
             == "root.checkpoints[0].dependencies: must contain at least 1 item(s), got 0"
         )
 
-        schema["checkpoints"][0]["dependencies"].append(
-            fixtures.dependency("action:0")
-        )
+        schema["checkpoints"][0]["dependencies"].append(fixtures.dependency("action:0"))
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 

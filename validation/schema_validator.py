@@ -1051,7 +1051,6 @@ class SchemaValidator:
         spawn = thread_group["spawn"] if "spawn" in thread_group else None
         if (
             spawn is None
-            or "from" not in spawn
             or "foreach" not in spawn
             or "as" not in spawn
             or "id" not in thread_group
@@ -1103,15 +1102,15 @@ class SchemaValidator:
             return [f"{self._context(path)}: could not resolve thread scope"]
 
         thread_group_id = str(thread_group["id"])
-        if is_global_ref(spawn["from"]):
+        if is_global_ref(spawn["foreach"]):
             # if the global ref is an action, it must be an ancestor of the thread
-            if utils.parse_ref_type(spawn["from"]) == "object_promise":
+            if utils.parse_ref_type(spawn["foreach"]) == "object_promise":
                 errors += self.validate_has_ancestor(
                     path,
                     descendant_id=thread_group_id,
                     descendant_type="thread_group",
-                    ancestor_ref=spawn["from"],
-                    ancestor_source="spawn.from",
+                    ancestor_ref=spawn["foreach"],
+                    ancestor_source="spawn.foreach",
                 )
 
                 if errors:
@@ -1124,74 +1123,47 @@ class SchemaValidator:
                     )
                     else None
                 )
-                from_object_type = self._resolve_type_from_global_ref(
-                    spawn["from"], resolution_context_thread_group_id
+                thread_variable_type = self._resolve_type_from_global_ref(
+                    spawn["foreach"], resolution_context_thread_group_id
                 )
             except Exception as e:
-                return [f"{self._context(path)}.spawn: {str(e)}"]
+                return [f"{self._context(path)}.spawn.foreach: {str(e)}"]
 
-        elif is_variable(spawn["from"]):
-            from_path = spawn["from"].split(".")
+        elif is_variable(spawn["foreach"]):
+            from_path = spawn["foreach"].split(".")
             var_name = from_path[0]
 
             from_var_type_details = self._find_thread_variable(var_name, scope)
 
             if from_var_type_details is None:
                 return [
-                    f"{self._context(path)}.spawn.from: variable not found within thread scope: {json.dumps(var_name)}"
+                    f"{self._context(path)}.spawn.foreach: variable not found within thread scope: {json.dumps(var_name)}"
                 ]
 
             # if there's a path, resolve it from the variable's type
             if len(path) > 1:
                 try:
-                    from_object_type = self._resolve_type_from_variable_path(
+                    thread_variable_type = self._resolve_type_from_variable_path(
                         var_type_details=from_var_type_details,
                         path=from_path[1:],
                     )
                 except Exception as e:
-                    return [f"{self._context(path)}.spawn.from: {str(e)}"]
+                    return [f"{self._context(path)}.spawn.foreach: {str(e)}"]
             else:
-                from_object_type = from_var_type_details
+                thread_variable_type = from_var_type_details
         else:
             return [
-                f"{self._context(path)}.spawn.from: expected global ref or thread variable, got {json.dumps(spawn['from'])}"
+                f"{self._context(path)}.spawn.foreach: expected global ref or thread variable, got {json.dumps(spawn['foreach'])}"
             ]
 
-        if from_object_type is None:
+        if thread_variable_type is None:
             errors += [
-                f"{self._context(path)}.spawn.from: could not resolve object type"
+                f"{self._context(path)}.spawn.foreach: could not resolve variable type: {json.dumps(spawn['foreach'])}"
             ]
-        else:
-            # from_object_type must be an object or template entity
-            variable_type = None
-            if from_object_type.item_type == "OBJECT":
-                variable_type = self._resolve_type_from_object_path(
-                    from_object_type.item_tag, spawn["foreach"]
-                )
-            elif is_global_ref(from_object_type.item_type):
-                variable_type = self._resolve_type_from_global_ref(
-                    ref=from_object_type.item_type + "." + spawn["foreach"]
-                )
-            else:
-                errors += [
-                    f"{self._context(path)}.spawn.from: invalid type ({from_object_type.to_string()})"
-                ]
-
-            if variable_type is None:
-                errors += [
-                    f"{self._context(path)}.spawn: could not resolve variable type: {json.dumps(spawn['from'] + '.' + spawn['foreach'])}"
-                ]
-            else:
-                if variable_type.is_list:
-                    if from_object_type.is_list:
-                        errors += [
-                            f"{self._context(path)}.spawn: nested list types are not supported"
-                        ]
-                else:
-                    if not from_object_type.is_list:
-                        errors += [
-                            f"{self._context(path)}.spawn: cannot spawn threads from a non-list object"
-                        ]
+        elif not thread_variable_type.is_list:
+            errors += [
+                f"{self._context(path)}.spawn.foreach: cannot spawn threads from a non-list object"
+            ]
 
         # check for variable name collision
         var_name = spawn["as"]
@@ -1204,9 +1176,11 @@ class SchemaValidator:
             ]
         elif not errors:
             # thread variables are essentially loop variables, so the collection is de-listified here for convenience
-            variable_type.is_list = False
+            thread_variable_type.is_list = False
             # record the variable type
-            self._thread_groups[thread_group_id].variables[var_name] = variable_type
+            self._thread_groups[thread_group_id].variables[
+                var_name
+            ] = thread_variable_type
 
         return errors
 

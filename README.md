@@ -145,7 +145,7 @@ __ReferencedOperand:__
 - The `field_type` of the reference is evaluated and checked against the other-side operand of the parent `Dependency` and the `Dependency.compare.operator` to determine whether the comparison is valid.
 ````
 type ReferencedOperand {
-    ref: reference_path(Action) | thread_variable_path
+    ref: reference_path(Action | thread_variable)
 }
 ````
 __LiteralOperand:__
@@ -159,9 +159,8 @@ type LiteralOperand {
 __ThreadGroup:__
 - Some sequences of `Action`s and `Checkpoint`s need to be completed for each member of a party, for each item in a list, or for each object in an edge collection. `ThreadGroups` accomplish this by enabling the `context` attribute of an `Action` or `Checkpoint` to indicate that it is part of a threaded sequence and will be executed in parallel with the other threads in the `ThreadGroup`.
 - `id` must be unique within `root.thread_groups`.
-- `spawn` defines the source `from` which to spawn threads `foreach` item in a collection. It also defines the name of the variable (`as`) to which the value of the item will be assigned for a given thread in the thread group.
+- `spawn` defines the source from which to spawn threads `foreach` item in a collection. It also defines the name of the `thread_variable` (`as`) to which the value of the item will be assigned for a given thread in the thread group. If an `ObjectPromise` is referenced by `spawn.foreach`, it must be an ancestor of the `ThreadGroup`.
 - If `context` is specified, the `ThreadGroup` is nested within another `ThreadGroup`. Nested `ThreadGroup`s can be spawned using `reference_path`s as normal, or from paths from existing `thread_variable`s that are available in the `ThreadGroup.context`.
-- A `thread_variable_path` can either be the name of a `thread_variable` or a path that begins with a `thread_variable`.
 - `Pipeline`s are a mechanism for specifying how data should be aggregated during the execution of a state map instance.
 - Referenceable: `id`
 ````
@@ -171,8 +170,7 @@ type ThreadGroup {
     context?: reference(ThreadGroup),
     depends_on?: reference(Checkpoint),
     spawn: {
-        from: reference_path(ObjectPromise) | thread_variable_path,
-        foreach: string,
+        foreach: reference_path(ObjectPromise | thread_variable),
         as: string
     }
 }

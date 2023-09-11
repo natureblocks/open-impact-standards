@@ -465,7 +465,7 @@ thread_group = {
         "spawn": {
             "type": "object",
             "properties": {
-                "from": {
+                "foreach": {
                     "types": [
                         {"type": "ref", "ref_types": ["object_promise"]},
                         {
@@ -475,7 +475,6 @@ thread_group = {
                         },
                     ],
                 },
-                "foreach": {"type": "string"},
                 "as": {
                     "type": "string",
                     "pattern": patterns.variable,

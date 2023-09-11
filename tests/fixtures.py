@@ -95,8 +95,7 @@ def thread_group(id, depends_on_id=None):
         "id": id,
         "description": "",
         "spawn": {
-            "from": "object_promise:0",
-            "foreach": "numbers",
+            "foreach": "object_promise:0.numbers",
             "as": "$number",
         },
     }

@@ -800,7 +800,7 @@ class TestAggregationPipeline:
         schema["thread_groups"] = [
             fixtures.thread_group(0, "depends-on-0"),
         ]
-        schema["thread_groups"][0]["spawn"]["from"] = "object_promise:0"
+        schema["thread_groups"][0]["spawn"]["foreach"] = "object_promise:0.numbers"
         schema["actions"][1]["context"] = "thread_group:0"
         schema["thread_groups"][0]["spawn"]["as"] = "$thread_var"
 
@@ -1295,8 +1295,7 @@ class TestAggregationPipeline:
             fixtures.thread_group(0, "depends-on-2"),
         ]
         schema["thread_groups"][0]["spawn"] = {
-            "from": "object_promise:2.objects",
-            "foreach": "number",
+            "foreach": "object_promise:2.objects.number",
             "as": "$thread_var",
         }
         schema["actions"][1]["context"] = "thread_group:0"
