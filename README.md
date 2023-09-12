@@ -47,6 +47,18 @@ type ObjectType {
     }
 }
 ````
+__ObjectPromise:__
+- An `ObjectPromise` promises an instance of an `ObjectType`. The promise is fulfilled at runtime when an `Action` that references the `ObjectPromise` is performed, thereby instantiating an object to which data can be written. Only the first `Action` to reference the `ObjectPromise` creates a new instance; every subsequent `Action` which references the same `ObjectPromise` edits the same object instance.
+- `object_type` determines the `ObjectType` of the promised object instance. It must be a key that exists within `root.object_types`.
+- Referenceable: `id`, `name`
+````
+type ObjectPromise {
+    id: integer,
+    name: string,
+    description?: string,
+    object_type: string, // must be a key from root.object_types
+}
+````
 __Action:__
 - `id` must be unique within `root.actions`.
 - `operation` allows specifying which attributes can be set when completing the action.
