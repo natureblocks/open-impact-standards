@@ -2198,6 +2198,9 @@ class SchemaValidator:
         return []
 
     def _resolve_global_ref(self, ref):
+        if ref is None:
+            return None
+
         is_alias_reference = re.match(patterns.global_alias_ref, ref)
         ref_id = utils.parse_ref_id(ref)
         ref_type = utils.parse_ref_type(ref)
