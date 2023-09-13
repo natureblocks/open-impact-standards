@@ -3,7 +3,7 @@ import logging
 from validation import obj_specs
 
 from tests import fixtures
-from validation import utils
+from validation import utils, patterns
 from validation.schema_validator import SchemaValidator
 from enums import milestones
 
@@ -1962,7 +1962,7 @@ class TestSchemaValidation:
             assert len(errors) == 1
             assert (
                 errors[0]
-                == f'root.parties[0].hex_code: string does not match {obj_specs.party["properties"]["hex_code"]["pattern_description"]} pattern: {obj_specs.party["properties"]["hex_code"]["pattern"]}'
+                == f'root.parties[0].hex_code: string does not match {obj_specs.party["properties"]["hex_code"]["patterns"][0]["description"]} pattern: {patterns.hex_code}'
             )
 
     def test_string(self):

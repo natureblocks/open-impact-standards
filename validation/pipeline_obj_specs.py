@@ -76,7 +76,16 @@ pipeline = {
                 "properties": {
                     "from": {
                         "type": "string",
-                        "pattern": patterns.variable,
+                        "patterns": [
+                            {
+                                "regex": patterns.variable,
+                                "description": "variable name",
+                            },
+                            {
+                                "regex": patterns.dotless,
+                                "description": "cannot include the . character",
+                            },
+                        ],
                     },
                     "to": {"type": "string"},
                 },
@@ -101,8 +110,16 @@ variable = {
     "properties": {
         "name": {
             "type": "string",
-            "pattern": patterns.variable,
-            "pattern_description": "variable name ",
+            "patterns": [
+                {
+                    "regex": patterns.variable,
+                    "description": "variable name",
+                },
+                {
+                    "regex": patterns.dotless,
+                    "description": "cannot include the . character",
+                },
+            ],
         },
         "type": {
             "type": "enum",
@@ -131,8 +148,12 @@ traverse = {
                 },
                 {
                     "type": "string",
-                    "pattern": patterns.variable,
-                    "pattern_description": "variable name ",
+                    "patterns": [
+                        {
+                            "regex": patterns.variable,
+                            "description": "variable name",
+                        },
+                    ],
                 },
             ],
         },
@@ -141,7 +162,16 @@ traverse = {
             "properties": {
                 "as": {
                     "type": "string",
-                    "pattern": patterns.variable,
+                    "patterns": [
+                        {
+                            "regex": patterns.variable,
+                            "description": "variable name",
+                        },
+                        {
+                            "regex": patterns.dotless,
+                            "description": "cannot include the . character",
+                        },
+                    ],
                 },
                 "variables": {
                     "type": "array",
@@ -195,8 +225,12 @@ apply = {
             "types": [
                 {
                     "type": "string",
-                    "pattern": patterns.variable,
-                    "pattern_description": "variable name ",
+                    "patterns": [
+                        {
+                            "regex": patterns.variable,
+                            "description": "variable name",
+                        },
+                    ],
                 },
                 {
                     "type": "ref",
@@ -206,8 +240,16 @@ apply = {
         },
         "to": {
             "type": "string",
-            "pattern": patterns.variable,
-            "pattern_description": "variable name ",
+            "patterns": [
+                {
+                    "regex": patterns.variable,
+                    "description": "variable name",
+                },
+                {
+                    "regex": patterns.dotless,
+                    "description": "cannot include the . character",
+                },
+            ],
         },
         "method": {
             "type": "enum",
@@ -421,13 +463,21 @@ contextual_ref = {
                 },
                 {
                     "type": "string",
-                    "pattern": patterns.local_variable,
-                    "pattern_description": "local variable name ",
+                    "patterns": [
+                        {
+                            "regex": patterns.local_variable,
+                            "description": "local variable name",
+                        },
+                    ],
                 },
                 {
                     "type": "string",
-                    "pattern": patterns.variable,
-                    "pattern_description": "variable name ",
+                    "patterns": [
+                        {
+                            "regex": patterns.variable,
+                            "description": "variable name",
+                        },
+                    ],
                 },
             ],
         },

@@ -46,6 +46,12 @@ root_object = {
             "type": "object",
             "keys": {
                 "type": "string",
+                "patterns": [
+                    {
+                        "regex": patterns.dotless,
+                        "description": "cannot include the . character",
+                    },
+                ],
             },
             "values": {
                 "type": "object",
@@ -116,6 +122,12 @@ object_type = {
     "type": "object",
     "keys": {
         "type": "string",
+        "patterns": [
+            {
+                "regex": patterns.dotless,
+                "description": "cannot include the . character",
+            },
+        ],
     },
     "values": {
         "type": "object",
@@ -203,8 +215,12 @@ referenced_operand = {
                 },
                 {
                     "type": "string",
-                    "pattern": patterns.variable,
-                    "pattern_description": "variable name"
+                    "patterns": [
+                        {
+                            "regex": patterns.variable,
+                            "description": "variable name",
+                        },
+                    ],
                 },
             ],
         },
@@ -267,7 +283,15 @@ checkpoint = {
     "type": "object",
     "properties": {
         "id": {"type": "integer"},
-        "alias": {"type": "string", "pattern": patterns.alias, "pattern_description": "checkpoint alias"},
+        "alias": {
+            "type": "string",
+            "patterns": [
+                {
+                    "regex": patterns.alias,
+                    "description": "checkpoint alias",
+                }
+            ],
+        },
         "description": {"type": "string"},
         "abbreviated_description": {"type": "string"},
         "supporting_info": {"type": "array", "values": {"type": "string"}},
@@ -439,8 +463,12 @@ party = {
         "name": {"type": "string"},
         "hex_code": {
             "type": "string",
-            "pattern": patterns.hex_code,
-            "pattern_description": "hex color code",
+            "patterns": [
+                {
+                    "regex": patterns.hex_code,
+                    "description": "hex color code",
+                },
+            ],
         },
     },
     "constraints": {
@@ -470,15 +498,27 @@ thread_group = {
                         {"type": "ref", "ref_types": ["object_promise"]},
                         {
                             "type": "string",
-                            "pattern": patterns.variable,
-                            "pattern_description": "variable name"
+                            "patterns": [
+                                {
+                                    "regex": patterns.variable,
+                                    "description": "variable name",
+                                },
+                            ],
                         },
                     ],
                 },
                 "as": {
                     "type": "string",
-                    "pattern": patterns.variable,
-                    "pattern_description": "variable name"
+                    "patterns": [
+                        {
+                            "regex": patterns.variable,
+                            "description": "variable name",
+                        },
+                        {
+                            "regex": patterns.dotless,
+                            "description": "cannot include the . character",
+                        },
+                    ],
                 },
             },
         },

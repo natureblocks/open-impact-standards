@@ -17,3 +17,6 @@ hex_code = "^#(?:[0-9a-fA-F]{3}){1,2}$"
 
 # cannot include "_", "{", "}", or ":" (avoids ref parsing issues)
 alias = "^[^_\{\}:]+$"
+
+# cannot include "."
+dotless = "^[^\.]*$"

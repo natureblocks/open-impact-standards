@@ -2269,15 +2269,15 @@ class SchemaValidator:
         if not isinstance(field, str):
             return [f"{self._context(path)}: expected string, got {str(type(field))}"]
 
-        if "pattern" in obj_spec and not re.match(obj_spec["pattern"], field):
-            pattern_description = (
-                f'{obj_spec["pattern_description"]} '
-                if "pattern_description" in obj_spec
-                else ""
-            )
-            return [
-                f"{self._context(path)}: string does not match {pattern_description}pattern: {obj_spec['pattern']}"
-            ]
+        if "patterns" in obj_spec:
+            for pattern in obj_spec["patterns"]:
+                if not re.match(pattern["regex"], field):
+                    pattern_description = (
+                        f'{pattern["description"]} ' if "description" in pattern else ""
+                    )
+                    return [
+                        f"{self._context(path)}: string does not match {pattern_description}pattern: {pattern['regex']}"
+                    ]
 
         if "expected_value" in obj_spec:
             return self._validate_expected_value(path, field, obj_spec, parent_obj_spec)
