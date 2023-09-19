@@ -1387,100 +1387,142 @@ class TestAggregationPipeline:
         validator = SchemaValidator()
 
         validator.schema = {
-            "object_types": {
-                "NodeA": {
-                    "string_field": {"field_type": "STRING"},
-                    "numeric_list_field": {"field_type": "NUMERIC_LIST"},
-                    "b": {
-                        "field_type": "EDGE",
-                        "object_type": "NodeB",
-                    },
+            "object_types": [
+                {
+                    "id": 0,
+                    "name": "NodeA",
+                    "attributes": [
+                        {
+                            "name": "string_field",
+                            "type": "STRING",
+                        },
+                        {
+                            "name": "numeric_list_field",
+                            "type": "NUMERIC_LIST",
+                        },
+                        {
+                            "name": "b",
+                            "type": "EDGE",
+                            "object_type": "object_type:{NodeB}",
+                        },
+                    ],
                 },
-                "NodeB": {
-                    "numeric_field": {"field_type": "NUMERIC"},
-                    "string_list_field": {"field_type": "STRING_LIST"},
-                    "c_collection": {
-                        "field_type": "EDGE_COLLECTION",
-                        "object_type": "NodeC",
-                    },
+                {
+                    "id": 1,
+                    "name": "NodeB",
+                    "attributes": [
+                        {
+                            "name": "numeric_field",
+                            "type": "NUMERIC",
+                        },
+                        {
+                            "name": "string_list_field",
+                            "type": "STRING_LIST",
+                        },
+                        {
+                            "name": "c_collection",
+                            "type": "EDGE_COLLECTION",
+                            "object_type": "object_type:{NodeC}",
+                        },
+                    ],
                 },
-                "NodeC": {
-                    "boolean_field": {"field_type": "BOOLEAN"},
-                    "d_collection": {
-                        "field_type": "EDGE_COLLECTION",
-                        "object_type": "NodeD",
-                    },
+                {
+                    "id": 2,
+                    "name": "NodeC",
+                    "attributes": [
+                        {
+                            "name": "boolean_field",
+                            "type": "BOOLEAN",
+                        },
+                        {
+                            "name": "d_collection",
+                            "type": "EDGE_COLLECTION",
+                            "object_type": "object_type:{NodeD}",
+                        },
+                    ],
                 },
-                "NodeD": {
-                    "numeric_field": {"field_type": "NUMERIC"},
-                    "numeric_list_field": {"field_type": "NUMERIC_LIST"},
+                {
+                    "id": 3,
+                    "name": "NodeD",
+                    "attributes": [
+                        {
+                            "name": "numeric_field",
+                            "type": "NUMERIC",
+                        },
+                        {
+                            "name": "numeric_list_field",
+                            "type": "NUMERIC_LIST",
+                        },
+                    ],
                 },
-            },
+            ]
         }
 
         # simple field
         assert validator._resolve_type_from_object_path(
-            "NodeA", "string_field"
+            "object_type:{NodeA}", "string_field"
         ).__dict__ == {
             "is_list": False,
             "item_type": "STRING",
-            "item_tag": None,
+            "object_type_ref": None,
         }
 
         # list field
         assert validator._resolve_type_from_object_path(
-            "NodeA", "numeric_list_field"
+            "object_type:{NodeA}", "numeric_list_field"
         ).__dict__ == {
             "is_list": True,
             "item_type": "NUMERIC",
-            "item_tag": None,
+            "object_type_ref": None,
         }
 
         # edge
-        assert validator._resolve_type_from_object_path("NodeA", "b").__dict__ == {
+        assert validator._resolve_type_from_object_path(
+            "object_type:{NodeA}", "b"
+        ).__dict__ == {
             "is_list": False,
             "item_type": "OBJECT",
-            "item_tag": "NodeB",
+            "object_type_ref": "object_type:{NodeB}",
         }
 
         # edge collection
         assert validator._resolve_type_from_object_path(
-            "NodeB", "c_collection"
+            "object_type:{NodeB}", "c_collection"
         ).__dict__ == {
             "is_list": True,
             "item_type": "OBJECT",
-            "item_tag": "NodeC",
+            "object_type_ref": "object_type:{NodeC}",
         }
 
         # field of an edge
         assert validator._resolve_type_from_object_path(
-            "NodeA", "b.numeric_field"
+            "object_type:{NodeA}", "b.numeric_field"
         ).__dict__ == {
             "is_list": False,
             "item_type": "NUMERIC",
-            "item_tag": None,
+            "object_type_ref": None,
         }
 
         # field of an edge collection
         assert validator._resolve_type_from_object_path(
-            "NodeB", "c_collection.boolean_field"
-        ).__dict__ == {"is_list": True, "item_type": "BOOLEAN", "item_tag": None}
+            "object_type:{NodeB}", "c_collection.boolean_field"
+        ).__dict__ == {"is_list": True, "item_type": "BOOLEAN", "object_type_ref": None}
 
         # two edges deep
         assert validator._resolve_type_from_object_path(
-            "NodeA", "b.c_collection.boolean_field"
-        ).__dict__ == {"is_list": True, "item_type": "BOOLEAN", "item_tag": None}
+            "object_type:{NodeA}", "b.c_collection.boolean_field"
+        ).__dict__ == {"is_list": True, "item_type": "BOOLEAN", "object_type_ref": None}
 
         # nested list (edge collection of an edge collection)
         with pytest.raises(Exception):
             validator._resolve_type_from_object_path(
-                "NodeB", "c_collection.d_collection.numeric_field"
+                "object_type:{NodeB}", "c_collection.d_collection.numeric_field"
             )
 
         # nested list (list field of an edge collection)
         with pytest.raises(Exception):
             validator._resolve_type_from_object_path(
-                "NodeC", "d_collection.numeric_list_field"
+                "object_type:{NodeC}", "d_collection.numeric_list_field"
             )
 
     def test_threaded_action_references(self):

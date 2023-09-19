@@ -149,7 +149,7 @@ class TestSchemaValidation:
         set_thread_value(["spawn", "foreach"], "object_promise:2.numbers")
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.thread_groups[0]: the value of property "spawn.foreach" must reference an ancestor of thread_group id "0", got "object_promise:2.numbers"'
+            'root.thread_groups[0]: the value of property "spawn.foreach" must reference an ancestor of "thread_group:0", got "object_promise:2.numbers"'
             in errors
         )
 
@@ -369,7 +369,7 @@ class TestSchemaValidation:
         schema["actions"][0]["context"] = "thread_group:0"
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            "A node cannot have itself as a dependency (id: 0); NOTE: actions with threaded context implicitly depend on the referenced thread group's checkpoint (ThreadGroup.depends_on)"
+            "An action cannot have itself as a dependency (action:0); NOTE: actions with threaded context implicitly depend on the referenced thread group's checkpoint (ThreadGroup.depends_on)"
             in errors
         )
 
@@ -615,7 +615,8 @@ class TestSchemaValidation:
                 set_operation_value(action_idx, inclusion_type, ["not_a_field"])
                 errors = validator.validate(json_string=json.dumps(schema))
                 assert (
-                    f'root.actions[{action_idx}].operation.{inclusion_type} (action id: {action_idx}): field does not exist on object type Placeholder: "not_a_field"'
+                    f"root.actions[{action_idx}].operation.{inclusion_type} (action id: {action_idx}): attribute does not exist on object type object_type:"
+                    + '{Placeholder}: "not_a_field"'
                     in errors
                 )
 
@@ -665,7 +666,8 @@ class TestSchemaValidation:
                 )
                 errors = validator.validate(json_string=json.dumps(schema))
                 assert {
-                    f'root.actions[{action_idx}].operation.default_values.not_a_field (action id: {action_idx}): field does not exist on object type: "Placeholder"',
+                    f'root.actions[{action_idx}].operation.default_values.not_a_field (action id: {action_idx}): attribute does not exist on object type: "object_type:'
+                    + '{Placeholder}"',
                     f"root.actions[{action_idx}].operation.default_values.edge (action id: {action_idx}): cannot specify default value for edge here; use default_edges instead",
                     f"root.actions[{action_idx}].operation.default_values.objects (action id: {action_idx}): setting default values for edge collections is not supported",
                 }.issubset(errors)
@@ -692,15 +694,28 @@ class TestSchemaValidation:
                 del schema["actions"][action_idx]["operation"]["default_values"]
 
                 # should be able to specify default edges for edges that exist on the object type
+                schema["actions"].append(fixtures.action(3))
+                schema["object_promises"].append(fixtures.object_promise(3))
+                schema["checkpoints"].append(
+                    fixtures.checkpoint(1, "depends-on-3", num_dependencies=1)
+                )
+                schema["checkpoints"][1]["dependencies"][0]["compare"]["left"][
+                    "ref"
+                ] = "action:3.object_promise.completed"
+                schema["actions"][0]["depends_on"] = "checkpoint:{depends-on-3}"
                 set_operation_value(
                     action_idx,
                     "default_edges",
                     {
-                        "edge": "object_promise:0",
+                        "edge": "object_promise:3",
                     },
                 )
                 errors = validator.validate(json_string=json.dumps(schema))
                 assert not errors
+                schema["actions"].pop()
+                schema["object_promises"].pop()
+                schema["checkpoints"].pop()
+                del schema["actions"][0]["depends_on"]
 
                 # - should not be able to specify default edges for edges that do not exist on the object type,
                 # - should not be able to specify default values for edge collections
@@ -716,15 +731,25 @@ class TestSchemaValidation:
                 )
                 errors = validator.validate(json_string=json.dumps(schema))
                 assert {
-                    f'root.actions[{action_idx}].operation.default_edges.corner (action id: {action_idx}): field does not exist on object type: "Placeholder"',
+                    f'root.actions[{action_idx}].operation.default_edges.corner (action id: {action_idx}): attribute does not exist on object type: "object_type:'
+                    + '{Placeholder}"',
                     f"root.actions[{action_idx}].operation.default_edges.objects (action id: {action_idx}): setting default values for edge collections is not supported",
                     f'root.actions[{action_idx}].operation.default_edges.edge (action id: {action_idx}): an ancestor of the action must fulfill the referenced object promise: "{utils.as_ref(1, "object_promise", value_is_id=True)}"',
                 }.issubset(errors)
 
                 # specified values must be of the tag defined by the object_type
-                schema["object_types"]["SomeOtherType"] = {
-                    "some_field": {"field_type": "STRING"}
-                }
+                schema["object_types"].append(
+                    {
+                        "id": 1,
+                        "name": "SomeOtherType",
+                        "attributes": [
+                            {
+                                "name": "some_field",
+                                "type": "STRING",
+                            },
+                        ],
+                    },
+                )
                 object_promise_count = len(schema["object_promises"])
                 schema["object_promises"].append(
                     fixtures.object_promise(object_promise_count, "SomeOtherType")
@@ -737,7 +762,10 @@ class TestSchemaValidation:
                     },
                 )
                 errors = validator.validate(json_string=json.dumps(schema))
-                expected_error = f'root.actions[{action_idx}].operation.default_edges.edge (action id: {action_idx}): object type of referenced object promise does not match the object type definition: "object_promise:{str(object_promise_count)}"; expected "Placeholder", got "SomeOtherType"'
+                expected_error = (
+                    f'root.actions[{action_idx}].operation.default_edges.edge (action id: {action_idx}): object type of referenced object promise does not match the object type definition: "object_promise:{str(object_promise_count)}"; expected "object_type:'
+                    + '{Placeholder}", got "object_type:{SomeOtherType}"'
+                )
                 assert expected_error in errors
 
                 del schema["actions"][action_idx]["operation"]["default_edges"]
@@ -823,12 +851,9 @@ class TestSchemaValidation:
         assert not errors
 
         # object type of object promise must match the object type of the referenced edge collection
-        schema["object_types"]["SomeOtherType"] = {
-            "some_field": {"field_type": "STRING"}
-        }
-        schema["object_types"]["Placeholder"]["some_other_objects"] = {
-            "field_type": "EDGE_COLLECTION",
-            "object_type": "SomeOtherType",
+        schema["object_types"][0]["some_other_objects"] = {
+            "type": "EDGE_COLLECTION",
+            "object_type": "object_type:{SomeOtherType}",
         }
         invalid_fields = ["some_other_objects", "edge", "numbers", "name"]
         for field_name in invalid_fields:
@@ -1065,7 +1090,7 @@ class TestSchemaValidation:
     def test_circular_dependencies(self):
         validator = SchemaValidator()
 
-        # A node should not be able to depend on itself
+        # An action should not be able to depend on itself
         schema = fixtures.basic_schema_with_actions(1)
         schema["checkpoints"] = [
             fixtures.checkpoint(0, "depends-on-0", num_dependencies=1),
@@ -1079,9 +1104,9 @@ class TestSchemaValidation:
         schema["actions"][0]["depends_on"] = "checkpoint:{depends-on-0}"
         errors = validator.validate(json_string=json.dumps(schema))
         assert len(errors) == 1
-        assert errors[0] == "A node cannot have itself as a dependency (id: 0)"
+        assert errors[0] == "An action cannot have itself as a dependency (action:0)"
 
-        # Two nodes should not be able to depend on each other
+        # Two actions should not be able to depend on each other
         schema["object_promises"].append(fixtures.object_promise(1))
         schema["actions"].append(fixtures.action(1))
         checkpoint_2 = fixtures.checkpoint(1, "depends-on-1", num_dependencies=1)
@@ -1096,7 +1121,7 @@ class TestSchemaValidation:
         assert len(errors) == 1
         assert errors[0] == "Circular dependency detected (dependency path: [0, 1])"
 
-        # Three or more nodes should not be able to form a circular dependency
+        # Three or more actions should not be able to form a circular dependency
         schema["object_promises"].append(fixtures.object_promise(2))
         schema["actions"].append(fixtures.action(2))
         checkpoint_3 = fixtures.checkpoint(2, "depends-on-2", num_dependencies=1)
@@ -1113,15 +1138,22 @@ class TestSchemaValidation:
 
         # What if a recurring dependency set helps form a circular dependency?
         schema["actions"].append(fixtures.action(3))
+        schema["object_promises"].append(fixtures.object_promise(3))
         schema["actions"].append(fixtures.action(4))
+        schema["object_promises"].append(fixtures.object_promise(4))
         checkpoint_4 = fixtures.checkpoint(3, "depends-on-3", num_dependencies=1)
-        checkpoint_4["dependencies"][0]["compare"]["left"]["ref"] = "action:3"
+        checkpoint_4["dependencies"][0]["compare"]["left"][
+            "ref"
+        ] = "action:3.object_promise.completed"
         schema["checkpoints"].append(checkpoint_4)
         schema["actions"][2]["depends_on"] = "checkpoint:{depends-on-3}"
         checkpoint_5 = fixtures.checkpoint(4, "depends-on-4-and-0", num_dependencies=1)
-        checkpoint_5["dependencies"][0]["compare"]["left"]["ref"] = "action:4"
+        checkpoint_5["dependencies"][0]["compare"]["left"][
+            "ref"
+        ] = "action:4.object_promise.completed"
         checkpoint_5["dependencies"].append({"checkpoint": "checkpoint:{depends-on-0}"})
         schema["checkpoints"].append(checkpoint_5)
+        schema["checkpoints"][-1]["gate_type"] = "AND"
         schema["actions"][3]["depends_on"] = "checkpoint:{depends-on-4-and-0}"
 
         errors = validator.validate(json_string=json.dumps(schema))
@@ -1484,38 +1516,40 @@ class TestSchemaValidation:
 
         schema = fixtures.basic_schema()
 
-        field_types = ["EDGE", "EDGE_COLLECTION"]
+        attribute_types = ["EDGE", "EDGE_COLLECTION"]
         field_names = ["some_edge", "some_edge_collection"]
 
-        for i in range(len(field_types)):
-            schema["object_types"]["Placeholder"][field_names[i]] = {
-                "field_type": field_types[i]
-            }
+        attribute_count = len(schema["object_types"][0]["attributes"])
+        for i in range(len(attribute_types)):
+            schema["object_types"][0]["attributes"].append(
+                {"name": field_names[i], "type": attribute_types[i]}
+            )
 
             errors = validator.validate(json_string=json.dumps(schema))
             assert (
-                f"root.object_types.Placeholder.{field_names[i]}: missing required property: object_type"
+                f"root.object_types[0].attributes[{attribute_count}]: missing required property: object_type"
                 in errors
             )
 
-            schema["object_types"]["Placeholder"][field_names[i]] = {
-                "field_type": field_types[i],
-                "object_type": "NotAnObject",
-            }
+            schema["object_types"][0]["attributes"][attribute_count][
+                "object_type"
+            ] = "object_type:{NotAnObject}"
 
             errors = validator.validate(json_string=json.dumps(schema))
             assert (
-                f'root.object_types.Placeholder.{field_names[i]}.object_type: expected any key from root.object_types, got "NotAnObject"'
+                f'root.object_types[0].attributes[{attribute_count}].object_type: invalid ref: object not found: "object_type:'
+                + '{NotAnObject}"'
                 in errors
             )
 
-            schema["object_types"]["Placeholder"][field_names[i]] = {
-                "field_type": field_types[i],
-                "object_type": "Placeholder",
-            }
+            schema["object_types"][0]["attributes"][attribute_count][
+                "object_type"
+            ] = "object_type:{Placeholder}"
 
             errors = validator.validate(json_string=json.dumps(schema))
             assert not errors
+
+            attribute_count += 1
 
     def test_required_properties(self):
         validator = SchemaValidator()
@@ -1662,10 +1696,11 @@ class TestSchemaValidation:
         schema = fixtures.basic_schema_with_actions(3)
 
         schema["checkpoints"] = [
-            fixtures.checkpoint(0, "some-alias"),
-            fixtures.checkpoint(1, "some-alias"),
+            fixtures.checkpoint(0, "some-alias", num_dependencies=1),
+            fixtures.checkpoint(1, "some-alias", num_dependencies=1),
         ]
-        schema["actions"][2]["depends_on"] = "checkpoint:{some-alias}"
+        schema["actions"][1]["depends_on"] = "checkpoint:0"
+        schema["actions"][2]["depends_on"] = "checkpoint:1"
 
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
@@ -1674,6 +1709,7 @@ class TestSchemaValidation:
         )
 
         schema["checkpoints"].pop()
+        del schema["actions"][2]["depends_on"]
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 

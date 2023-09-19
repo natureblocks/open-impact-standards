@@ -3,7 +3,7 @@ from validation import obj_specs, oisql, pipeline_obj_specs, patterns
 from enums import ref_types
 
 
-def has_reference_to_template_entity(obj, key, entity_obj_name):
+def is_template_entity_reference(obj, key, entity_obj_name):
     return (
         isinstance(obj, dict)
         and key in obj
@@ -45,9 +45,22 @@ def is_filter_ref(value):
     return isinstance(value, str) and re.match(patterns.filter_ref, value)
 
 
+def is_import_ref(value):
+    split_path = value.split(".")
+    return (
+        len(split_path) > 1
+        and is_global_ref(split_path[0])
+        and is_global_ref(split_path[1])
+        and parse_ref_type(split_path[0]) == "schema"
+    )
+
+
 def parse_ref_id(value):
     if not is_global_ref(value):
         raise Exception(f"Invalid ref: {value}")
+
+    if is_import_ref(value):
+        value = value.split(".")[1]
 
     ref_id = ":".join(value.split(":")[1:]).split(".")[0]  # "{ref_id}" or "ref_id"
 
@@ -75,21 +88,89 @@ def parse_ref_type(value):
     if not is_global_ref(value):
         raise Exception(f"Invalid ref: {value}")
 
+    if is_import_ref(value):
+        split_path = value.split(".")
+        return parse_ref_type(split_path[1])
+
     return value.split(":")[0]
 
 
-def action_id_from_dependency_ref(dependency, left_or_right):
-    if (
-        "compare" not in dependency
-        or left_or_right not in dependency["compare"]
-        or "ref" not in dependency["compare"][left_or_right]
-        or not has_reference_to_template_entity(
-            dependency["compare"][left_or_right], "ref", "action"
-        )
-    ):
+def as_namespaced_ref(schema_id, entity_id, entity_type):
+    ref = f"{entity_type}:{str(entity_id)}"
+    if schema_id is not None:
+        # note that imported schemas do not have an "id" field,
+        # so the alias reference pattern is always used
+        ref = "schema:{" + schema_id + "}." + ref
+    return ref
+
+def prepend_schema_id(schema_id, ref):
+    if schema_id is not None:
+        # note that imported schemas do not have an "id" field,
+        # so the alias reference pattern is always used
+        return "schema:{" + schema_id + "}." + ref
+    return ref
+
+def truncate_schema_id(ref):
+    """Removes the schema id from a reference, if it exists.
+    """
+
+    if is_import_ref(ref):
+        return ".".join(ref.split(".")[1:])
+
+    return ref
+
+def reduce_ref(ref):
+    split_ref = ref.split(".")
+    num_path_segments = len(split_ref)
+    if num_path_segments == 0:
+        return None
+    
+    if num_path_segments == 1:
+        return split_ref[0]
+    
+    if is_import_ref(ref):
+        return ".".join(split_ref[:1])
+    
+    return split_ref[0]
+
+def parse_schema_id(value):
+    if not is_import_ref(value):
         return None
 
-    return parse_ref_id(dependency["compare"][left_or_right]["ref"])
+    schema_id = value.split(".")[0].split(":")[1]
+    if schema_id[0] == "{" and schema_id[-1] == "}":
+        return schema_id[1:-1]
+
+    return schema_id
+
+
+def action_ref_from_dependency_ref(dependency, left_or_right):
+    if _is_action_ref(dependency, left_or_right):
+        split_ref = dependency["compare"][left_or_right]["ref"].split(".")
+        if is_import_ref(dependency["compare"][left_or_right]["ref"]):
+            return ".".join(split_ref[:1])
+
+        return split_ref[0]
+
+    return None
+
+
+def action_id_from_dependency_ref(dependency, left_or_right):
+    if _is_action_ref(dependency, left_or_right):
+        return parse_ref_id(dependency["compare"][left_or_right]["ref"])
+    
+    return None
+
+
+def _is_action_ref(dependency, left_or_right):
+    return (
+        "compare" in dependency
+        and left_or_right in dependency["compare"]
+        and "ref" in dependency["compare"][left_or_right]
+        and is_template_entity_reference(
+            dependency["compare"][left_or_right], "ref", "action"
+        )
+    )
 
 
 def get_obj_spec(obj_spec_name):

@@ -33,88 +33,93 @@
             "hex_code": "#fffcc7"
         }
     ],
-    "object_types": {
-        "Placeholder": {
-            "completed": {
-                "field_type": "BOOLEAN",
-                "description": "Placeholder field definition"
-            },
-            "number": {
-                "field_type": "NUMERIC",
-                "description": "Another placeholder field definition"
-            },
-            "numbers": {
-                "field_type": "NUMERIC_LIST",
-                "description": "Yet another placeholder field definition"
-            }
+    "object_types": [
+        {
+            "id": 0,
+            "name": "Placeholder",
+            "description": "Placeholder object type",
+            "attributes": [
+                {
+                    "name": "completed",
+                    "type": "BOOLEAN"
+                },
+                {
+                    "name": "number",
+                    "type": "NUMERIC"
+                },
+                {
+                    "name": "numbers",
+                    "type": "NUMERIC_LIST"
+                }
+            ]
         }
-    },
+    ],
     "object_promises": [
         {
             "id": 0,
             "name": "object promise 0",
             "description": "Placeholder object promise",
-            "object_type": "Placeholder"
+            "object_type": "object_type:{Placeholder}"
         },
         {
             "id": 1,
             "name": "object promise 1",
             "description": "Placeholder object promise",
-            "object_type": "Placeholder"
+            "object_type": "object_type:{Placeholder}"
         },
         {
             "id": 2,
             "name": "object promise 2",
             "description": "Placeholder object promise",
-            "object_type": "Placeholder"
+            "object_type": "object_type:{Placeholder}"
         },
         {
             "id": 3,
             "name": "object promise 3",
             "description": "Placeholder object promise",
-            "object_type": "Placeholder"
+            "object_type": "object_type:{Placeholder}"
         },
         {
             "id": 4,
             "name": "object promise 4",
             "description": "Placeholder object promise",
-            "object_type": "Placeholder"
+            "object_type": "object_type:{Placeholder}"
         },
         {
             "id": 5,
             "name": "object promise 5",
             "description": "Placeholder object promise",
-            "object_type": "Placeholder"
+            "object_type": "object_type:{Placeholder}"
         },
         {
             "id": 6,
             "name": "object promise 6",
             "description": "Placeholder object promise",
-            "object_type": "Placeholder"
+            "object_type": "object_type:{Placeholder}"
         },
         {
             "id": 7,
             "name": "object promise 7",
             "description": "Placeholder object promise",
-            "object_type": "Placeholder"
+            "object_type": "object_type:{Placeholder}"
         },
         {
             "id": 8,
             "name": "object promise 8",
             "description": "Placeholder object promise",
-            "object_type": "Placeholder"
+            "object_type": "object_type:{Placeholder}"
         },
         {
             "id": 9,
             "name": "object promise 9",
             "description": "Placeholder object promise",
-            "object_type": "Placeholder"
+            "object_type": "object_type:{Placeholder}"
         },
         {
             "id": 10,
             "name": "object promise 10",
             "description": "Placeholder object promise",
-            "object_type": "Placeholder"
+            "object_type": "object_type:{Placeholder}"
         }
     ],
     "pipelines": [

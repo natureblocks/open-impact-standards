@@ -2,11 +2,11 @@ import re
 from validation import patterns
 
 
-class FieldTypeDetails:
-    def __init__(self, is_list, item_type, item_tag):
+class TypeDetails:
+    def __init__(self, is_list, item_type, object_type_ref):
         self.is_list = is_list
         self.item_type = item_type
-        self.item_tag = item_tag
+        self.object_type_ref = object_type_ref
 
     def to_field_type_string(self):
         item_type = self.item_type if self.item_type is not None else "NULL"
@@ -16,16 +16,11 @@ class FieldTypeDetails:
 
         return item_type
 
-    def to_string(self, specify_object_tag=False):
+    def to_string(self):
         item_type_string = self.item_type if self.item_type is not None else "NULL"
 
-        if specify_object_tag and item_type_string == "OBJECT":
-            item_type_string = "EDGE"
-
         if self.is_list:
-            if item_type_string == "EDGE":
-                return "EDGE_COLLECTION"
-            elif re.match(patterns.global_alias_ref, item_type_string) or re.match(
+            if re.match(patterns.global_alias_ref, item_type_string) or re.match(
                 patterns.global_id_ref, item_type_string
             ):
                 return f"[{item_type_string}]"
@@ -40,5 +35,5 @@ class FieldTypeDetails:
         return (
             self.is_list == field_type_details.is_list
             and self.item_type == field_type_details.item_type
-            and self.item_tag == field_type_details.item_tag
+            and self.object_type_ref == field_type_details.object_type_ref
         )

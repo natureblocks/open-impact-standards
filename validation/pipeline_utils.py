@@ -1,6 +1,6 @@
 import json
 from validation import utils
-from validation.field_type_details import FieldTypeDetails
+from validation.type_details import TypeDetails
 from enums import valid_list_item_types
 
 
@@ -75,7 +75,7 @@ def determine_right_operand_type(
     ref_type_details,
     pipeline_scope,
     schema_validator,
-    resolution_context_thread_group_id,
+    resolution_context_thread_group_ref,
 ):
     if "aggregate" in operation:
         field_to_aggregate = operation["aggregate"]["field"]
@@ -92,12 +92,12 @@ def determine_right_operand_type(
                 )
 
             field_type_to_aggregate = schema_validator._resolve_type_from_object_path(
-                ref_type_details.item_tag, field_to_aggregate
+                ref_type_details.object_type_ref, field_to_aggregate
             )
 
             if field_type_to_aggregate is None:
                 raise Exception(
-                    f"field {json.dumps(field_to_aggregate)} not found on object type {json.dumps(ref_type_details.item_tag)}"
+                    f"field {json.dumps(field_to_aggregate)} not found on object type {json.dumps(ref_type_details.object_type_ref)}"
                 )
 
         if not field_type_to_aggregate.is_list:
@@ -136,16 +136,16 @@ def determine_right_operand_type(
             )
 
         if operator in ["FIRST", "LAST"]:
-            return FieldTypeDetails(
+            return TypeDetails(
                 is_list=False,
                 item_type=ref_type_details.item_type,
-                item_tag=ref_type_details.item_tag,
+                object_type_ref=ref_type_details.object_type_ref,
             )
         else:
-            return FieldTypeDetails(
+            return TypeDetails(
                 is_list=False,
                 item_type="BOOLEAN" if operator in ["AND", "OR"] else "NUMERIC",
-                item_tag=None,
+                object_type_ref=None,
             )
 
     if "sort" in operation:
@@ -174,7 +174,7 @@ def determine_right_operand_type(
                         # filter variable
                         if len(split_ref) > 1:
                             # need to resolve path
-                            if ref_type_details.item_tag is None:
+                            if ref_type_details.object_type_ref is None:
                                 raise Exception(
                                     "cannot resolve path from non-object type"
                                 )
@@ -182,26 +182,26 @@ def determine_right_operand_type(
                             operand_types[
                                 side
                             ] = schema_validator._resolve_type_from_object_path(
-                                ref_type_details.item_tag, split_ref[1:]
+                                ref_type_details.object_type_ref, split_ref[1:]
                             )
                         else:
                             # same type as the collection being filtered, but de-listified
-                            operand_types[side] = FieldTypeDetails(
+                            operand_types[side] = TypeDetails(
                                 is_list=False,
                                 item_type=ref_type_details.item_type,
-                                item_tag=ref_type_details.item_tag,
+                                object_type_ref=ref_type_details.object_type_ref,
                             )
                     else:
                         # some other ref type
                         operand_types[side] = schema_validator.resolve_ref_type_details(
                             path,
-                            ref=operand["ref"],
-                            pipeline_scope=pipeline_scope,
-                            resolution_context_thread_group_id=resolution_context_thread_group_id,
+                            operand["ref"],
+                            pipeline_scope,
+                            resolution_context_thread_group_ref,
                         )
                 else:
                     # scalar
-                    operand_types[side] = field_type_details_from_scalar(operand)
+                    operand_types[side] = type_details_from_scalar(operand)
 
                 if operand_types[side] is None:
                     raise Exception(f"invalid filter operand: {json.dumps(operand)}")
@@ -221,17 +221,17 @@ def determine_right_operand_type(
 
     if "select" in operation:
         # ref must be an edge or edge collection
-        if ref_type_details.item_tag is None:
+        if ref_type_details.object_type_ref is None:
             raise Exception("cannot select from non-object type")
 
         # try to resolve the path
         resulting_type = schema_validator._resolve_type_from_object_path(
-            ref_type_details.item_tag, operation["select"]
+            ref_type_details.object_type_ref, operation["select"]
         )
 
         if resulting_type is None:
             raise Exception(
-                f"field {json.dumps(operation['select'])} not found on object type {json.dumps(ref_type_details.item_tag)}"
+                f"field {json.dumps(operation['select'])} not found on object type {json.dumps(ref_type_details.object_type_ref)}"
             )
 
         if ref_type_details.is_list:
@@ -263,7 +263,7 @@ def initial_matches_type(initial_type_details, var_type):
     )
 
 
-def field_type_details_from_scalar(value, expected_type=None):
+def type_details_from_scalar(value, expected_type=None):
     if value is None:
         is_list = False
         if expected_type is not None and expected_type in [
@@ -276,17 +276,17 @@ def field_type_details_from_scalar(value, expected_type=None):
         else:
             item_type = expected_type
 
-        return FieldTypeDetails(
+        return TypeDetails(
             is_list=is_list,
             item_type=item_type,
-            item_tag=None,
+            object_type_ref=None,
         )
 
     if not isinstance(value, list):
-        return FieldTypeDetails(
+        return TypeDetails(
             is_list=False,
             item_type=utils.field_type_from_python_type_name(type(value).__name__),
-            item_tag=None,
+            object_type_ref=None,
         )
 
     item_type = None
@@ -308,8 +308,8 @@ def field_type_details_from_scalar(value, expected_type=None):
     ):
         item_type = expected_type[: -len("_LIST")]
 
-    return FieldTypeDetails(
+    return TypeDetails(
         is_list=True,
         item_type=item_type,
-        item_tag=None,
+        object_type_ref=None,
     )

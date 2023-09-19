@@ -24,6 +24,7 @@ __Root json object:__
 ````
 {
     standard: string,
+    imports: [SchemaImport],
     terms: [Term],
     parties: [Party],
     object_types: {<object_tag>: ObjectType},
@@ -209,6 +210,26 @@ type Party {
     id: integer,
     name: string,
     hex_code?: string
+}
+````
+__SchemaImport:__
+- `file_name` is the name of the schema file to be imported, without the .json file extension, from [open-impact-standards/schemas](https://github.com/natureblocks/open-impact-standards/tree/main/schemas).
+- `connections` defines the ways the native schema connects *to* the imported schema. Note that connections *from* the imported schema *to* the native schema can be defined as normal within `Checkpoint.dependencies` or `Action.depends_on`.
+- Referenceable objects from imported schemas are namespaced and can be referenced by prepending `schema:{file_name}.` to a global reference, for example: `schema:{my_imported_schema}.action:0` would reference the `Action` with `id` = `0` from the `root.actions` array of `my_imported_schema.json`.
+- Referenceable: `file_name`
+````
+type SchemaImport {
+    file_name: string,
+    connections: [ImportConnection]
+}
+````
+__ImportConnection__
+- `to_ref` specifies an object from the imported schema to which a dependency will be added. Since imported schemas cannot be modified, such dependencies must be specified as part of `SchemaImport.connections`.
+- `add_dependency` specifies the `Checkpoint` on which the `to_ref` object will depend. If the object referenced by `to_ref` already has one or more dependencies, the existing dependencies will be automatically combined with the added dependency via a `Checkpoint` with `gate_type` `"AND"`.
+````
+type ImportConnection {
+    to_ref: reference(Action | Checkpoint),
+    add_dependency: reference(Checkpoint)
 }
 ````
 

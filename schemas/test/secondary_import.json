@@ -1,0 +1,136 @@
+{
+    "standard": "A schema for testing imports",
+    "imports": [
+        {
+            "file_name": "test/basic_import",
+            "connections": [
+                {
+                    "to_ref": "schema:{test/basic_import}.action:0",
+                    "add_dependency": "checkpoint:1"
+                },
+                {
+                    "to_ref": "schema:{test/basic_import}.checkpoint:1",
+                    "add_dependency": "checkpoint:0"
+                }
+            ]
+        }
+    ],
+    "terms": [],
+    "parties": [
+        {
+            "id": 0,
+            "name": "Project Developer"
+        }
+    ],
+    "object_types": [
+        {
+            "id": 0,
+            "name": "SomeType",
+            "attributes": [
+                {
+                    "name": "done",
+                    "type": "BOOLEAN"
+                },
+                {
+                    "name": "some_string_field",
+                    "type": "STRING"
+                },
+                {
+                    "name": "imported_edge",
+                    "type": "EDGE",
+                    "object_type": "schema:{test/basic_import}.object_type:{ImportedType}"
+                }
+            ]
+        }
+    ],
+    "object_promises": [
+        {
+            "id": 0,
+            "name": "object promise 0",
+            "description": "",
+            "object_type": "object_type:{SomeType}"
+        },
+        {
+            "id": 1,
+            "name": "object promise 1",
+            "description": "",
+            "object_type": "object_type:{SomeType}"
+        },
+        {
+            "id": 2,
+            "name": "object promise 2",
+            "description": "",
+            "object_type": "schema:{test/basic_import}.object_type:{ImportedType}"
+        }
+    ],
+    "actions": [
+        {
+            "id": 0,
+            "description": "action 0",
+            "party": "party:{Project Developer}",
+            "object_promise": "object_promise:0",
+            "operation": {
+                "exclude": null
+            }
+        },
+        {
+            "id": 1,
+            "description": "action 1",
+            "party": "party:{Project Developer}",
+            "object_promise": "object_promise:1",
+            "operation": {
+                "exclude": null
+            },
+            "depends_on": "checkpoint:{depends-on-0}"
+        },
+        {
+            "id": 2,
+            "description": "action 2",
+            "party": "party:{Project Developer}",
+            "object_promise": "object_promise:2",
+            "operation": {
+                "exclude": null
+            },
+            "depends_on": "checkpoint:{depends-on-1}"
+        }
+    ],
+    "checkpoints": [
+        {
+            "id": 0,
+            "alias": "depends-on-0",
+            "description": "",
+            "dependencies": [
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:0.object_promise.done"
+                        },
+                        "right": {
+                            "value": true
+                        },
+                        "operator": "EQUALS"
+                    }
+                }
+            ]
+        },
+        {
+            "id": 1,
+            "alias": "depends-on-1",
+            "description": "",
+            "dependencies": [
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:1.object_promise.done"
+                        },
+                        "right": {
+                            "value": true
+                        },
+                        "operator": "EQUALS"
+                    }
+                }
+            ]
+        }
+    ],
+    "pipelines": []
+}

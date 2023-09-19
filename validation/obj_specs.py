@@ -16,6 +16,13 @@ root_object = {
     "type": "object",
     "properties": {
         "standard": {"type": "string"},
+        "imports": {
+            "type": "array",
+            "values": {"type": "object", "obj_spec_name": "schema_import"},
+            "constraints": {
+                "unique": ["file_name"],
+            },
+        },
         "terms": {
             "type": "array",
             "values": {
@@ -43,19 +50,10 @@ root_object = {
             },
         },
         "object_types": {
-            "type": "object",
-            "keys": {
-                "type": "string",
-                "patterns": [
-                    {
-                        "regex": patterns.dotless,
-                        "description": "cannot include the . character",
-                    },
-                ],
-            },
-            "values": {
-                "type": "object",
-                "obj_spec_name": "object_type",
+            "type": "array",
+            "values": {"type": "object", "obj_spec_name": "object_type"},
+            "constraints": {
+                "unique": ["id", "name"],
             },
         },
         "object_promises": {
@@ -113,54 +111,113 @@ root_object = {
         },
     },
     "constraints": {
-        "optional": ["thread_groups"],
+        "optional": ["imports", "thread_groups"],
     },
     "property_validation_priority": ["thread_groups", "pipelines"],
 }
 
-object_type = {
+schema_import = {
     "type": "object",
-    "keys": {
-        "type": "string",
-        "patterns": [
+    "properties": {
+        "file_name": {"type": "string"},
+        "connections": {
+            "type": "array",
+            "values": {
+                "type": "object",
+                "properties": {
+                    "to_ref": {
+                        "type": "ref",
+                        "ref_types": ["action", "checkpoint"],
+                    },
+                    "add_dependency": {
+                        "type": "ref",
+                        "ref_types": ["checkpoint"],
+                    },
+                },
+            },
+            "constraints": {
+                "unique": ["to_ref"],
+            },
+        },
+    },
+    "constraints": {
+        "optional": ["connections"],
+        "validation_functions": [
             {
-                "regex": patterns.dotless,
-                "description": "cannot include the . character",
+                "function": "validate_import_connections",
             },
         ],
     },
-    "values": {
-        "type": "object",
-        "properties": {
-            "field_type": {
-                "type": "enum",
-                "values": list(field_types) + ["EDGE", "EDGE_COLLECTION"],
-            },
-            "description": {"type": "string"},
+    "ref_config": {
+        "collection": "root.imported_schemas",
+        "alias_field": "file_name",
+    },
+}
+
+object_type = {
+    "type": "object",
+    "properties": {
+        "id": {"type": "integer"},
+        "name": {
+            "type": "string",
+            "patterns": [
+                {
+                    "regex": patterns.dotless,
+                    "description": "cannot include the . character",
+                },
+            ],
         },
-        "constraints": {
-            "optional": ["description"],
-        },
-        "if": [
-            {
-                "property": "field_type",
-                "operator": "ONE_OF",
-                "value": ["EDGE", "EDGE_COLLECTION"],
-                "then": {
-                    "add_properties": {
-                        "object_type": {
-                            "type": "string",
-                            "expected_value": {
-                                "one_of": {
-                                    "from": "root.object_types",
-                                    "extract": "keys",
+        "description": {"type": "string"},
+        "attributes": {
+            "type": "array",
+            "values": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "patterns": [
+                            {
+                                "regex": patterns.dotless,
+                                "description": "cannot include the . character",
+                            },
+                        ],
+                    },
+                    "type": {
+                        "type": "enum",
+                        "values": list(field_types) + ["EDGE", "EDGE_COLLECTION"],
+                    },
+                    "description": {"type": "string"},
+                },
+                "constraints": {
+                    "optional": ["description"],
+                },
+                "if": [
+                    {
+                        "property": "type",
+                        "operator": "ONE_OF",
+                        "value": ["EDGE", "EDGE_COLLECTION"],
+                        "then": {
+                            "add_properties": {
+                                "object_type": {
+                                    "type": "ref",
+                                    "ref_types": ["object_type"],
                                 },
                             },
                         },
                     },
-                },
+                ],
             },
-        ],
+            "constraints": {
+                "unique": ["name"],
+            },
+        },
+    },
+    "constraints": {
+        "optional": ["description"],
+    },
+    "ref_config": {
+        "collection": "root.object_types",
+        "alias_field": "name",
     },
 }
 
@@ -171,13 +228,8 @@ object_promise = {
         "name": {"type": "string"},
         "description": {"type": "string"},
         "object_type": {
-            "type": "string",
-            "expected_value": {
-                "one_of": {
-                    "from": "root.object_types",
-                    "extract": "keys",
-                },
-            },
+            "type": "ref",
+            "ref_types": ["object_type"],
         },
     },
     "constraints": {
@@ -313,11 +365,9 @@ checkpoint = {
         "validation_functions": [
             {
                 "function": "validate_is_referenced",
-                "args": ["alias", "checkpoints"],
+                "args": ["checkpoint"],
             },
-            {
-                "function": "validate_checkpoint_context"
-            },
+            {"function": "validate_checkpoint_context"},
         ],
     },
     "if": [
@@ -358,10 +408,7 @@ action = {
     "type": "object",
     "properties": {
         "id": {"type": "integer"},
-        "context": {
-            "type": "ref",
-            "ref_types": ["thread_group"]
-        },
+        "context": {"type": "ref", "ref_types": ["thread_group"]},
         "object_promise": {
             "type": "ref",
             "ref_types": ["object_promise"],
@@ -420,7 +467,7 @@ action = {
                 "appends_objects_to": {
                     "type": "ref",
                     "ref_types": ["object_promise"],
-                }
+                },
             },
             "constraints": {
                 "mutually_exclusive": ["include", "exclude"],
@@ -528,7 +575,7 @@ thread_group = {
         "validation_functions": [
             {
                 "function": "validate_is_referenced",
-                "args": ["id", "thread_groups"],
+                "args": ["thread_group"],
             },
             {
                 "function": "validate_dependency_scope",
