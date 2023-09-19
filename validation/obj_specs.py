@@ -209,6 +209,7 @@ object_type = {
             },
             "constraints": {
                 "unique": ["name"],
+                "min_length": 1,
             },
         },
     },

@@ -19,7 +19,6 @@ __Root json object:__
 - Henceforth denoted as `root`.
 - `standard` is the name of the open standard.
 - `parties` is the list of parties relevant to the open standard.
-- The keys of the `object_types` object (denoted as `<object_tag>` below) define the object type names that the schema requires.
 - `actions` and `checkpoints` are lists containing the `Action` and `Checkpoint` objects that comprise the standard's dependency chart.
 ````
 {
@@ -27,7 +26,7 @@ __Root json object:__
     imports: [SchemaImport],
     terms: [Term],
     parties: [Party],
-    object_types: {<object_tag>: ObjectType},
+    object_types: [ObjectType],
     object_promises: [ObjectPromise],
     actions: [Action],
     checkpoints: [Checkpoint],
@@ -36,28 +35,35 @@ __Root json object:__
 }
 ````
 __ObjectType:__
-- The keys of an `ObjectType` object (denoted as `<attribute>` below) should be the names of any attributes that instances of that object would have. There is no limit to the number of `<attribute>` keys that can be specified for a given `ObjectType`.
-- `tag` is optional when `field_type` is set to any `FieldType` enum value. If `field_type` is set to `"EDGE"` or `"EDGE_COLLECTION"` then `tag` is required to specify the `ObjectType` of object instance(s) that the edge or edge collection can reference.
-- `description` can be used to provide more detail regarding the purpose of the attribute.
+- `ObjectType`s can be thought of as classes, with `ObjectType.name` being the class name and `ObjectType.attributes` defining the names and types of properties that exist on the class.
+- `attributes` on an `ObjectType` can be specified by attribute `name` as part of reference paths.
+- For `attributes`, `object_type` is optional when `type` is set to any `FieldType` enum value. If `type` is set to `"EDGE"` or `"EDGE_COLLECTION"` then `object_type` is required to specify the `ObjectType` of object instance(s) that the edge or edge collection can reference.
+- Referenceable: `id`, `name`
 ````
 type ObjectType {
-    <attribute>: {
-        field_type: FieldType | "EDGE" | "EDGE_COLLECTION",
-        tag?*: string,
-        description?: string
-    }
+    id: integer,
+    name: string,
+    description?: string,
+    attributes: [
+        {
+            name: string,
+            description?: string,
+            type: FieldType | "EDGE" | "EDGE_COLLECTION",
+            object_type?*: reference(ObjectType)
+        }
+    ]
 }
 ````
 __ObjectPromise:__
 - An `ObjectPromise` promises an instance of an `ObjectType`. The promise is fulfilled at runtime when an `Action` that references the `ObjectPromise` is performed, thereby instantiating an object to which data can be written. Only the first `Action` to reference the `ObjectPromise` creates a new instance; every subsequent `Action` which references the same `ObjectPromise` edits the same object instance.
-- `object_type` determines the `ObjectType` of the promised object instance. It must be a key that exists within `root.object_types`.
+- `object_type` determines the `ObjectType` of the promised object instance.
 - Referenceable: `id`, `name`
 ````
 type ObjectPromise {
     id: integer,
     name: string,
     description?: string,
-    object_type: string, // must be a key from root.object_types
+    object_type: reference(ObjectType),
 }
 ````
 __Action:__
