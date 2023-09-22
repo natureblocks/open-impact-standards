@@ -124,6 +124,8 @@
     ],
     "pipelines": [
         {
+            "id": 0,
+            "name": "pipeline_0",
             "object_promise": "object_promise:0",
             "context": "TEMPLATE",
             "variables": [

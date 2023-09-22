@@ -73,7 +73,7 @@ root_object = {
                 "obj_spec_name": "pipeline",  # see aggregation_pipeline.py
             },
             "constraints": {
-                "unique": ["object_promise"],
+                "unique": ["id", "name", "object_promise"],
             },
         },
         "actions": {

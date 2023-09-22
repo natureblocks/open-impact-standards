@@ -27,6 +27,8 @@ class TestAggregationPipeline:
 
         schema["pipelines"].append(
             {
+                "id": 0,
+                "name": "pipeline_0",
                 "object_promise": "object_promise:0",
                 "context": "TEMPLATE",
                 "variables": [
@@ -245,6 +247,8 @@ class TestAggregationPipeline:
         schema = fixtures.basic_schema_with_actions(3)
         schema["pipelines"].append(
             {
+                "id": 0,
+                "name": "pipeline_0",
                 "object_promise": "object_promise:1",
                 "context": "TEMPLATE",
                 "variables": [
@@ -437,6 +441,8 @@ class TestAggregationPipeline:
         # unused varaibles should throw a warning
         schema["pipelines"].append(
             {
+                "id": 0,
+                "name": "pipeline_0",
                 "object_promise": "object_promise:1",
                 "context": "TEMPLATE",
                 "variables": [
@@ -555,6 +561,8 @@ class TestAggregationPipeline:
         schema = fixtures.basic_schema_with_actions(2)
         schema["pipelines"].append(
             {
+                "id": 0,
+                "name": "pipeline_0",
                 "object_promise": "object_promise:1",
                 "context": "TEMPLATE",
                 "variables": [
@@ -658,6 +666,8 @@ class TestAggregationPipeline:
         # should not be able to declare variables with the same name
         schema["pipelines"].append(
             {
+                "id": 0,
+                "name": "pipeline_0",
                 "object_promise": "object_promise:1",
                 "context": "TEMPLATE",
                 "variables": [
@@ -863,6 +873,8 @@ class TestAggregationPipeline:
         # simple filter
         schema["pipelines"].append(
             {
+                "id": 0,
+                "name": "pipeline_0",
                 "object_promise": "object_promise:1",
                 "context": "TEMPLATE",
                 "variables": [
@@ -1079,6 +1091,8 @@ class TestAggregationPipeline:
         schema["object_promises"][3]["context"] = "thread_group:0"
         schema["pipelines"].append(
             {
+                "id": 1,
+                "name": "pipeline_1",
                 "object_promise": "object_promise:3",
                 "context": "TEMPLATE",
                 "variables": [
@@ -1124,6 +1138,8 @@ class TestAggregationPipeline:
         schema = fixtures.basic_schema_with_actions(2)
         schema["pipelines"].append(
             {
+                "id": 0,
+                "name": "pipeline_0",
                 "object_promise": "object_promise:1",
                 "context": "TEMPLATE",
                 "variables": [
@@ -1314,6 +1330,8 @@ class TestAggregationPipeline:
         schema = fixtures.basic_schema_with_actions(1)
         schema["pipelines"].append(
             {
+                "id": 0,
+                "name": "pipeline_0",
                 "object_promise": "object_promise:0",
                 "context": "TEMPLATE",
                 "variables": [
@@ -1545,6 +1563,8 @@ class TestAggregationPipeline:
         schema["object_promises"][2]["context"] = "thread_group:0"
         schema["pipelines"].append(
             {
+                "id": 0,
+                "name": "pipeline_0",
                 "object_promise": "object_promise:2",
                 "context": "TEMPLATE",
                 "variables": [
@@ -1581,6 +1601,8 @@ class TestAggregationPipeline:
         # should result in an error
         schema["pipelines"].append(
             {
+                "id": 1,
+                "name": "pipeline_1",
                 "object_promise": "object_promise:3",
                 "context": "TEMPLATE",
                 "variables": [

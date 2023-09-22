@@ -250,6 +250,8 @@ type ImportConnection {
 __Pipeline:__
 ````
 type Pipeline {
+    id: integer,
+    name: string,
     object_promise: reference(ObjectPromise),
     variables: [PipelineVariable],
     traverse?: [PipelineTraversal],

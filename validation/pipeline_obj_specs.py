@@ -28,6 +28,8 @@ aggregation_operators = [
 pipeline = {
     "type": "object",
     "properties": {
+        "id": {"type": "integer"},
+        "name": {"type": "string"},
         "object_promise": {
             "type": "ref",
             "ref_types": ["object_promise"],
