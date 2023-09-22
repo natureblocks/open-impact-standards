@@ -70,15 +70,17 @@ type ObjectPromise {
 ````
 __Action:__
 - `id` must be unique within `root.actions`.
+- `name` must be unique within `root.actions`.
 - `operation` allows specifying which attributes can be set when completing the action.
 - `object_promise` specifies the promised object instance on which the `operation` will act.
 - `context` determines whether the `Action` is to be completed as part of a thread within a `ThreadGroup`.
 - `depends_on` references the `Checkpoint` that must be satisfied before the action can be taken.
 - An `Action` may specify 0 or more `Milestone` values, but a given `Milestone` value may not appear on `Action` objects more than once per schema.
-- Referenceable: `id`
+- Referenceable: `id`, `name`
 ````
 type Action {
     id: integer,
+    name: string,
     description: string,
     steps?: {
         title: string,

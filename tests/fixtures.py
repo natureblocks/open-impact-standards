@@ -61,6 +61,7 @@ def action(action_id=None):
 
     return {
         "id": action_id,
+        "name": "action_" + str(action_id),
         "object_promise": "object_promise:" + str(action_id),
         "description": "test action",
         "party": "party:{Project}",

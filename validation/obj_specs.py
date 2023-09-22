@@ -83,7 +83,7 @@ root_object = {
                 "obj_spec_name": "action",
             },
             "constraints": {
-                "unique": ["id", "milestones"],
+                "unique": ["id", "name", "milestones"],
             },
         },
         "thread_groups": {
@@ -413,6 +413,7 @@ action = {
     "type": "object",
     "properties": {
         "id": {"type": "integer"},
+        "name": {"type": "string"},
         "context": {"type": "ref", "ref_types": ["thread_group"]},
         "object_promise": {
             "type": "ref",
@@ -505,6 +506,7 @@ action = {
     },
     "ref_config": {
         "collection": "root.actions",
+        "alias_field": "name",
     },
 }
 

@@ -155,6 +155,7 @@
     "actions": [
         {
             "id": 7,
+            "name": "action_7",
             "description": "Set up survey",
             "party": "party:{Project Developer}",
             "object_promise": "object_promise:0",
@@ -164,6 +165,7 @@
         },
         {
             "id": 8,
+            "name": "action_8",
             "description": "Make contact with them with preliminary set of questions",
             "party": "party:{Project Developer}",
             "object_promise": "object_promise:1",
@@ -174,6 +176,7 @@
         },
         {
             "id": 9,
+            "name": "action_9",
             "description": "Agreement decided between tenant and owner.",
             "party": "party:{Land Representative}",
             "object_promise": "object_promise:2",
@@ -183,6 +186,7 @@
         },
         {
             "id": 10,
+            "name": "action_10",
             "description": "Guidance on what should be on the contract from Natureblocks",
             "party": "party:{Project Developer}",
             "object_promise": "object_promise:3",
@@ -192,6 +196,7 @@
         },
         {
             "id": 11,
+            "name": "action_11",
             "description": "Written agreement to generate Carbon offsets",
             "party": "party:{Land Representative}",
             "object_promise": "object_promise:4",
@@ -202,6 +207,7 @@
         },
         {
             "id": 12,
+            "name": "action_12",
             "description": "Laws and contracts adhered to by both parties",
             "party": "party:{Land Representative}",
             "object_promise": "object_promise:5",
@@ -212,6 +218,7 @@
         },
         {
             "id": 13,
+            "name": "action_13",
             "description": "Tenant of land",
             "party": "party:{Land Representative}",
             "object_promise": "object_promise:6",
@@ -222,6 +229,7 @@
         },
         {
             "id": 14,
+            "name": "action_14",
             "description": "Is the owner of land",
             "party": "party:{Land Representative}",
             "object_promise": "object_promise:7",
@@ -232,6 +240,7 @@
         },
         {
             "id": 15,
+            "name": "action_15",
             "description": "Land user has the rights to generate carbon offsets",
             "party": "party:{Project}",
             "object_promise": "object_promise:8",
@@ -242,6 +251,7 @@
         },
         {
             "id": 16,
+            "name": "action_16",
             "description": "No local laws would be broken by planting crops / trees / etc",
             "party": "party:{Project}",
             "object_promise": "object_promise:9",
@@ -252,6 +262,7 @@
         },
         {
             "id": 17,
+            "name": "action_17",
             "description": "Usable land available",
             "party": "party:{Project}",
             "object_promise": "object_promise:10",
