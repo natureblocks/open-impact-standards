@@ -57,6 +57,7 @@ type ObjectType {
 __ObjectPromise:__
 - An `ObjectPromise` promises an instance of an `ObjectType`. The promise is fulfilled at runtime when an `Action` that references the `ObjectPromise` is performed, thereby instantiating an object to which data can be written. Only the first `Action` to reference the `ObjectPromise` creates a new instance; every subsequent `Action` which references the same `ObjectPromise` edits the same object instance.
 - `object_type` determines the `ObjectType` of the promised object instance.
+- The `context` of an `ObjectPromise` must match the context of the `Action` that fulfills the promise. If the fulfiller `Action` does not specify a `context`, then the `ObjectPromise` must likewise omit `context`.
 - Referenceable: `id`, `name`
 ````
 type ObjectPromise {
@@ -64,6 +65,7 @@ type ObjectPromise {
     name: string,
     description?: string,
     object_type: reference(ObjectType),
+    context?*: reference(ThreadGroup)
 }
 ````
 __Action:__

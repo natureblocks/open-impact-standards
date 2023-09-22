@@ -362,10 +362,32 @@ class SchemaValidator:
             object_promise["id"], "object_promise", value_is_id=True
         )
         errors = []
-        if object_promise_ref not in self._object_promise_fulfillment_actions:
+        if object_promise_ref not in self._object_promise_fulfillment_action_refs:
             errors += [
                 f"{self._context(path)}: object promise is never fulfilled by an action"
             ]
+
+        if object_promise_ref in self._object_promise_fulfillment_action_refs:
+            fulfiller_action_ref = self._object_promise_fulfillment_action_refs[
+                object_promise_ref
+            ]
+            if fulfiller_action_ref is not None:
+                context_error = [
+                    f"{self._context(path)}: object promise context must match the context of the action that fulfills it ({fulfiller_action_ref})"
+                ]
+                fulfiller_action = self._resolve_global_ref(
+                    self._object_promise_fulfillment_action_refs[object_promise_ref]
+                )
+                if utils.is_template_entity_reference(
+                    fulfiller_action, "context", "thread_group"
+                ):
+                    if (
+                        "context" not in object_promise
+                        or object_promise["context"] != fulfiller_action["context"]
+                    ):
+                        errors += context_error
+                elif "context" in object_promise:
+                    errors += context_error
 
         if object_promise_ref in self._duplicate_object_promise_fulfillments:
             errors += [
@@ -435,9 +457,9 @@ class SchemaValidator:
                         f"{self._context(f'{path}.operation.{inclusion_type}')}: attribute does not exist on object type {object_promise['object_type']}: {json.dumps(attribute_name)}"
                     ]
 
-        if object_promise_ref in self._object_promise_fulfillment_actions:
+        if object_promise_ref in self._object_promise_fulfillment_action_refs:
             if (
-                self._object_promise_fulfillment_actions[object_promise_ref]
+                self._object_promise_fulfillment_action_refs[object_promise_ref]
                 == action_ref
             ):
                 # CREATE operation
@@ -526,11 +548,11 @@ class SchemaValidator:
                             else:
                                 if (
                                     edge_ref
-                                    not in self._object_promise_fulfillment_actions
+                                    not in self._object_promise_fulfillment_action_refs
                                     or self.validate_has_ancestor(
                                         path,
                                         descendant_ref=action_ref,
-                                        ancestor_ref=self._object_promise_fulfillment_actions[
+                                        ancestor_ref=self._object_promise_fulfillment_action_refs[
                                             edge_ref
                                         ],
                                     )
@@ -548,11 +570,11 @@ class SchemaValidator:
                     )
                     if (
                         appends_to_object_promise_ref
-                        not in self._object_promise_fulfillment_actions
+                        not in self._object_promise_fulfillment_action_refs
                         or self.validate_has_ancestor(
                             path,
                             descendant_ref=action_ref,
-                            ancestor_ref=self._object_promise_fulfillment_actions[
+                            ancestor_ref=self._object_promise_fulfillment_action_refs[
                                 appends_to_object_promise_ref
                             ],
                             guarantee_ancestry=True,
@@ -632,11 +654,12 @@ class SchemaValidator:
                     ]
 
                 if (
-                    object_promise_ref not in self._object_promise_fulfillment_actions
+                    object_promise_ref
+                    not in self._object_promise_fulfillment_action_refs
                     or self.validate_has_ancestor(
                         path,
                         descendant_ref=action_ref,
-                        ancestor_ref=self._object_promise_fulfillment_actions[
+                        ancestor_ref=self._object_promise_fulfillment_action_refs[
                             object_promise_ref
                         ],
                     )
@@ -732,10 +755,12 @@ class SchemaValidator:
             ancestor_ref = utils.reduce_ref(ancestor_ref)
             if utils.parse_ref_type(ancestor_ref) == "object_promise":
                 # convert object promise ref to its fulfiller action ref
-                if ancestor_ref not in self._object_promise_fulfillment_actions:
+                if ancestor_ref not in self._object_promise_fulfillment_action_refs:
                     return error
 
-                ancestor_ref = self._object_promise_fulfillment_actions[ancestor_ref]
+                ancestor_ref = self._object_promise_fulfillment_action_refs[
+                    ancestor_ref
+                ]
 
             for dependency in checkpoint["dependencies"]:
                 if "compare" in dependency:
@@ -3018,7 +3043,7 @@ class SchemaValidator:
         self._object_promise_actions = {}  # {object_promise_ref: [action_ref]}
 
         # which action fulfills each object promise?
-        self._object_promise_fulfillment_actions = (
+        self._object_promise_fulfillment_action_refs = (
             {}
         )  # {object_promise_ref: action_ref}
         # which object promises are fulfilled by more than one action? (this is not allowed)
@@ -3304,10 +3329,10 @@ class SchemaValidator:
                     # no ancestor references the same object promise...
                     if (
                         object_promise_ref
-                        not in self._object_promise_fulfillment_actions
+                        not in self._object_promise_fulfillment_action_refs
                     ):
                         # this action fulfills the object promise
-                        self._object_promise_fulfillment_actions[
+                        self._object_promise_fulfillment_action_refs[
                             object_promise_ref
                         ] = action_ref
                         # and therefore the object promise inherits the action's thread scope

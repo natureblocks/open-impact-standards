@@ -232,9 +232,13 @@ object_promise = {
             "type": "ref",
             "ref_types": ["object_type"],
         },
+        "context": {
+            "type": "ref",
+            "ref_types": ["thread_group"],
+        },
     },
     "constraints": {
-        "optional": ["description"],
+        "optional": ["description", "context"],
         "validation_functions": [
             {
                 "function": "validate_object_promise_fulfillment",

@@ -331,6 +331,7 @@ class TestAggregationPipeline:
             fixtures.thread_group(0, "depends-on-0"),
         ]
         schema["actions"][2]["context"] = "thread_group:0"  # action:2 is now threaded
+        schema["object_promises"][2]["context"] = "thread_group:0"
         set_pipeline_value("variables", "name", "$average_minimums")
         set_pipeline_value("variables", "type", "NUMERIC_LIST")
         set_pipeline_value("variables", "initial", [])
@@ -802,6 +803,7 @@ class TestAggregationPipeline:
         ]
         schema["thread_groups"][0]["spawn"]["foreach"] = "object_promise:0.numbers"
         schema["actions"][1]["context"] = "thread_group:0"
+        schema["object_promises"][1]["context"] = "thread_group:0"
         schema["thread_groups"][0]["spawn"]["as"] = "$thread_var"
 
         schema["pipelines"][0]["variables"].append(
@@ -1074,6 +1076,7 @@ class TestAggregationPipeline:
         schema["actions"].append(fixtures.action(3))
         schema["object_promises"].append(fixtures.object_promise(3))
         schema["actions"][3]["context"] = "thread_group:0"
+        schema["object_promises"][3]["context"] = "thread_group:0"
         schema["pipelines"].append(
             {
                 "object_promise": "object_promise:3",
@@ -1538,6 +1541,8 @@ class TestAggregationPipeline:
         ]
         schema["actions"][1]["context"] = "thread_group:0"
         schema["actions"][2]["context"] = "thread_group:0"
+        schema["object_promises"][1]["context"] = "thread_group:0"
+        schema["object_promises"][2]["context"] = "thread_group:0"
         schema["pipelines"].append(
             {
                 "object_promise": "object_promise:2",

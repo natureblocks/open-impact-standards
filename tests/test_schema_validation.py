@@ -82,6 +82,7 @@ class TestSchemaValidation:
         child_thread = fixtures.thread_group(1)
         child_thread["context"] = "thread_group:0"
         schema["actions"][1]["context"] = "thread_group:1"
+        schema["object_promises"][1]["context"] = "thread_group:1"
 
         # should not be able to reuse a variable name in the same scope
         thread["spawn"]["as"] = "$some_var"
@@ -111,6 +112,7 @@ class TestSchemaValidation:
         sibling_thread["spawn"]["as"] = "$some_var"
         schema["thread_groups"].append(sibling_thread)
         schema["actions"][2]["context"] = "thread_group:2"
+        schema["object_promises"][2]["context"] = "thread_group:2"
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
@@ -134,6 +136,7 @@ class TestSchemaValidation:
             }
         ]
         schema["actions"][1]["context"] = "thread_group:0"
+        schema["object_promises"][1]["context"] = "thread_group:0"
 
         def set_thread_value(key, val):
             if isinstance(key, list):
@@ -188,6 +191,7 @@ class TestSchemaValidation:
             "as": "$number",
         }
         schema["actions"][2]["context"] = "thread_group:1"
+        schema["object_promises"][2]["context"] = "thread_group:1"
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
@@ -210,6 +214,7 @@ class TestSchemaValidation:
         ]
         schema["thread_groups"][0]["depends_on"] = "checkpoint:{depends-on-0}"
         schema["actions"][2]["context"] = "thread_group:0"
+        schema["object_promises"][2]["context"] = "thread_group:0"
 
         # test valid list sources...
         valid_list_sources = [
@@ -235,6 +240,8 @@ class TestSchemaValidation:
         schema["thread_groups"][1]["context"] = "thread_group:0"
         schema["actions"][1]["context"] = "thread_group:0"
         schema["actions"][2]["context"] = "thread_group:1"
+        schema["object_promises"][1]["context"] = "thread_group:0"
+        schema["object_promises"][2]["context"] = "thread_group:1"
         schema["checkpoints"].append(
             fixtures.checkpoint(1, "depends-on-1", num_dependencies=1)
         )
@@ -307,6 +314,7 @@ class TestSchemaValidation:
             "as": "$object",
         }
         schema["actions"][3]["context"] = "thread_group:2"
+        schema["object_promises"][3]["context"] = "thread_group:2"
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
@@ -397,6 +405,7 @@ class TestSchemaValidation:
         }
         schema["thread_groups"][1]["context"] = "thread_group:0"
         schema["actions"][1]["context"] = "thread_group:1"
+        schema["object_promises"][1]["context"] = "thread_group:1"
         schema["actions"][0]["depends_on"] = "checkpoint:{depends-on-1}"
 
         errors = validator.validate(json_string=json.dumps(schema))
@@ -430,6 +439,8 @@ class TestSchemaValidation:
         }
         schema["actions"][1]["context"] = "thread_group:0"
         schema["actions"][2]["context"] = "thread_group:0"
+        schema["object_promises"][1]["context"] = "thread_group:0"
+        schema["object_promises"][2]["context"] = "thread_group:0"
         schema["checkpoints"][1]["context"] = "thread_group:0"
         schema["checkpoints"][2]["context"] = "thread_group:0"
         schema["checkpoints"][1]["dependencies"][0]["compare"] = {
@@ -475,6 +486,7 @@ class TestSchemaValidation:
         schema["thread_groups"][1]["context"] = "thread_group:0"
         schema["thread_groups"][1]["spawn"]["as"] = "$child_thread_variable"
         schema["actions"][1]["context"] = "thread_group:1"
+        schema["object_promises"][1]["context"] = "thread_group:1"
         schema["checkpoints"][1]["context"] = "thread_group:1"
         assert (
             schema["checkpoints"][1]["dependencies"][0]["compare"]["left"]["ref"]
@@ -511,6 +523,7 @@ class TestSchemaValidation:
         assert "root.thread_groups[0]: thread_group is never referenced" in errors
 
         schema["actions"][1]["context"] = "thread_group:0"
+        schema["object_promises"][1]["context"] = "thread_group:0"
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
@@ -525,6 +538,7 @@ class TestSchemaValidation:
         assert "root.thread_groups[1]: thread_group is never referenced" in errors
 
         schema["actions"][1]["context"] = "thread_group:1"
+        schema["object_promises"][1]["context"] = "thread_group:1"
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
@@ -568,6 +582,7 @@ class TestSchemaValidation:
         )
 
         schema["actions"][1]["context"] = "thread_group:0"
+        schema["object_promises"][1]["context"] = "thread_group:0"
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
             'root.actions[1].context (action id: 1): invalid ref: object not found: "thread_group:0"'
@@ -577,6 +592,39 @@ class TestSchemaValidation:
         schema["thread_groups"] = [
             fixtures.thread_group(0, "depends-on-0"),  # creates thread_group:0
         ]
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+    def test_object_promise_context(self):
+        validator = SchemaValidator()
+
+        schema = fixtures.basic_schema_with_actions(2)
+        schema["checkpoints"] = [
+            fixtures.checkpoint(0, "depends-on-0", num_dependencies=1),
+        ]
+        schema["thread_groups"] = [
+            fixtures.thread_group(0, "depends-on-0"),
+        ]
+        schema["actions"][1]["context"] = "thread_group:0"
+
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.object_promises[1]: object promise context must match the context of the action that fulfills it (action:1)"
+            in errors
+        )
+
+        schema["object_promises"][1]["context"] = "thread_group:0"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert not errors
+
+        schema["object_promises"][0]["context"] = "thread_group:0"
+        errors = validator.validate(json_string=json.dumps(schema))
+        assert (
+            "root.object_promises[0]: object promise context must match the context of the action that fulfills it (action:0)"
+            in errors
+        )
+
+        del schema["object_promises"][0]["context"]
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
@@ -896,6 +944,7 @@ class TestSchemaValidation:
         ]
         # threaded appender, non-threaded appendee
         schema["actions"][1]["context"] = "thread_group:0"
+        schema["object_promises"][1]["context"] = "thread_group:0"
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
             "root.actions[1].operation.appends_objects_to (action id: 1): the action's context must match the context of the object promise referenced by this property (thread_group:0 != None)"
@@ -907,6 +956,7 @@ class TestSchemaValidation:
             "appends_objects_to"
         ] = "object_promise:2.objects"
         schema["actions"][2]["context"] = "thread_group:0"
+        schema["object_promises"][2]["context"] = "thread_group:0"
         schema["checkpoints"].append(
             fixtures.checkpoint(1, "depends-on-2", num_dependencies=1)
         )
@@ -935,6 +985,8 @@ class TestSchemaValidation:
         del schema["checkpoints"][1]
         del schema["actions"][1]["context"]
         del schema["actions"][2]["context"]
+        del schema["object_promises"][1]["context"]
+        del schema["object_promises"][2]["context"]
         schema["actions"][1]["operation"][
             "appends_objects_to"
         ] = "object_promise:0.objects"
@@ -999,6 +1051,7 @@ class TestSchemaValidation:
             fixtures.thread_group(0, "depends-on-0"),
         ]
         schema["actions"][1]["context"] = "thread_group:0"
+        schema["object_promises"][1]["context"] = "thread_group:0"
         schema["actions"][1]["object_promise"] = "object_promise:0"
         schema["actions"][2]["object_promise"] = "object_promise:1"
         del schema["object_promises"][2]  # unused
@@ -1183,6 +1236,7 @@ class TestSchemaValidation:
             },
         }
         schema["actions"][1]["context"] = "thread_group:0"
+        schema["object_promises"][1]["context"] = "thread_group:0"
         schema["actions"][1]["depends_on"] = "checkpoint:{depends-on-thread-variable}"
 
         errors = validator.validate(json_string=json.dumps(schema))
@@ -1191,6 +1245,7 @@ class TestSchemaValidation:
         # it cannot reference a thread variable that's out of scope
         schema["thread_groups"].append(fixtures.thread_group(1, "depends-on-0"))
         schema["actions"][2]["context"] = "thread_group:1"
+        schema["object_promises"][2]["context"] = "thread_group:1"
         schema["thread_groups"][1]["spawn"]["as"] = "$out_of_scope_thread_variable"
         schema["checkpoints"][1]["dependencies"][0]["compare"]["left"][
             "ref"
@@ -1214,6 +1269,7 @@ class TestSchemaValidation:
         schema["actions"][2]["depends_on"] = "checkpoint:{out-of-scope}"
         # using action 5 to avoid a referenceless checkpoint error further down
         schema["actions"][5]["context"] = "thread_group:1"
+        schema["object_promises"][5]["context"] = "thread_group:1"
         schema["actions"][5]["depends_on"] = "checkpoint:{out-of-scope}"
         schema["checkpoints"][1]["dependencies"].append(
             {"checkpoint": "checkpoint:{out-of-scope}"}
@@ -1253,12 +1309,14 @@ class TestSchemaValidation:
         )
         schema["checkpoints"][4]["gate_type"] = "OR"
         schema["actions"][3]["context"] = "thread_group:2"
+        schema["object_promises"][3]["context"] = "thread_group:2"
         schema["actions"][3]["depends_on"] = "checkpoint:{references-parent-context}"
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
         # it can be referenced by an action that specifies a nested threaded context in the same scope
         schema["actions"][4]["context"] = "thread_group:2"
+        schema["object_promises"][4]["context"] = "thread_group:2"
         schema["actions"][4]["depends_on"] = "checkpoint:{depends-on-thread-variable}"
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
@@ -1280,6 +1338,7 @@ class TestSchemaValidation:
             fixtures.thread_group(3, "depends-on-thread-variable")
         )
         schema["actions"][6]["context"] = "thread_group:3"
+        schema["object_promises"][6]["context"] = "thread_group:3"
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
             'root.thread_groups[3].depends_on: checkpoint with threaded context referenced out of scope: "checkpoint:{depends-on-thread-variable}"'
@@ -1297,6 +1356,7 @@ class TestSchemaValidation:
         schema["thread_groups"][4]["context"] = "thread_group:3"
         schema["thread_groups"][4]["spawn"]["as"] = "$n"  # avoid name collision
         schema["actions"][7]["context"] = "thread_group:4"
+        schema["object_promises"][7]["context"] = "thread_group:4"
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
@@ -1432,11 +1492,13 @@ class TestSchemaValidation:
             fixtures.thread_group(0, "test-checkpoint"),
         ]
         schema["actions"][1]["context"] = "thread_group:0"
+        schema["object_promises"][1]["context"] = "thread_group:0"
         errors = validator.validate(json_string=json.dumps(schema))
         assert not errors
 
         # within another checkpoint
         del schema["actions"][1]["context"]
+        del schema["object_promises"][1]["context"]
         del schema["thread_groups"][0]
         nested_checkpoint = fixtures.checkpoint(
             1, "nested-checkpoint", num_dependencies=1
