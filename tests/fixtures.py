@@ -115,6 +115,7 @@ def dependency(
 def thread_group(id, depends_on_id=None):
     thread = {
         "id": id,
+        "name": "thread_group_" + str(id),
         "description": "",
         "spawn": {
             "foreach": "object_promise:0.numbers",

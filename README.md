@@ -185,10 +185,11 @@ __ThreadGroup:__
 - `spawn` defines the source from which to spawn threads `foreach` item in a collection. It also defines the name of the `thread_variable` (`as`) to which the value of the item will be assigned for a given thread in the thread group. If an `ObjectPromise` is referenced by `spawn.foreach`, it must be an ancestor of the `ThreadGroup`.
 - If `context` is specified, the `ThreadGroup` is nested within another `ThreadGroup`. Nested `ThreadGroup`s can be spawned using `reference_path`s as normal, or from paths from existing `thread_variable`s that are available in the `ThreadGroup.context`.
 - `Pipeline`s are a mechanism for specifying how data should be aggregated during the execution of a state map instance.
-- Referenceable: `id`
+- Referenceable: `id`, `name`
 ````
 type ThreadGroup {
     id: integer,
+    name: string,
     description?: string,
     context?: reference(ThreadGroup),
     depends_on?: reference(Checkpoint),

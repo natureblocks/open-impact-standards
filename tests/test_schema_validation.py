@@ -126,6 +126,7 @@ class TestSchemaValidation:
         schema["thread_groups"] = [
             {
                 "id": 0,
+                "name": "thread_group_0",
                 "description": "",
                 "party": "party:{0}",
                 "spawn": {

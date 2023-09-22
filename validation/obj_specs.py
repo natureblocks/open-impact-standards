@@ -93,7 +93,7 @@ root_object = {
                 "obj_spec_name": "thread_group",
             },
             "constraints": {
-                "unique": ["id"],
+                "unique": ["id", "name"],
             },
         },
         "checkpoints": {
@@ -538,6 +538,7 @@ thread_group = {
     "type": "object",
     "properties": {
         "id": {"type": "integer"},
+        "name": {"type": "string"},
         "description": {"type": "string"},
         "context": {
             "type": "ref",
@@ -594,5 +595,6 @@ thread_group = {
     },
     "ref_config": {
         "collection": "root.thread_groups",
+        "alias_field": "name",
     },
 }
