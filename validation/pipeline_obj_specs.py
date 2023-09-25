@@ -98,7 +98,7 @@ pipeline = {
         },
     },
     "constraints": {
-        "optional": ["traverse", "apply"],
+        "optional": ["traverse", "apply", "context"],
         "validation_functions": [
             {
                 "function": "validate_pipeline",
