@@ -2334,7 +2334,14 @@ class SchemaValidator:
         if field is None:
             return []
 
-        valid_types = ["string", "decimal", "boolean", "string_list", "numeric_list"]
+        valid_types = [
+            "string",
+            "decimal",
+            "boolean",
+            "string_list",
+            "numeric_list",
+            "boolean_list",
+        ]
 
         for scalar_type in valid_types:
             if (
@@ -2399,6 +2406,18 @@ class SchemaValidator:
             return []
 
         return [f"{self._context(path)}: expected boolean, got {str(type(field))}"]
+
+    def _validate_boolean_list(self, path, field, obj_spec=None, parent_obj_spec=None):
+        if not isinstance(field, list):
+            return [f"{self._context(path)}: expected list, got {str(type(field))}"]
+
+        for item in field:
+            if not isinstance(item, bool):
+                return [
+                    f"{self._context(path)}: expected list of booleans, found {str(type(item))}"
+                ]
+
+        return []
 
     def _validate_string_list(self, path, field, obj_spec=None, parent_obj_spec=None):
         if not isinstance(field, list):
