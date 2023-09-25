@@ -148,7 +148,7 @@ class TestAggregationPipeline:
         )
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            f"root.pipelines[0].apply[{len(schema['pipelines'][0]['apply']) - 1}].from: cannot use local object as pipeline input"
+            f"root.pipelines[0].apply[{len(schema['pipelines'][0]['apply']) - 1}].from: cannot use local object as pipeline input (object_promise:0)"
             in errors
         )
 
@@ -156,7 +156,7 @@ class TestAggregationPipeline:
         schema["pipelines"][0]["apply"][1]["from"] = "object_promise:0.number"
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            "root.pipelines[0].apply[1].from: cannot use local object as pipeline input"
+            "root.pipelines[0].apply[1].from: cannot use local object as pipeline input (object_promise:0)"
             in errors
         )
 

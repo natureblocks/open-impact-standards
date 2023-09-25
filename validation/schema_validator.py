@@ -78,7 +78,7 @@ class SchemaValidator:
     def print_errors(self, include_warnings=True):
         print(
             "\n".join(self.errors)
-            + ("\nWARNINGS:\n".join(self.warnings) if include_warnings else "")
+            + ("\nWARNINGS:\n" + "\n".join(self.warnings) if include_warnings and self.warnings else "")
         )
 
     def get_next_action_id(self, json_file_path):
@@ -158,8 +158,14 @@ class SchemaValidator:
             if len(errors) == 0:
                 return []
 
+        # more helpful error message for incorrect reference types
+        if is_global_ref(field):
+            got_type = utils.parse_ref_type(field) + " reference"
+        else:
+            got_type = json.dumps(type(field).__name__)
+
         return [
-            f"{self._context(path)}: expected one of {json.dumps(allowed_types)}, got {json.dumps(type(field).__name__)}"
+            f"{self._context(path)}: expected one of {json.dumps(allowed_types)}, got {got_type}"
         ]
 
     def _validate_object(self, path, field, obj_spec, parent_obj_spec=None):
@@ -1450,14 +1456,15 @@ class SchemaValidator:
                 )
 
         # were any variables declared but not used?
-        for variables in pipeline.variables.values():
-            for var_name, var in variables.items():
-                if var.is_loop_variable or var.assigned or var.used:
-                    continue
+        if not errors:
+            for variables in pipeline.variables.values():
+                for var_name, var in variables.items():
+                    if var.is_loop_variable or var.assigned or var.used:
+                        continue
 
-                self.warnings.append(
-                    f"{self._context(path)}: variable declared but not used: {json.dumps(var_name)}"
-                )
+                    self.warnings.append(
+                        f"{self._context(path)}: variable declared but not used: {json.dumps(var_name)}"
+                    )
 
         return errors
 
@@ -1703,7 +1710,7 @@ class SchemaValidator:
 
         # is apply["from"] a global reference to the local object?
         local_input_error = [
-            f"{self._context(f'{path}.from')}: cannot use local object as pipeline input"
+            f"{self._context(f'{path}.from')}: cannot use local object as pipeline input ({pipeline.object_promise_ref})"
         ]
         if utils.is_template_entity_reference(apply, "from", "object_promise"):
             object_promise = self._resolve_global_ref(apply["from"])
@@ -1712,10 +1719,6 @@ class SchemaValidator:
                 and "id" in object_promise
                 and utils.reduce_ref(apply["from"]) == pipeline.object_promise_ref
             ):
-                self.warnings.append(
-                    f'{self._context(f"{path}.from")}: global ref refers to the local object -- consider using "$_object" instead to reference the local object.'
-                )
-
                 return local_input_error
         elif is_local_variable(apply["from"]):
             return local_input_error
@@ -2269,7 +2272,7 @@ class SchemaValidator:
             ref_type = utils.parse_ref_type(field)
             if ref_type not in obj_spec["ref_types"]:
                 return [
-                    f"{self._context(path)}: invalid ref type: expected one of {json.dumps(obj_spec['ref_types'])}, got {json.dumps(ref_type)}"
+                    f"{self._context(path)}: invalid ref type: expected one of {json.dumps(obj_spec['ref_types'])}, got {ref_type} reference"
                 ]
 
             # TODO: the following line should resolve to a type, not an object.

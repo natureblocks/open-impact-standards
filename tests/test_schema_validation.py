@@ -578,7 +578,7 @@ class TestSchemaValidation:
         schema["actions"][1]["context"] = "action:0"
         errors = validator.validate(json_string=json.dumps(schema))
         assert (
-            'root.actions[1].context (action id: 1): invalid ref type: expected one of ["thread_group"], got "action"'
+            'root.actions[1].context (action id: 1): invalid ref type: expected one of ["thread_group"], got action reference'
             in errors
         )
 
