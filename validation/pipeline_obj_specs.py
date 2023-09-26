@@ -44,9 +44,6 @@ pipeline = {
                 "type": "object",
                 "obj_spec_name": "variable",
             },
-            "constraints": {
-                "min_length": 1,
-            },
         },
         "traverse": {
             "type": "array",
@@ -180,9 +177,6 @@ traverse = {
                     "values": {
                         "type": "object",
                         "obj_spec_name": "variable",
-                    },
-                    "constraints": {
-                        "min_length": 1,
                     },
                 },
                 "traverse": {
