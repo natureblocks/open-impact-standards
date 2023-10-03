@@ -1512,16 +1512,9 @@ class SchemaValidator:
                 pipeline_var.traversal_scopes.add(pipeline_scope)
             else:
                 # look for a thread variable in the current scope
-                parent_action = self._get_parent_action(path)
-                if "context" in parent_action:
-                    parent_thread_group_id = utils.parse_ref_id(
-                        parent_action["context"]
-                    )
-                    var_type_details = self._find_thread_variable(
-                        var_name, self._thread_groups[parent_thread_group_id].scope
-                    )
-                else:
-                    var_type_details = None
+                var_type_details = self._find_thread_variable(
+                    var_name, pipeline.thread_scope
+                )
 
                 if var_type_details is None:
                     return [
@@ -1543,7 +1536,6 @@ class SchemaValidator:
                 f"{self._context(f'{path}.ref')}: cannot use field from local object as pipeline input"
             ]
 
-            parent_action = self._get_parent_action(path)
             if is_global_ref(ref):
                 # warn if the global ref refers to the local object
                 if utils.is_template_entity_reference(
