@@ -78,7 +78,11 @@ class SchemaValidator:
     def print_errors(self, include_warnings=True):
         print(
             "\n".join(self.errors)
-            + ("\nWARNINGS:\n" + "\n".join(self.warnings) if include_warnings and self.warnings else "")
+            + (
+                "\nWARNINGS:\n" + "\n".join(self.warnings)
+                if include_warnings and self.warnings
+                else ""
+            )
         )
 
     def get_next_action_id(self, json_file_path):
@@ -1023,6 +1027,16 @@ class SchemaValidator:
             return [
                 f"{self._context(path + '.depends_on')}: checkpoint with threaded context referenced out of scope: {json.dumps(field['depends_on'])}"
             ]
+
+        return []
+
+    def validate_singular_dependency(self, path, field):
+        if "dependencies" in field and len(field["dependencies"]) == 1:
+            dependency = field["dependencies"][0]
+            if "compare" not in dependency and "checkpoint" in dependency:
+                return [
+                    f"{self._context(path)}: if a checkpoint specifies only a single dependency, then that dependency cannot be a checkpoint reference"
+                ]
 
         return []
 

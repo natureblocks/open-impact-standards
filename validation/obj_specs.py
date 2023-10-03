@@ -373,6 +373,7 @@ checkpoint = {
                 "args": ["checkpoint"],
             },
             {"function": "validate_checkpoint_context"},
+            {"function": "validate_singular_dependency"},
         ],
     },
     "if": [
