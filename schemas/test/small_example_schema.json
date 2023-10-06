@@ -59,67 +59,67 @@
             "id": 0,
             "name": "object promise 0",
             "description": "Placeholder object promise",
-            "object_type": "object_type:{Placeholder}"
+            "object_type": "object_type:0"
         },
         {
             "id": 1,
             "name": "object promise 1",
             "description": "Placeholder object promise",
-            "object_type": "object_type:{Placeholder}"
+            "object_type": "object_type:0"
         },
         {
             "id": 2,
             "name": "object promise 2",
             "description": "Placeholder object promise",
-            "object_type": "object_type:{Placeholder}"
+            "object_type": "object_type:0"
         },
         {
             "id": 3,
             "name": "object promise 3",
             "description": "Placeholder object promise",
-            "object_type": "object_type:{Placeholder}"
+            "object_type": "object_type:0"
         },
         {
             "id": 4,
             "name": "object promise 4",
             "description": "Placeholder object promise",
-            "object_type": "object_type:{Placeholder}"
+            "object_type": "object_type:0"
         },
         {
             "id": 5,
             "name": "object promise 5",
             "description": "Placeholder object promise",
-            "object_type": "object_type:{Placeholder}"
+            "object_type": "object_type:0"
         },
         {
             "id": 6,
             "name": "object promise 6",
             "description": "Placeholder object promise",
-            "object_type": "object_type:{Placeholder}"
+            "object_type": "object_type:0"
         },
         {
             "id": 7,
             "name": "object promise 7",
             "description": "Placeholder object promise",
-            "object_type": "object_type:{Placeholder}"
+            "object_type": "object_type:0"
         },
         {
             "id": 8,
             "name": "object promise 8",
             "description": "Placeholder object promise",
-            "object_type": "object_type:{Placeholder}"
+            "object_type": "object_type:0"
         },
         {
             "id": 9,
             "name": "object promise 9",
             "description": "Placeholder object promise",
-            "object_type": "object_type:{Placeholder}"
+            "object_type": "object_type:0"
         },
         {
             "id": 10,
             "name": "object promise 10",
             "description": "Placeholder object promise",
-            "object_type": "object_type:{Placeholder}"
+            "object_type": "object_type:0"
         }
     ],
     "pipelines": [
