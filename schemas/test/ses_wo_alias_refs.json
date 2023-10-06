@@ -59,67 +59,67 @@
             "id": 0,
             "name": "object promise 0",
             "description": "Placeholder object promise",
-            "object_type": "object_type:{Placeholder}"
+            "object_type": "object_type:0"
         },
         {
             "id": 1,
             "name": "object promise 1",
             "description": "Placeholder object promise",
-            "object_type": "object_type:{Placeholder}"
+            "object_type": "object_type:0"
         },
         {
             "id": 2,
             "name": "object promise 2",
             "description": "Placeholder object promise",
-            "object_type": "object_type:{Placeholder}"
+            "object_type": "object_type:0"
         },
         {
             "id": 3,
             "name": "object promise 3",
             "description": "Placeholder object promise",
-            "object_type": "object_type:{Placeholder}"
+            "object_type": "object_type:0"
         },
         {
             "id": 4,
             "name": "object promise 4",
             "description": "Placeholder object promise",
-            "object_type": "object_type:{Placeholder}"
+            "object_type": "object_type:0"
         },
         {
             "id": 5,
             "name": "object promise 5",
             "description": "Placeholder object promise",
-            "object_type": "object_type:{Placeholder}"
+            "object_type": "object_type:0"
         },
         {
             "id": 6,
             "name": "object promise 6",
             "description": "Placeholder object promise",
-            "object_type": "object_type:{Placeholder}"
+            "object_type": "object_type:0"
         },
         {
             "id": 7,
             "name": "object promise 7",
             "description": "Placeholder object promise",
-            "object_type": "object_type:{Placeholder}"
+            "object_type": "object_type:0"
         },
         {
             "id": 8,
             "name": "object promise 8",
             "description": "Placeholder object promise",
-            "object_type": "object_type:{Placeholder}"
+            "object_type": "object_type:0"
         },
         {
             "id": 9,
             "name": "object promise 9",
             "description": "Placeholder object promise",
-            "object_type": "object_type:{Placeholder}"
+            "object_type": "object_type:0"
         },
         {
             "id": 10,
             "name": "object promise 10",
             "description": "Placeholder object promise",
-            "object_type": "object_type:{Placeholder}"
+            "object_type": "object_type:0"
         }
     ],
     "pipelines": [
@@ -159,7 +159,7 @@
             "id": 7,
             "name": "action_7",
             "description": "Set up survey",
-            "party": "party:{Project Developer}",
+            "party": "party:2",
             "object_promise": "object_promise:0",
             "operation": {
                 "exclude": ["number"]
@@ -169,18 +169,18 @@
             "id": 8,
             "name": "action_8",
             "description": "Make contact with them with preliminary set of questions",
-            "party": "party:{Project Developer}",
+            "party": "party:2",
             "object_promise": "object_promise:1",
             "operation": {
                 "exclude": null
             },
-            "depends_on": "checkpoint:{Set up survey#0000}"
+            "depends_on": "checkpoint:2"
         },
         {
             "id": 9,
             "name": "action_9",
             "description": "Agreement decided between tenant and owner.",
-            "party": "party:{Land Representative}",
+            "party": "party:0",
             "object_promise": "object_promise:2",
             "operation": {
                 "exclude": null
@@ -190,7 +190,7 @@
             "id": 10,
             "name": "action_10",
             "description": "Guidance on what should be on the contract from Natureblocks",
-            "party": "party:{Project Developer}",
+            "party": "party:2",
             "object_promise": "object_promise:3",
             "operation": {
                 "exclude": null
@@ -200,78 +200,78 @@
             "id": 11,
             "name": "action_11",
             "description": "Written agreement to generate Carbon offsets",
-            "party": "party:{Land Representative}",
+            "party": "party:0",
             "object_promise": "object_promise:4",
             "operation": {
                 "exclude": null
             },
-            "depends_on": "checkpoint:{Agreement and Guidance#0000}"
+            "depends_on": "checkpoint:3"
         },
         {
             "id": 12,
             "name": "action_12",
             "description": "Laws and contracts adhered to by both parties",
-            "party": "party:{Land Representative}",
+            "party": "party:0",
             "object_promise": "object_promise:5",
             "operation": {
                 "exclude": null
             },
-            "depends_on": "checkpoint:{8}"
+            "depends_on": "checkpoint:0"
         },
         {
             "id": 13,
             "name": "action_13",
             "description": "Tenant of land",
-            "party": "party:{Land Representative}",
+            "party": "party:0",
             "object_promise": "object_promise:6",
             "operation": {
                 "exclude": null
             },
-            "depends_on": "checkpoint:{Written Agreement, Laws and Contracts#0000}"
+            "depends_on": "checkpoint:1"
         },
         {
             "id": 14,
             "name": "action_14",
             "description": "Is the owner of land",
-            "party": "party:{Land Representative}",
+            "party": "party:0",
             "object_promise": "object_promise:7",
             "operation": {
                 "exclude": null
             },
-            "depends_on": "checkpoint:{8}"
+            "depends_on": "checkpoint:0"
         },
         {
             "id": 15,
             "name": "action_15",
             "description": "Land user has the rights to generate carbon offsets",
-            "party": "party:{Project}",
+            "party": "party:1",
             "object_promise": "object_promise:8",
             "operation": {
                 "exclude": null
             },
-            "depends_on": "checkpoint:{Land owner or Tenant#0000}"
+            "depends_on": "checkpoint:4"
         },
         {
             "id": 16,
             "name": "action_16",
             "description": "No local laws would be broken by planting crops / trees / etc",
-            "party": "party:{Project}",
+            "party": "party:1",
             "object_promise": "object_promise:9",
             "operation": {
                 "exclude": null
             },
-            "depends_on": "checkpoint:{Land owner or Tenant#0000}"
+            "depends_on": "checkpoint:4"
         },
         {
             "id": 17,
             "name": "action_17",
             "description": "Usable land available",
-            "party": "party:{Project}",
+            "party": "party:1",
             "object_promise": "object_promise:10",
             "operation": {
                 "exclude": null
             },
-            "depends_on": "checkpoint:{Land Rights and Local Laws#0000}"
+            "depends_on": "checkpoint:5"
         }
     ],
     "thread_groups": [],
