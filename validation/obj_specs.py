@@ -119,7 +119,15 @@ root_object = {
 schema_import = {
     "type": "object",
     "properties": {
-        "file_name": {"type": "string"},
+        "file_name": {
+            "type": "string",
+            "patterns": [
+                {
+                    "regex": patterns.alias,
+                    "description": "alias",
+                },
+            ],
+        },
         "connections": {
             "type": "array",
             "values": {
@@ -162,8 +170,8 @@ object_type = {
             "type": "string",
             "patterns": [
                 {
-                    "regex": patterns.dotless,
-                    "description": "cannot include the . character",
+                    "regex": patterns.alias,
+                    "description": "alias",
                 },
             ],
         },
@@ -226,7 +234,15 @@ object_promise = {
     "type": "object",
     "properties": {
         "id": {"type": "integer"},
-        "name": {"type": "string"},
+        "name": {
+            "type": "string",
+            "patterns": [
+                {
+                    "regex": patterns.alias,
+                    "description": "alias",
+                },
+            ],
+        },
         "description": {"type": "string"},
         "object_type": {
             "type": "ref",
@@ -345,8 +361,8 @@ checkpoint = {
             "patterns": [
                 {
                     "regex": patterns.alias,
-                    "description": "checkpoint alias",
-                }
+                    "description": "alias",
+                },
             ],
         },
         "description": {"type": "string"},
@@ -414,7 +430,15 @@ action = {
     "type": "object",
     "properties": {
         "id": {"type": "integer"},
-        "name": {"type": "string"},
+        "name": {
+            "type": "string",
+            "patterns": [
+                {
+                    "regex": patterns.alias,
+                    "description": "alias",
+                },
+            ],
+        },
         "context": {"type": "ref", "ref_types": ["thread_group"]},
         "object_promise": {
             "type": "ref",
@@ -515,7 +539,15 @@ party = {
     "type": "object",
     "properties": {
         "id": {"type": "integer"},
-        "name": {"type": "string"},
+        "name": {
+            "type": "string",
+            "patterns": [
+                {
+                    "regex": patterns.alias,
+                    "description": "alias",
+                },
+            ],
+        },
         "hex_code": {
             "type": "string",
             "patterns": [
@@ -539,7 +571,15 @@ thread_group = {
     "type": "object",
     "properties": {
         "id": {"type": "integer"},
-        "name": {"type": "string"},
+        "name": {
+            "type": "string",
+            "patterns": [
+                {
+                    "regex": patterns.alias,
+                    "description": "alias",
+                },
+            ],
+        },
         "description": {"type": "string"},
         "context": {
             "type": "ref",
