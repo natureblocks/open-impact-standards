@@ -1,0 +1,90 @@
+{
+    "standard": "basic_test_schema",
+    "terms": [],
+    "parties": [
+        {
+            "id": 0,
+            "name": "Project"
+        }
+    ],
+    "actions": [
+        {
+            "id": 0,
+            "name": "action_0",
+            "object_promise": "object_promise:0",
+            "description": "test action",
+            "party": "party:{Project}",
+            "operation": {
+                "include": [
+                    "name"
+                ]
+            },
+            "depends_on": "schema:{test/basic_import}.checkpoint:1"
+        },
+        {
+            "id": 1,
+            "name": "action_1",
+            "object_promise": "object_promise:1",
+            "description": "test action",
+            "party": "party:{Project}",
+            "operation": {
+                "include": [
+                    "name"
+                ]
+            }
+        }
+    ],
+    "checkpoints": [],
+    "object_types": [
+        {
+            "id": 0,
+            "name": "Placeholder",
+            "attributes": [
+                {
+                    "name": "completed",
+                    "type": "BOOLEAN"
+                },
+                {
+                    "name": "name",
+                    "type": "STRING"
+                },
+                {
+                    "name": "number",
+                    "type": "NUMERIC"
+                },
+                {
+                    "name": "numbers",
+                    "type": "NUMERIC_LIST"
+                },
+                {
+                    "name": "edge",
+                    "type": "EDGE",
+                    "object_type": "object_type:{Placeholder}"
+                },
+                {
+                    "name": "objects",
+                    "type": "EDGE_COLLECTION",
+                    "object_type": "object_type:{Placeholder}"
+                }
+            ]
+        }
+    ],
+    "object_promises": [
+        {
+            "id": 0,
+            "name": "object_promise_0",
+            "object_type": "object_type:{Placeholder}"
+        },
+        {
+            "id": 1,
+            "name": "object_promise_1",
+            "object_type": "object_type:{Placeholder}"
+        }
+    ],
+    "pipelines": [],
+    "imports": [
+        {
+            "file_name": "test/secondary_import"
+        }
+    ]
+}

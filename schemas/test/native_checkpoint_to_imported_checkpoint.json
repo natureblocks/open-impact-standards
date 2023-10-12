@@ -1,0 +1,114 @@
+{
+    "standard": "basic_test_schema",
+    "terms": [],
+    "parties": [
+        {
+            "id": 0,
+            "name": "Project"
+        }
+    ],
+    "actions": [
+        {
+            "id": 0,
+            "name": "action_0",
+            "object_promise": "object_promise:0",
+            "description": "test action",
+            "party": "party:{Project}",
+            "operation": {
+                "include": [
+                    "name"
+                ]
+            }
+        },
+        {
+            "id": 1,
+            "name": "action_1",
+            "object_promise": "object_promise:1",
+            "description": "test action",
+            "party": "party:{Project}",
+            "operation": {
+                "include": [
+                    "name"
+                ]
+            }
+        }
+    ],
+    "checkpoints": [
+        {
+            "id": 0,
+            "alias": "depends-on-0",
+            "description": "test dependency set",
+            "dependencies": [
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:0.object_promise.completed"
+                        },
+                        "right": {
+                            "value": true
+                        },
+                        "operator": "EQUALS"
+                    }
+                }
+            ]
+        }
+    ],
+    "object_types": [
+        {
+            "id": 0,
+            "name": "Placeholder",
+            "attributes": [
+                {
+                    "name": "completed",
+                    "type": "BOOLEAN"
+                },
+                {
+                    "name": "name",
+                    "type": "STRING"
+                },
+                {
+                    "name": "number",
+                    "type": "NUMERIC"
+                },
+                {
+                    "name": "numbers",
+                    "type": "NUMERIC_LIST"
+                },
+                {
+                    "name": "edge",
+                    "type": "EDGE",
+                    "object_type": "object_type:{Placeholder}"
+                },
+                {
+                    "name": "objects",
+                    "type": "EDGE_COLLECTION",
+                    "object_type": "object_type:{Placeholder}"
+                }
+            ]
+        }
+    ],
+    "object_promises": [
+        {
+            "id": 0,
+            "name": "object_promise_0",
+            "object_type": "object_type:{Placeholder}"
+        },
+        {
+            "id": 1,
+            "name": "object_promise_1",
+            "object_type": "object_type:{Placeholder}"
+        }
+    ],
+    "pipelines": [],
+    "imports": [
+        {
+            "file_name": "test/basic_import",
+            "connections": [
+                {
+                    "to_ref": "schema:{test/basic_import}.checkpoint:0",
+                    "add_dependency": "checkpoint:{depends-on-0}"
+                }
+            ]
+        }
+    ]
+}
