@@ -38,6 +38,28 @@ class TestSchemaValidation:
 
         assert not errors
 
+    def test_all_valid_schemas(self):
+        schemas_to_validate = [
+            "schemas/test/small_example_schema.json",
+            "schemas/test/basic_import.json",
+            "schemas/test/imported_action_to_native_checkpoint.json",
+            "schemas/test/imported_checkpoint_to_native_action.json",
+            "schemas/test/imported_checkpoint_to_native_checkpoint.json",
+            "schemas/test/native_checkpoint_to_imported_action.json",
+            "schemas/test/native_checkpoint_to_imported_checkpoint.json",
+            "schemas/test/recursive_import_example.json",
+        ]
+
+        for json_file_path in schemas_to_validate:
+            validator = SchemaValidator()
+            errors = validator.validate(json_file_path=json_file_path)
+
+            if errors:
+                print(f"Invalid schema ({json_file_path}):")
+                validator.print_errors()
+
+            assert not errors
+
     def test_get_next_action_id(self):
         """Logs the next action id for the provided JSON schema file.
 

@@ -13,7 +13,7 @@
             "name": "action_0",
             "object_promise": "object_promise:0",
             "description": "test action",
-            "party": "party:{Project}",
+            "party": "party:0",
             "operation": {
                 "include": [
                     "name"
@@ -25,7 +25,7 @@
             "name": "action_1",
             "object_promise": "object_promise:1",
             "description": "test action",
-            "party": "party:{Project}",
+            "party": "party:0",
             "operation": {
                 "include": [
                     "name"
@@ -77,12 +77,12 @@
                 {
                     "name": "edge",
                     "type": "EDGE",
-                    "object_type": "object_type:{Placeholder}"
+                    "object_type": "object_type:0"
                 },
                 {
                     "name": "objects",
                     "type": "EDGE_COLLECTION",
-                    "object_type": "object_type:{Placeholder}"
+                    "object_type": "object_type:0"
                 }
             ]
         }
@@ -91,12 +91,12 @@
         {
             "id": 0,
             "name": "object_promise_0",
-            "object_type": "object_type:{Placeholder}"
+            "object_type": "object_type:0"
         },
         {
             "id": 1,
             "name": "object_promise_1",
-            "object_type": "object_type:{Placeholder}"
+            "object_type": "object_type:0"
         }
     ],
     "pipelines": [],
@@ -106,7 +106,7 @@
             "connections": [
                 {
                     "to_ref": "schema:{test/basic_import}.checkpoint:0",
-                    "add_dependency": "checkpoint:{depends-on-0}"
+                    "add_dependency": "checkpoint:0"
                 }
             ]
         }

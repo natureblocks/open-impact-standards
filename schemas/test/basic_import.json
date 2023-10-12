@@ -28,19 +28,19 @@
             "id": 0,
             "name": "object promise 0",
             "description": "",
-            "object_type": "object_type:{ImportedType}"
+            "object_type": "object_type:0"
         },
         {
             "id": 1,
             "name": "object promise 1",
             "description": "",
-            "object_type": "object_type:{ImportedType}"
+            "object_type": "object_type:0"
         },
         {
             "id": 2,
             "name": "object promise 2",
             "description": "",
-            "object_type": "object_type:{ImportedType}"
+            "object_type": "object_type:0"
         }
     ],
     "actions": [
@@ -48,7 +48,7 @@
             "id": 0,
             "name": "action_0",
             "description": "action 0",
-            "party": "party:{Project Developer}",
+            "party": "party:0",
             "object_promise": "object_promise:0",
             "operation": {
                 "exclude": null
@@ -58,23 +58,23 @@
             "id": 1,
             "name": "action_1",
             "description": "action 1",
-            "party": "party:{Project Developer}",
+            "party": "party:0",
             "object_promise": "object_promise:1",
             "operation": {
                 "exclude": null
             },
-            "depends_on": "checkpoint:{depends-on-0}"
+            "depends_on": "checkpoint:0"
         },
         {
             "id": 2,
             "name": "action_2",
             "description": "action 2",
-            "party": "party:{Project Developer}",
+            "party": "party:0",
             "object_promise": "object_promise:2",
             "operation": {
                 "exclude": null
             },
-            "depends_on": "checkpoint:{depends-on-1}"
+            "depends_on": "checkpoint:1"
         }
     ],
     "checkpoints": [
