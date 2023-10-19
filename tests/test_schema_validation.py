@@ -48,6 +48,7 @@ class TestSchemaValidation:
             "schemas/test/native_checkpoint_to_imported_action.json",
             "schemas/test/native_checkpoint_to_imported_checkpoint.json",
             "schemas/test/recursive_import_example.json",
+            "schemas/test/attach_edge_example.json",
         ]
 
         for json_file_path in schemas_to_validate:

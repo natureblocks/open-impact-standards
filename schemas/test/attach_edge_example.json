@@ -1,0 +1,191 @@
+{
+    "standard": "Open Impact Standard",
+    "terms": [],
+    "parties": [
+        {
+            "id": 5,
+            "name": "Party 0"
+        }
+    ],
+    "object_types": [
+        {
+            "id": 0,
+            "name": "Has Edge",
+            "description": "",
+            "attributes": [
+                {
+                    "name": "name",
+                    "description": "",
+                    "type": "STRING"
+                },
+                {
+                    "name": "related object",
+                    "description": "",
+                    "type": "EDGE",
+                    "object_type": "object_type:19"
+                }
+            ]
+        },
+        {
+            "id": 19,
+            "name": "Is Edge",
+            "description": "",
+            "attributes": [
+                {
+                    "name": "name",
+                    "description": "",
+                    "type": "STRING"
+                }
+            ]
+        },
+        {
+            "id": 29,
+            "name": "Has Number",
+            "description": "",
+            "attributes": [
+                {
+                    "name": "number",
+                    "description": "",
+                    "type": "NUMERIC"
+                }
+            ]
+        }
+    ],
+    "object_promises": [
+        {
+            "id": 10,
+            "name": "An Object",
+            "description": "",
+            "object_type": "object_type:0"
+        },
+        {
+            "id": 21,
+            "name": "An Edge",
+            "description": "",
+            "object_type": "object_type:19"
+        },
+        {
+            "id": 31,
+            "name": "default object_promise 31",
+            "description": "",
+            "object_type": "object_type:29"
+        }
+    ],
+    "actions": [
+        {
+            "id": 4,
+            "description": "",
+            "name": "Create Object",
+            "party": "party:5",
+            "object_promise": "object_promise:10",
+            "operation": {
+                "include": [
+                    "name"
+                ],
+                "default_values": {
+                    "name": "some value"
+                }
+            }
+        },
+        {
+            "id": 13,
+            "description": "",
+            "name": "Attach Edge",
+            "party": "party:5",
+            "object_promise": "object_promise:10",
+            "operation": {
+                "include": [
+                    "related object"
+                ]
+            },
+            "depends_on": "checkpoint:14"
+        },
+        {
+            "id": 22,
+            "description": "",
+            "name": "Create Edge",
+            "party": "party:5",
+            "object_promise": "object_promise:21",
+            "operation": {
+                "include": [
+                    "name"
+                ],
+                "default_values": {
+                    "name": "Edge #1"
+                }
+            }
+        },
+        {
+            "id": 28,
+            "description": "",
+            "name": "Evergreen Action",
+            "party": "party:5",
+            "object_promise": "object_promise:31",
+            "operation": {
+                "include": [
+                    "number"
+                ],
+                "default_values": {
+                    "number": 0
+                }
+            },
+            "depends_on": "checkpoint:17"
+        }
+    ],
+    "checkpoints": [
+        {
+            "id": 14,
+            "alias": "Objects Exists",
+            "description": "",
+            "dependencies": [
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:4.object_promise.name"
+                        },
+                        "right": {
+                            "value": null
+                        },
+                        "operator": "DOES_NOT_EQUAL",
+                        "description": ""
+                    }
+                },
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:22.object_promise.name"
+                        },
+                        "right": {
+                            "value": "Edge #1"
+                        },
+                        "operator": "EQUALS",
+                        "description": ""
+                    }
+                }
+            ],
+            "gate_type": "AND"
+        },
+        {
+            "id": 17,
+            "alias": "Edge is attached",
+            "description": "",
+            "dependencies": [
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:13.object_promise.related object"
+                        },
+                        "right": {
+                            "ref": "action:22.object_promise"
+                        },
+                        "operator": "EQUALS",
+                        "description": ""
+                    }
+                }
+            ]
+        }
+    ],
+    "thread_groups": [],
+    "pipelines": [],
+    "imports": []
+}
