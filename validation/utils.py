@@ -103,6 +103,7 @@ def as_namespaced_ref(schema_id, entity_id, entity_type):
         ref = "schema:{" + schema_id + "}." + ref
     return ref
 
+
 def prepend_schema_id(schema_id, ref):
     if schema_id is not None:
         # note that imported schemas do not have an "id" field,
@@ -110,28 +111,30 @@ def prepend_schema_id(schema_id, ref):
         return "schema:{" + schema_id + "}." + ref
     return ref
 
+
 def truncate_schema_id(ref):
-    """Removes the schema id from a reference, if it exists.
-    """
+    """Removes the schema id from a reference, if it exists."""
 
     if is_import_ref(ref):
         return ".".join(ref.split(".")[1:])
 
     return ref
 
+
 def reduce_ref(ref):
     split_ref = ref.split(".")
     num_path_segments = len(split_ref)
     if num_path_segments == 0:
         return None
-    
+
     if num_path_segments == 1:
         return split_ref[0]
-    
+
     if is_import_ref(ref):
         return ".".join(split_ref[:1])
-    
+
     return split_ref[0]
+
 
 def parse_schema_id(value):
     if not is_import_ref(value):
@@ -158,7 +161,7 @@ def action_ref_from_dependency_ref(dependency, left_or_right):
 def action_id_from_dependency_ref(dependency, left_or_right):
     if _is_action_ref(dependency, left_or_right):
         return parse_ref_id(dependency["compare"][left_or_right]["ref"])
-    
+
     return None
 
 
@@ -192,6 +195,7 @@ def field_type_from_python_type_name(python_type_name):
         "bool": "BOOLEAN",
         "list": "LIST",
         "dict": "OBJECT",
+        "NoneType": "NULL",
     }
 
     if python_type_name in type_map:
@@ -203,6 +207,9 @@ def field_type_from_python_type_name(python_type_name):
 
 
 def types_are_comparable(left_type, right_type, operator):
+    if left_type is "NULL" or right_type is "NULL":
+        return True
+
     # {left_types: {valid_operators: valid_right_type}}
     valid_comparisons = {
         "STRING": {
