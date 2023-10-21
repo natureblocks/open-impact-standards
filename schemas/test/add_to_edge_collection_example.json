@@ -1,0 +1,176 @@
+{
+    "standard": "Open Impact Standard",
+    "terms": [],
+    "parties": [
+        {
+            "id": 33,
+            "name": "party 0"
+        }
+    ],
+    "object_types": [
+        {
+            "id": 0,
+            "name": "parent object type",
+            "description": "",
+            "attributes": [
+                {
+                    "name": "name",
+                    "description": "",
+                    "type": "STRING"
+                },
+                {
+                    "name": "children",
+                    "description": "",
+                    "type": "EDGE_COLLECTION",
+                    "object_type": "object_type:30"
+                }
+            ]
+        },
+        {
+            "id": 30,
+            "name": "child object type",
+            "description": "",
+            "attributes": [
+                {
+                    "name": "number",
+                    "description": "",
+                    "type": "NUMERIC"
+                }
+            ]
+        }
+    ],
+    "object_promises": [
+        {
+            "id": 28,
+            "name": "parent object",
+            "description": "",
+            "object_type": "object_type:0"
+        },
+        {
+            "id": 29,
+            "name": "child 1",
+            "description": "",
+            "object_type": "object_type:30"
+        },
+        {
+            "id": 34,
+            "name": "child 2",
+            "description": "",
+            "object_type": "object_type:30"
+        }
+    ],
+    "actions": [
+        {
+            "id": 25,
+            "description": "",
+            "name": "Create Child 1",
+            "party": "party:33",
+            "object_promise": "object_promise:29",
+            "operation": {
+                "include": null,
+                "default_values": {
+                    "number": 3.14
+                }
+            }
+        },
+        {
+            "id": 27,
+            "description": "",
+            "name": "Create Parent Object",
+            "party": "party:33",
+            "object_promise": "object_promise:28",
+            "operation": {
+                "include": null,
+                "default_values": {
+                    "name": "Parent Object"
+                }
+            }
+        },
+        {
+            "id": 35,
+            "description": "",
+            "name": "Create Child 2",
+            "party": "party:33",
+            "object_promise": "object_promise:34",
+            "operation": {
+                "include": null,
+                "default_values": {
+                    "number": 159
+                }
+            }
+        },
+        {
+            "id": 42,
+            "description": "",
+            "name": "Add to edge collection",
+            "party": "party:33",
+            "object_promise": "object_promise:28",
+            "operation": {
+                "include": [
+                    "children"
+                ]
+            },
+            "depends_on": "checkpoint:39"
+        }
+    ],
+    "checkpoints": [
+        {
+            "id": 36,
+            "alias": "A child exists",
+            "description": "",
+            "dependencies": [
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:25.object_promise.number"
+                        },
+                        "right": {
+                            "value": 3.14
+                        },
+                        "operator": "EQUALS",
+                        "description": ""
+                    }
+                },
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:35.object_promise.number"
+                        },
+                        "right": {
+                            "value": 159
+                        },
+                        "operator": "EQUALS",
+                        "description": ""
+                    }
+                }
+            ],
+            "gate_type": "OR"
+        },
+        {
+            "id": 39,
+            "alias": "Parent and children exist",
+            "description": "",
+            "dependencies": [
+                {
+                    "checkpoint": "checkpoint:36"
+                },
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:27.object_promise.name"
+                        },
+                        "right": {
+                            "value": "Parent Object"
+                        },
+                        "operator": "EQUALS",
+                        "description": ""
+                    }
+                }
+            ],
+            "gate_type": "AND"
+        }
+    ],
+    "thread_groups": [],
+    "pipelines": [],
+    "imports": []
+}
