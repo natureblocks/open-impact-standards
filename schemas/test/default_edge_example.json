@@ -1,0 +1,134 @@
+{
+    "standard": "Open Impact Standard",
+    "terms": [],
+    "parties": [
+        {
+            "id": 10,
+            "name": "party 0"
+        }
+    ],
+    "object_types": [
+        {
+            "id": 0,
+            "name": "Object Type 1",
+            "description": "",
+            "attributes": [
+                {
+                    "name": "some boolean",
+                    "description": "",
+                    "type": "BOOLEAN"
+                },
+                {
+                    "name": "some string list",
+                    "description": "",
+                    "type": "STRING_LIST"
+                },
+                {
+                    "name": "some numeric list",
+                    "description": "",
+                    "type": "NUMERIC_LIST"
+                },
+                {
+                    "name": "some boolean list",
+                    "description": "",
+                    "type": "BOOLEAN_LIST"
+                }
+            ]
+        },
+        {
+            "id": 5,
+            "name": "Object Type 2",
+            "description": "",
+            "attributes": [
+                {
+                    "name": "some edge",
+                    "description": "",
+                    "type": "EDGE",
+                    "object_type": "object_type:0"
+                }
+            ]
+        }
+    ],
+    "object_promises": [
+        {
+            "id": 7,
+            "name": "object 1",
+            "description": "",
+            "object_type": "object_type:0"
+        },
+        {
+            "id": 8,
+            "name": "object 2",
+            "description": "",
+            "object_type": "object_type:5"
+        }
+    ],
+    "actions": [
+        {
+            "id": 9,
+            "description": "",
+            "name": "create object 1",
+            "party": "party:10",
+            "object_promise": "object_promise:7",
+            "operation": {
+                "include": null,
+                "default_values": {
+                    "some boolean": true,
+                    "some string list": [
+                        "a",
+                        "b",
+                        "c"
+                    ],
+                    "some numeric list": [
+                        1,
+                        2,
+                        3
+                    ],
+                    "some boolean list": [
+                        true,
+                        false,
+                        true
+                    ]
+                }
+            }
+        },
+        {
+            "id": 11,
+            "description": "",
+            "name": "set default edge",
+            "party": "party:10",
+            "object_promise": "object_promise:8",
+            "operation": {
+                "include": null,
+                "default_edges": {
+                    "some edge": "object_promise:7"
+                }
+            },
+            "depends_on": "checkpoint:12"
+        }
+    ],
+    "checkpoints": [
+        {
+            "id": 12,
+            "alias": "object 1 exists",
+            "description": "",
+            "dependencies": [
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:9.object_promise.some boolean"
+                        },
+                        "right": {
+                            "value": true
+                        },
+                        "operator": "EQUALS",
+                        "description": ""
+                    }
+                }
+            ]
+        }
+    ],
+    "thread_groups": [],
+    "pipelines": [],
+    "imports": []
+}
