@@ -236,7 +236,10 @@ def types_are_comparable(left_type, right_type, operator):
             "ONE_OF": "NUMERIC_LIST",
             "NONE_OF": "NUMERIC_LIST",
         },
-        "BOOLEAN": {"EQUALS": "BOOLEAN"},
+        "BOOLEAN": {
+            "EQUALS": "BOOLEAN",
+            "DOES_NOT_EQUAL": "BOOLEAN",
+        },
         "STRING_LIST": {
             "CONTAINS": "STRING",
             "DOES_NOT_CONTAIN": "STRING",
