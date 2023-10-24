@@ -210,6 +210,12 @@ def types_are_comparable(left_type, right_type, operator):
     if left_type is "NULL" or right_type is "NULL":
         return True
 
+    # normalize empty list type to the appropriate type
+    if left_type is not None and left_type.endswith("_LIST") and right_type == "LIST":
+        right_type = left_type
+    elif right_type is not None and right_type.endswith("_LIST") and left_type == "LIST":
+        left_type = right_type
+
     # {left_types: {valid_operators: valid_right_type}}
     valid_comparisons = {
         "STRING": {
