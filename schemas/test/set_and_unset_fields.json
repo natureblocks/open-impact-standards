@@ -1,0 +1,276 @@
+{
+    "standard": "Open Impact Standard",
+    "terms": [],
+    "parties": [
+        {
+            "id": 9,
+            "name": "party 0"
+        }
+    ],
+    "object_types": [
+        {
+            "id": 0,
+            "name": "Has All Field Types",
+            "description": "",
+            "attributes": [
+                {
+                    "name": "string",
+                    "description": "",
+                    "type": "STRING"
+                },
+                {
+                    "name": "number",
+                    "description": "",
+                    "type": "NUMERIC"
+                },
+                {
+                    "name": "boolean",
+                    "description": "",
+                    "type": "BOOLEAN"
+                },
+                {
+                    "name": "string list",
+                    "description": "",
+                    "type": "STRING_LIST"
+                },
+                {
+                    "name": "number list",
+                    "description": "",
+                    "type": "NUMERIC_LIST"
+                },
+                {
+                    "name": "boolean list",
+                    "description": "",
+                    "type": "BOOLEAN_LIST"
+                }
+            ]
+        }
+    ],
+    "object_promises": [
+        {
+            "id": 7,
+            "name": "object promise 0",
+            "description": "",
+            "object_type": "object_type:0"
+        },
+        {
+            "id": 26,
+            "name": "object promise 1",
+            "description": "",
+            "object_type": "object_type:0"
+        }
+    ],
+    "actions": [
+        {
+            "id": 8,
+            "description": "",
+            "name": "set fields",
+            "party": "party:9",
+            "object_promise": "object_promise:7",
+            "operation": {
+                "include": [
+                    "string",
+                    "number",
+                    "boolean",
+                    "string list",
+                    "number list",
+                    "boolean list"
+                ]
+            }
+        },
+        {
+            "id": 17,
+            "description": "",
+            "name": "unset fields",
+            "party": "party:9",
+            "object_promise": "object_promise:7",
+            "operation": {
+                "include": [
+                    "string",
+                    "number",
+                    "boolean",
+                    "string list",
+                    "number list",
+                    "boolean list"
+                ]
+            },
+            "depends_on": "checkpoint:10"
+        },
+        {
+            "id": 25,
+            "description": "",
+            "name": "final action",
+            "party": "party:9",
+            "object_promise": "object_promise:26",
+            "operation": {
+                "include": null
+            },
+            "depends_on": "checkpoint:18"
+        }
+    ],
+    "checkpoints": [
+        {
+            "id": 10,
+            "alias": "all fields are set",
+            "description": "",
+            "dependencies": [
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:8.object_promise.string"
+                        },
+                        "right": {
+                            "value": null
+                        },
+                        "operator": "DOES_NOT_EQUAL",
+                        "description": ""
+                    }
+                },
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:8.object_promise.number"
+                        },
+                        "right": {
+                            "value": null
+                        },
+                        "operator": "DOES_NOT_EQUAL",
+                        "description": ""
+                    }
+                },
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:8.object_promise.boolean"
+                        },
+                        "right": {
+                            "value": null
+                        },
+                        "operator": "DOES_NOT_EQUAL",
+                        "description": ""
+                    }
+                },
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:8.object_promise.string list"
+                        },
+                        "right": {
+                            "value": []
+                        },
+                        "operator": "DOES_NOT_EQUAL",
+                        "description": ""
+                    }
+                },
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:8.object_promise.number list"
+                        },
+                        "right": {
+                            "value": []
+                        },
+                        "operator": "DOES_NOT_EQUAL",
+                        "description": ""
+                    }
+                },
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:8.object_promise.boolean list"
+                        },
+                        "right": {
+                            "value": []
+                        },
+                        "operator": "DOES_NOT_EQUAL",
+                        "description": ""
+                    }
+                }
+            ],
+            "gate_type": "AND"
+        },
+        {
+            "id": 18,
+            "alias": "all fields are unset",
+            "description": "",
+            "dependencies": [
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:17.object_promise.string"
+                        },
+                        "right": {
+                            "value": null
+                        },
+                        "operator": "EQUALS",
+                        "description": ""
+                    }
+                },
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:17.object_promise.number"
+                        },
+                        "right": {
+                            "value": null
+                        },
+                        "operator": "EQUALS",
+                        "description": ""
+                    }
+                },
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:17.object_promise.boolean"
+                        },
+                        "right": {
+                            "value": null
+                        },
+                        "operator": "EQUALS",
+                        "description": ""
+                    }
+                },
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:17.object_promise.string list"
+                        },
+                        "right": {
+                            "value": []
+                        },
+                        "operator": "EQUALS",
+                        "description": ""
+                    }
+                },
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:17.object_promise.number list"
+                        },
+                        "right": {
+                            "value": []
+                        },
+                        "operator": "EQUALS",
+                        "description": ""
+                    }
+                },
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:17.object_promise.boolean list"
+                        },
+                        "right": {
+                            "value": []
+                        },
+                        "operator": "EQUALS",
+                        "description": ""
+                    }
+                }
+            ],
+            "gate_type": "AND"
+        }
+    ],
+    "thread_groups": [],
+    "pipelines": [],
+    "imports": []
+}
