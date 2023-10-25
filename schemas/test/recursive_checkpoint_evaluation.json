@@ -1,0 +1,211 @@
+{
+    "standard": "Open Impact Standard",
+    "terms": [],
+    "parties": [
+        {
+            "id": 6,
+            "name": "party 0"
+        }
+    ],
+    "object_types": [
+        {
+            "id": 0,
+            "name": "object type 0",
+            "description": "",
+            "attributes": [
+                {
+                    "name": "field a",
+                    "description": "",
+                    "type": "BOOLEAN"
+                },
+                {
+                    "name": "field b",
+                    "description": "",
+                    "type": "BOOLEAN"
+                },
+                {
+                    "name": "field c",
+                    "description": "",
+                    "type": "BOOLEAN"
+                }
+            ]
+        }
+    ],
+    "object_promises": [
+        {
+            "id": 4,
+            "name": "object 0",
+            "description": "",
+            "object_type": "object_type:0"
+        },
+        {
+            "id": 7,
+            "name": "object 1",
+            "description": "",
+            "object_type": "object_type:0"
+        },
+        {
+            "id": 28,
+            "name": "default object_promise 28",
+            "description": "",
+            "object_type": "object_type:0"
+        }
+    ],
+    "actions": [
+        {
+            "id": 5,
+            "description": "",
+            "name": "action 0",
+            "party": "party:6",
+            "object_promise": "object_promise:4",
+            "operation": {
+                "include": [
+                    "field a",
+                    "field b",
+                    "field c"
+                ]
+            }
+        },
+        {
+            "id": 8,
+            "description": "",
+            "name": "action 1",
+            "party": "party:6",
+            "object_promise": "object_promise:7",
+            "operation": {
+                "include": [
+                    "field a",
+                    "field b",
+                    "field c"
+                ]
+            }
+        },
+        {
+            "id": 17,
+            "description": "",
+            "name": "action 3",
+            "party": "party:6",
+            "object_promise": "object_promise:28",
+            "operation": {
+                "include": null
+            },
+            "depends_on": "checkpoint:16"
+        }
+    ],
+    "checkpoints": [
+        {
+            "id": 11,
+            "alias": "checkpoint 0",
+            "description": "",
+            "dependencies": [
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:5.object_promise.field a"
+                        },
+                        "right": {
+                            "value": true
+                        },
+                        "operator": "EQUALS",
+                        "description": ""
+                    }
+                }
+            ]
+        },
+        {
+            "id": 12,
+            "alias": "checkpoint 1",
+            "description": "",
+            "dependencies": [
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:5.object_promise.field b"
+                        },
+                        "right": {
+                            "value": true
+                        },
+                        "operator": "EQUALS",
+                        "description": ""
+                    }
+                },
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:5.object_promise.field c"
+                        },
+                        "right": {
+                            "value": true
+                        },
+                        "operator": "EQUALS",
+                        "description": ""
+                    }
+                }
+            ],
+            "gate_type": "AND"
+        },
+        {
+            "id": 13,
+            "alias": "checkpoint 2",
+            "description": "",
+            "dependencies": [
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:8.object_promise.field a"
+                        },
+                        "right": {
+                            "ref": "action:8.object_promise.field b"
+                        },
+                        "operator": "EQUALS",
+                        "description": ""
+                    }
+                },
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:8.object_promise.field b"
+                        },
+                        "right": {
+                            "ref": "action:8.object_promise.field c"
+                        },
+                        "operator": "EQUALS",
+                        "description": ""
+                    }
+                }
+            ],
+            "gate_type": "AND"
+        },
+        {
+            "id": 14,
+            "alias": "checkpoint 3",
+            "description": "",
+            "dependencies": [
+                {
+                    "checkpoint": "checkpoint:11"
+                },
+                {
+                    "checkpoint": "checkpoint:12"
+                }
+            ],
+            "gate_type": "OR"
+        },
+        {
+            "id": 16,
+            "alias": "checkpoint 4",
+            "description": "",
+            "dependencies": [
+                {
+                    "checkpoint": "checkpoint:13"
+                },
+                {
+                    "checkpoint": "checkpoint:14"
+                }
+            ],
+            "gate_type": "AND"
+        }
+    ],
+    "thread_groups": [],
+    "pipelines": [],
+    "imports": []
+}

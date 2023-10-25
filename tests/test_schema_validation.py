@@ -51,6 +51,7 @@ class TestSchemaValidation:
             "schemas/test/attach_edge_example.json",
             "schemas/test/default_edge_example.json",
             "schemas/test/set_and_unset_fields.json",
+            "schemas/test/recursive_checkpoint_evaluation.json",
         ]
 
         for json_file_path in schemas_to_validate:
