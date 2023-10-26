@@ -1,0 +1,238 @@
+{
+    "standard": "Open Impact Standard",
+    "terms": [],
+    "parties": [
+        {
+            "id": 7,
+            "name": "party 0"
+        }
+    ],
+    "object_types": [
+        {
+            "id": 0,
+            "name": "object type 0",
+            "description": "",
+            "attributes": [
+                {
+                    "name": "some number",
+                    "description": "",
+                    "type": "NUMERIC"
+                },
+                {
+                    "name": "some boolean",
+                    "description": "",
+                    "type": "BOOLEAN"
+                },
+                {
+                    "name": "some edge",
+                    "description": "",
+                    "type": "EDGE",
+                    "object_type": "object_type:3"
+                },
+                {
+                    "name": "some edge collection",
+                    "description": "",
+                    "type": "EDGE_COLLECTION",
+                    "object_type": "object_type:3"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "name": "object type 1",
+            "description": "",
+            "attributes": [
+                {
+                    "name": "some string",
+                    "description": "",
+                    "type": "STRING"
+                },
+                {
+                    "name": "some string list",
+                    "description": "",
+                    "type": "STRING_LIST"
+                }
+            ]
+        }
+    ],
+    "object_promises": [
+        {
+            "id": 8,
+            "name": "object 0",
+            "description": "",
+            "object_type": "object_type:3"
+        },
+        {
+            "id": 11,
+            "name": "object 1",
+            "description": "",
+            "object_type": "object_type:0"
+        },
+        {
+            "id": 13,
+            "name": "object 2",
+            "description": "",
+            "object_type": "object_type:0"
+        },
+        {
+            "id": 15,
+            "name": "object 3",
+            "description": "",
+            "object_type": "object_type:0"
+        },
+        {
+            "id": 18,
+            "name": "object 4",
+            "description": "",
+            "object_type": "object_type:0"
+        },
+        {
+            "id": 20,
+            "name": "object 5",
+            "description": "",
+            "object_type": "object_type:0"
+        },
+        {
+            "id": 21,
+            "name": "object 6",
+            "description": "",
+            "object_type": "object_type:0"
+        },
+        {
+            "id": 25,
+            "name": "object 7",
+            "description": "",
+            "object_type": "object_type:0"
+        }
+    ],
+    "actions": [
+        {
+            "id": 9,
+            "description": "",
+            "name": "include specific field",
+            "party": "party:7",
+            "object_promise": "object_promise:8",
+            "operation": {
+                "include": [
+                    "some string list"
+                ]
+            }
+        },
+        {
+            "id": 12,
+            "description": "",
+            "name": "include null",
+            "party": "party:7",
+            "object_promise": "object_promise:11",
+            "operation": {
+                "include": null
+            }
+        },
+        {
+            "id": 14,
+            "description": "",
+            "name": "exclude specific field",
+            "party": "party:7",
+            "object_promise": "object_promise:13",
+            "operation": {
+                "exclude": [
+                    "some boolean"
+                ]
+            }
+        },
+        {
+            "id": 17,
+            "description": "",
+            "name": "include specific edge",
+            "party": "party:7",
+            "object_promise": "object_promise:15",
+            "operation": {
+                "include": [
+                    "some edge"
+                ]
+            },
+            "depends_on": "checkpoint:24"
+        },
+        {
+            "id": 19,
+            "description": "",
+            "name": "include specific edge collection",
+            "party": "party:7",
+            "object_promise": "object_promise:18",
+            "operation": {
+                "include": [
+                    "some edge collection"
+                ]
+            },
+            "depends_on": "checkpoint:24"
+        },
+        {
+            "id": 22,
+            "description": "",
+            "name": "exclude specific edge",
+            "party": "party:7",
+            "object_promise": "object_promise:20",
+            "operation": {
+                "exclude": [
+                    "some edge"
+                ]
+            },
+            "depends_on": "checkpoint:24"
+        },
+        {
+            "id": 23,
+            "description": "",
+            "name": "exclude specific edge collection",
+            "party": "party:7",
+            "object_promise": "object_promise:21",
+            "operation": {
+                "exclude": [
+                    "some edge collection"
+                ]
+            },
+            "depends_on": "checkpoint:24"
+        },
+        {
+            "id": 26,
+            "description": "",
+            "name": "only defaults",
+            "party": "party:7",
+            "object_promise": "object_promise:25",
+            "operation": {
+                "include": null,
+                "default_values": {
+                    "some number": 1,
+                    "some boolean": true
+                },
+                "default_edges": {
+                    "some edge": "object_promise:8"
+                }
+            },
+            "depends_on": "checkpoint:24"
+        }
+    ],
+    "checkpoints": [
+        {
+            "id": 24,
+            "alias": "object 0 exists",
+            "description": "",
+            "dependencies": [
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:9.object_promise"
+                        },
+                        "right": {
+                            "value": null
+                        },
+                        "operator": "DOES_NOT_EQUAL",
+                        "description": ""
+                    }
+                }
+            ]
+        }
+    ],
+    "thread_groups": [],
+    "pipelines": [],
+    "imports": []
+}
