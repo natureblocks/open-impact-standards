@@ -1,0 +1,181 @@
+{
+    "standard": "Open Impact Standard",
+    "terms": [],
+    "parties": [
+        {
+            "id": 2,
+            "name": "party 0"
+        }
+    ],
+    "object_types": [
+        {
+            "id": 0,
+            "name": "Has Edge Collection",
+            "description": "",
+            "attributes": [
+                {
+                    "name": "some edge collection",
+                    "description": "",
+                    "type": "EDGE_COLLECTION",
+                    "object_type": "object_type:3"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "name": "Is Edge",
+            "description": "",
+            "attributes": [
+                {
+                    "name": "default field 4",
+                    "description": "",
+                    "type": "STRING"
+                }
+            ]
+        }
+    ],
+    "object_promises": [
+        {
+            "id": 6,
+            "name": "object 0",
+            "description": "",
+            "object_type": "object_type:0"
+        },
+        {
+            "id": 7,
+            "name": "edge 1",
+            "description": "",
+            "object_type": "object_type:3"
+        },
+        {
+            "id": 9,
+            "name": "edge 2",
+            "description": "",
+            "object_type": "object_type:3"
+        },
+        {
+            "id": 10,
+            "name": "edge 3",
+            "description": "",
+            "object_type": "object_type:3"
+        }
+    ],
+    "actions": [
+        {
+            "id": 8,
+            "description": "",
+            "name": "create object 0",
+            "party": "party:2",
+            "object_promise": "object_promise:6",
+            "operation": {
+                "include": [
+                    "some edge collection"
+                ]
+            }
+        },
+        {
+            "id": 11,
+            "description": "",
+            "name": "create edge 1",
+            "party": "party:2",
+            "object_promise": "object_promise:7",
+            "operation": {
+                "include": null
+            }
+        },
+        {
+            "id": 12,
+            "description": "",
+            "name": "create edge 2",
+            "party": "party:2",
+            "object_promise": "object_promise:9",
+            "operation": {
+                "include": null
+            }
+        },
+        {
+            "id": 13,
+            "description": "",
+            "name": "create edge 3",
+            "party": "party:2",
+            "object_promise": "object_promise:10",
+            "operation": {
+                "include": null
+            }
+        },
+        {
+            "id": 19,
+            "description": "",
+            "name": "edit edge collection",
+            "party": "party:2",
+            "object_promise": "object_promise:6",
+            "operation": {
+                "include": [
+                    "some edge collection"
+                ]
+            },
+            "depends_on": "checkpoint:14"
+        }
+    ],
+    "checkpoints": [
+        {
+            "id": 14,
+            "alias": "all objects exist",
+            "description": "",
+            "dependencies": [
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:8.object_promise.some edge collection"
+                        },
+                        "right": {
+                            "value": []
+                        },
+                        "operator": "DOES_NOT_EQUAL",
+                        "description": ""
+                    }
+                },
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:11.object_promise"
+                        },
+                        "right": {
+                            "value": null
+                        },
+                        "operator": "DOES_NOT_EQUAL",
+                        "description": ""
+                    }
+                },
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:12.object_promise"
+                        },
+                        "right": {
+                            "value": null
+                        },
+                        "operator": "DOES_NOT_EQUAL",
+                        "description": ""
+                    }
+                },
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:13.object_promise"
+                        },
+                        "right": {
+                            "value": null
+                        },
+                        "operator": "DOES_NOT_EQUAL",
+                        "description": ""
+                    }
+                }
+            ],
+            "gate_type": "AND"
+        }
+    ],
+    "thread_groups": [],
+    "pipelines": [],
+    "imports": []
+}

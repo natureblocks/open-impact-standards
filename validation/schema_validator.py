@@ -884,6 +884,7 @@ class SchemaValidator:
         def extract_field_type(path, operand_object):
             if "ref" in operand_object:
                 resolution_context_thread_group_ref = None
+                type_details = None
                 # resolve checkpoint context from path
                 if re.match("^root\.checkpoints\[\d+\]", ".".join(path.split(".")[:2])):
                     checkpoint = self._get_field(path.split(".")[:2])

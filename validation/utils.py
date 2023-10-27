@@ -34,7 +34,7 @@ def is_global_ref(value):
 
 
 def is_variable(value):
-    return re.match(patterns.variable, value)
+    return value is not None and re.match(patterns.variable, value)
 
 
 def is_local_variable(value):
