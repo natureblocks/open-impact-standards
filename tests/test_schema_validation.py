@@ -54,6 +54,7 @@ class TestSchemaValidation:
             "schemas/test/recursive_checkpoint_evaluation.json",
             "schemas/test/operations_test.json",
             "schemas/test/include_exclude_test.json",
+            "schemas/test/unset_edge_test.json",
         ]
 
         for json_file_path in schemas_to_validate:

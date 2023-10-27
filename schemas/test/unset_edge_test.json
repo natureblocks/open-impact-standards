@@ -1,0 +1,148 @@
+{
+    "standard": "Open Impact Standard",
+    "terms": [],
+    "parties": [
+        {
+            "id": 7,
+            "name": "party 0"
+        }
+    ],
+    "object_types": [
+        {
+            "id": 0,
+            "name": "Has Edge",
+            "description": "",
+            "attributes": [
+                {
+                    "name": "some edge",
+                    "description": "",
+                    "type": "EDGE",
+                    "object_type": "object_type:2"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "name": "Is Edge",
+            "description": "",
+            "attributes": [
+                {
+                    "name": "default field 16",
+                    "description": "",
+                    "type": "STRING"
+                }
+            ]
+        }
+    ],
+    "object_promises": [
+        {
+            "id": 4,
+            "name": "object 0",
+            "description": "",
+            "object_type": "object_type:0"
+        },
+        {
+            "id": 5,
+            "name": "object 1",
+            "description": "",
+            "object_type": "object_type:2"
+        },
+        {
+            "id": 15,
+            "name": "object 2",
+            "description": "",
+            "object_type": "object_type:2"
+        }
+    ],
+    "actions": [
+        {
+            "id": 6,
+            "description": "",
+            "name": "create object 0",
+            "party": "party:7",
+            "object_promise": "object_promise:4",
+            "operation": {
+                "include": [
+                    "some edge"
+                ]
+            }
+        },
+        {
+            "id": 8,
+            "description": "",
+            "name": "create object 1",
+            "party": "party:7",
+            "object_promise": "object_promise:5",
+            "operation": {
+                "include": null
+            }
+        },
+        {
+            "id": 11,
+            "description": "",
+            "name": "unset edge",
+            "party": "party:7",
+            "object_promise": "object_promise:4",
+            "operation": {
+                "include": [
+                    "some edge"
+                ]
+            },
+            "depends_on": "checkpoint:9"
+        },
+        {
+            "id": 14,
+            "description": "",
+            "name": "final action",
+            "party": "party:7",
+            "object_promise": "object_promise:15",
+            "operation": {
+                "include": null
+            },
+            "depends_on": "checkpoint:12"
+        }
+    ],
+    "checkpoints": [
+        {
+            "id": 9,
+            "alias": "edge is set",
+            "description": "",
+            "dependencies": [
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:6.object_promise.some edge"
+                        },
+                        "right": {
+                            "value": null
+                        },
+                        "operator": "DOES_NOT_EQUAL",
+                        "description": ""
+                    }
+                }
+            ]
+        },
+        {
+            "id": 12,
+            "alias": "edge is unset",
+            "description": "",
+            "dependencies": [
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:11.object_promise.some edge"
+                        },
+                        "right": {
+                            "value": null
+                        },
+                        "operator": "EQUALS",
+                        "description": ""
+                    }
+                }
+            ]
+        }
+    ],
+    "thread_groups": [],
+    "pipelines": [],
+    "imports": []
+}
