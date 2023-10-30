@@ -1,0 +1,50 @@
+{
+    "standard": "Open Impact Standard",
+    "terms": [],
+    "parties": [
+        {
+            "id": 3,
+            "name": "party 0"
+        }
+    ],
+    "object_types": [
+        {
+            "id": 0,
+            "name": "object type 0",
+            "description": "",
+            "attributes": [
+                {
+                    "name": "name",
+                    "description": "",
+                    "type": "STRING"
+                }
+            ]
+        }
+    ],
+    "object_promises": [
+        {
+            "id": 4,
+            "name": "object 0",
+            "description": "",
+            "object_type": "object_type:0"
+        }
+    ],
+    "actions": [
+        {
+            "id": 2,
+            "description": "",
+            "name": "evergreen action",
+            "party": "party:3",
+            "object_promise": "object_promise:4",
+            "operation": {
+                "include": [
+                    "name"
+                ]
+            }
+        }
+    ],
+    "checkpoints": [],
+    "thread_groups": [],
+    "pipelines": [],
+    "imports": []
+}
