@@ -30,6 +30,16 @@
                     "name": "names",
                     "description": "",
                     "type": "STRING_LIST"
+                },
+                {
+                    "name": "numbers",
+                    "description": "",
+                    "type": "NUMERIC_LIST"
+                },
+                {
+                    "name": "booleans",
+                    "description": "",
+                    "type": "BOOLEAN_LIST"
                 }
             ]
         },
@@ -42,6 +52,16 @@
                     "name": "name",
                     "description": "",
                     "type": "STRING"
+                },
+                {
+                    "name": "number",
+                    "description": "",
+                    "type": "NUMERIC"
+                },
+                {
+                    "name": "boolean",
+                    "description": "",
+                    "type": "BOOLEAN"
                 }
             ]
         }
@@ -105,7 +125,9 @@
             "object_promise": "object_promise:5",
             "operation": {
                 "include": [
-                    "name"
+                    "name",
+                    "number",
+                    "boolean"
                 ]
             }
         },
@@ -117,7 +139,9 @@
             "object_promise": "object_promise:8",
             "operation": {
                 "include": [
-                    "name"
+                    "name",
+                    "number",
+                    "boolean"
                 ]
             }
         },
@@ -129,7 +153,9 @@
             "object_promise": "object_promise:9",
             "operation": {
                 "include": [
-                    "name"
+                    "name",
+                    "number",
+                    "boolean"
                 ]
             }
         },
@@ -141,7 +167,9 @@
             "object_promise": "object_promise:10",
             "operation": {
                 "include": [
-                    "names"
+                    "names",
+                    "numbers",
+                    "booleans"
                 ]
             }
         },
@@ -183,7 +211,31 @@
                         "right": {
                             "ref": "action:13.object_promise.names"
                         },
-                        "operator": "IS_SUBSET_OF",
+                        "operator": "EQUALS",
+                        "description": ""
+                    }
+                },
+                {
+                    "compare": {
+                        "right": {
+                            "ref": "action:13.object_promise.numbers"
+                        },
+                        "left": {
+                            "ref": "action:6.object_promise.object list.number"
+                        },
+                        "operator": "EQUALS",
+                        "description": ""
+                    }
+                },
+                {
+                    "compare": {
+                        "left": {
+                            "ref": "action:6.object_promise.object list.boolean"
+                        },
+                        "right": {
+                            "ref": "action:13.object_promise.booleans"
+                        },
+                        "operator": "EQUALS",
                         "description": ""
                     }
                 }
