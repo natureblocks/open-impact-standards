@@ -55,12 +55,18 @@
         },
         {
             "id": 5,
-            "name": "edge 1",
+            "name": "edge 0",
             "description": "",
             "object_type": "object_type:11"
         },
         {
             "id": 8,
+            "name": "edge 1",
+            "description": "",
+            "object_type": "object_type:11"
+        },
+        {
+            "id": 9,
             "name": "edge 2",
             "description": "",
             "object_type": "object_type:11"
@@ -94,7 +100,7 @@
         {
             "id": 7,
             "description": "",
-            "name": "create edge 1",
+            "name": "create edge 0",
             "party": "party:3",
             "object_promise": "object_promise:5",
             "operation": {
@@ -106,9 +112,21 @@
         {
             "id": 9,
             "description": "",
-            "name": "create edge 2",
+            "name": "create edge 1",
             "party": "party:3",
             "object_promise": "object_promise:8",
+            "operation": {
+                "include": [
+                    "name"
+                ]
+            }
+        },
+        {
+            "id": 10,
+            "description": "",
+            "name": "create edge 2",
+            "party": "party:3",
+            "object_promise": "object_promise:9",
             "operation": {
                 "include": [
                     "name"
@@ -151,7 +169,7 @@
                             "ref": "action:6.object_promise.object list.name"
                         },
                         "right": {
-                            "value": ["bob", "joe", "greg"]
+                            "value": ["edge 0", "edge 1", "edge 2"]
                         },
                         "operator": "EQUALS",
                         "description": ""
