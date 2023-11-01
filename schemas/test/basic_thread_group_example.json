@@ -94,7 +94,8 @@
             "operation": {
                 "include": [
                     "number"
-                ]
+                ],
+                "appends_objects_to": "object_promise:9.edges"
             },
             "depends_on": "checkpoint:10"
         },
