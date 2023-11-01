@@ -58,6 +58,7 @@ class TestSchemaValidation:
             "schemas/test/remove_from_edge_collection_test.json",
             "schemas/test/evergreen_action_test.json",
             "schemas/test/compare_edge_collection_attribute_test.json",
+            "schemas/test/basic_thread_group_example.json",
         ]
 
         for json_file_path in schemas_to_validate:
